@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Офферы — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link active">Офферы</a>
+                    <a href="index.html#suppliers" class="nav-link">Для поставщиков</a>
+                    <a href="index.html#affiliates" class="nav-link">Для affiliates</a>
+                    <a href="demo.html" class="nav-link">Демо</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </a>
+                <a href="offers.html" class="sidebar-link active">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Офферы</span>
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Аналитика</span>
+                </a>
+                <a href="payments.html" class="sidebar-link">
+                    <i class="fas fa-wallet"></i>
+                    <span>Выплаты</span>
+                </a>
+                <a href="support.html" class="sidebar-link">
+                    <i class="fas fa-headset"></i>
+                    <span>Поддержка</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <div class="offers-page-header">
+                <div>
+                    <h1>Офферы</h1>
+                    <p class="offers-subtitle">Фильтруйте по категории, CPA‑ставке, региону и рейтингу.</p>
+                </div>
+                <a href="create-offer.html" class="btn btn-primary" id="createOfferBtn">
+                    <i class="fas fa-plus"></i>
+                    Создать новый оффер
+                </a>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="filters-section">
+                <div class="search-box-inline">
+                    <input type="text" class="search-input" placeholder="Например: продукты питания оптом" id="offerSearch">
+                    <button class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="filters-grid">
+                    <select class="filter-select" id="categoryFilter">
+                        <option value="">Все категории</option>
+                        <option value="food">Продукты питания</option>
+                        <option value="construction">Стройматериалы</option>
+                        <option value="auto">Автозапчасти</option>
+                    </select>
+                    <select class="filter-select" id="regionFilter">
+                        <option value="">Все регионы</option>
+                        <option value="moscow">Москва</option>
+                        <option value="spb">Санкт-Петербург</option>
+                        <option value="russia">Вся РФ</option>
+                    </select>
+                    <select class="filter-select" id="cpaFilter">
+                        <option value="">CPA‑ставка</option>
+                        <option value="low">До 300 ₽</option>
+                        <option value="medium">300–500 ₽</option>
+                        <option value="high">500+ ₽</option>
+                    </select>
+                    <select class="filter-select" id="sortFilter">
+                        <option value="popularity">По популярности</option>
+                        <option value="newest">По новизне</option>
+                        <option value="rating">По рейтингу</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Список офферов (загружается из API) -->
+            <div class="offers-list" id="offersList">
+                <p class="loading-offers">Загрузка офферов...</p>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>RealCPA Hub</h4>
+                    <p>Агрегатор CPA-офферов для реального сектора экономики</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="about.html">О компании</a></li>
+                        <li><a href="offers.html">Офферы</a></li>
+                        <li><a href="demo.html">Демо</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="login.html">Вход</a></li>
+                        <li><a href="register.html">Регистрация</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Документы</h4>
+                    <ul>
+                        <li><a href="policy.html">Политика конфиденциальности</a></li>
+                        <li><a href="personal-data.html">Обработка персональных данных</a></li>
+                        <li><a href="terms.html">Пользовательское соглашение</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="support.html">FAQ</a></li>
+                        <li><a href="contacts.html">Контакты</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RealCPA Hub. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Модальное окно деталей оффера -->
+    <div class="modal" id="offerModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeOfferDetails()">&times;</span>
+            <h2 id="modalOfferTitle">Детали оффера</h2>
+            <div id="modalOfferContent">
+                <p>Трекинг-ссылка будет доступна после подключения к офферу.</p>
+                <p><strong>Правила:</strong></p>
+                <ul>
+                    <li>Оплата производится только за подтвержденные заказы</li>
+                    <li>Минимальная сумма вывода: 1000 ₽</li>
+                    <li>Выплаты осуществляются еженедельно</li>
+                </ul>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="connectToOffer()">Подключиться к офферу</button>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+    <script>
+    (function() {
+        var listEl = document.getElementById('offersList');
+        var createBtn = document.getElementById('createOfferBtn');
+        if (typeof window.RealCPA === 'undefined') {
+            if (listEl) listEl.innerHTML = '<p>Подключите api.js и запустите бэкенд (npm run dev в папке backend).</p>';
+            return;
+        }
+        var role = window.RealCPA.getRole();
+        if (createBtn) createBtn.style.display = (role === 'supplier') ? '' : 'none';
+
+        function iconForSlug(slug) {
+            if (slug === 'construction') return 'fa-box-open';
+            if (slug === 'products') return 'fa-shopping-basket';
+            return 'fa-briefcase';
+        }
+        function renderOffers(offers) {
+            if (!listEl) return;
+            if (!offers || !offers.length) {
+                listEl.innerHTML = '<p>Нет активных офферов.</p>';
+                return;
+            }
+            listEl.innerHTML = offers.map(function(o, i) {
+                var cat = o.category ? o.category.name : '—';
+                var slug = o.category ? o.category.slug : '';
+                var icon = iconForSlug(slug);
+                var geo = o.targetGeo || '—';
+                var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || '₽') : '—';
+                return '<div class="offer-card animate-on-scroll" style="--i:' + i + '">' +
+                    '<div class="offer-image"><i class="fas ' + icon + '"></i></div>' +
+                    '<div class="offer-content">' +
+                    '<div class="offer-category">' + escapeHtml(cat) + '</div>' +
+                    '<h3>' + escapeHtml(o.title) + '</h3>' +
+                    '<p>' + escapeHtml((o.description || '').slice(0, 180)) + (o.description && o.description.length > 180 ? '…' : '') + '</p>' +
+                    '<div class="offer-meta">' +
+                    '<span><i class="fas fa-ruble-sign"></i> CPA: ' + escapeHtml(String(rate)) + '</span>' +
+                    '<span><i class="fas fa-map-marker-alt"></i> ' + escapeHtml(geo) + '</span>' +
+                    '</div>' +
+                    '<div class="offer-actions">' +
+                    '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-primary">Подключиться</a>' +
+                    '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-secondary">Детали</a>' +
+                    '</div></div></div>';
+            }).join('');
+        }
+        function escapeHtml(s) {
+            var div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+        window.RealCPA.offers({ status: 'active' })
+            .then(renderOffers)
+            .catch(function(err) {
+                if (listEl) listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(err.message || 'ошибка сети') + '. Запустите бэкенд на порту 3000.</p>';
+            });
+    })();
+    </script>
+</body>
+</html>

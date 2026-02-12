@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход / Регистрация — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link">Офферы</a>
+                    <a href="index.html#suppliers" class="nav-link">Для поставщиков</a>
+                    <a href="index.html#affiliates" class="nav-link">Для affiliates</a>
+                    <a href="demo.html" class="nav-link">Демо</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link active">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Форма входа/регистрации -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Вход</button>
+                    <button class="auth-tab" data-tab="register" onclick="window.location.href='register.html'">Регистрация</button>
+                </div>
+
+                <!-- Форма входа -->
+                <div class="auth-form active" id="loginForm">
+                    <h2>Вход в систему</h2>
+                    <form id="loginFormElement">
+                        <div class="form-group">
+                            <label for="loginEmail">Email</label>
+                            <input type="email" id="loginEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Пароль</label>
+                            <input type="password" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Войти</button>
+                    </form>
+                    <div class="auth-divider">
+                        <span>или</span>
+                    </div>
+                    <div class="auth-social">
+                        <button class="btn btn-social" type="button">
+                            <i class="fas fa-id-card"></i>
+                            Войти через Госуслуги
+                        </button>
+                        <button class="btn btn-social" type="button">
+                            <i class="fas fa-building"></i>
+                            Войти через Макс
+                        </button>
+                        <button class="btn btn-social" type="button">
+                            <i class="fab fa-telegram"></i>
+                            Войти через Telegram
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Форма регистрации -->
+                <div class="auth-form" id="registerForm">
+                    <h2>Регистрация</h2>
+                    <form id="registerFormElement">
+                        <div class="role-buttons">
+                            <p class="role-label">Кто вы?</p>
+                            <div class="role-buttons-grid">
+                                <button type="button" class="role-btn active" data-role="affiliate">
+                                    <span class="role-title">Affiliate</span>
+                                    <span class="role-desc">Привожу трафик и зарабатываю по CPA</span>
+                                </button>
+                                <button type="button" class="role-btn" data-role="supplier">
+                                    <span class="role-title">Поставщик</span>
+                                    <span class="role-desc">Размещаю офферы на свои товары</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group role-select-hidden">
+                            <label for="registerRole">Роль</label>
+                            <select id="registerRole" required>
+                                <option value="">Выберите роль</option>
+                                <option value="affiliate">Affiliate</option>
+                                <option value="supplier">Поставщик</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerEmail">Email</label>
+                            <input type="email" id="registerEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword">Пароль</label>
+                            <input type="password" id="registerPassword" required>
+                        </div>
+
+                        <!-- Дополнительные поля для поставщика -->
+                        <div class="form-group supplier-fields" id="supplierFields" style="display: none;">
+                            <label for="companyName">Название компании</label>
+                            <input type="text" id="companyName">
+                        </div>
+                        <div class="form-group supplier-fields" id="supplierFields2" style="display: none;">
+                            <label for="inn">ИНН</label>
+                            <input type="text" id="inn" placeholder="Для РФ">
+                        </div>
+                        <div class="form-group supplier-fields" id="supplierFields3" style="display: none;">
+                            <label for="productCategory">Категория товаров</label>
+                            <select id="productCategory">
+                                <option value="">Выберите категорию</option>
+                                <option value="food">Продукты питания</option>
+                                <option value="construction">Стройматериалы</option>
+                                <option value="auto">Автозапчасти</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+
+                        <!-- Дополнительные поля для affiliate -->
+                        <div class="form-group affiliate-fields" id="affiliateFields" style="display: none;">
+                            <label for="trafficSource">Источники трафика</label>
+                            <input type="text" id="trafficSource" placeholder="Сайт, соцсети и т.д.">
+                        </div>
+                        <div class="form-group affiliate-fields" id="affiliateFields2" style="display: none;">
+                            <label for="experience">Опыт</label>
+                            <select id="experience">
+                                <option value="">Выберите опыт</option>
+                                <option value="beginner">Начинающий</option>
+                                <option value="intermediate">Средний</option>
+                                <option value="advanced">Продвинутый</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">Зарегистрироваться</button>
+                    </form>
+                    <div class="auth-divider">
+                        <span>или</span>
+                    </div>
+                    <div class="auth-social">
+                        <button class="btn btn-social" type="button">
+                            <i class="fas fa-id-card"></i>
+                            Регистрация через Госуслуги
+                        </button>
+                        <button class="btn btn-social" type="button">
+                            <i class="fas fa-building"></i>
+                            Регистрация через Макс
+                        </button>
+                        <button class="btn btn-social" type="button">
+                            <i class="fab fa-telegram"></i>
+                            Регистрация через Telegram
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>RealCPA Hub</h4>
+                    <p>Агрегатор CPA-офферов для реального сектора экономики</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="about.html">О компании</a></li>
+                        <li><a href="offers.html">Офферы</a></li>
+                        <li><a href="demo.html">Демо</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="login.html">Вход</a></li>
+                        <li><a href="register.html">Регистрация</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Документы</h4>
+                    <ul>
+                        <li><a href="policy.html">Политика конфиденциальности</a></li>
+                        <li><a href="personal-data.html">Обработка персональных данных</a></li>
+                        <li><a href="terms.html">Пользовательское соглашение</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="support.html">FAQ</a></li>
+                        <li><a href="contacts.html">Контакты</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RealCPA Hub. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

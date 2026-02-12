@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создать оффер — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link active">Офферы</a>
+                    <a href="index.html#suppliers" class="nav-link">Для поставщиков</a>
+                    <a href="index.html#affiliates" class="nav-link">Для affiliates</a>
+                    <a href="demo.html" class="nav-link">Демо</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard-supplier.html" class="sidebar-link" id="sidebarMainLink">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </a>
+                <a href="dashboard-supplier-offers.html" class="sidebar-link">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Мои офферы</span>
+                </a>
+                <a href="create-offer.html" class="sidebar-link active">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Создать оффер</span>
+                </a>
+                <a href="dashboard-supplier-requests.html" class="sidebar-link">
+                    <i class="fas fa-user-check"></i>
+                    <span>Заявки партнёров</span>
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Аналитика</span>
+                </a>
+                <a href="payments.html" class="sidebar-link">
+                    <i class="fas fa-wallet"></i>
+                    <span>Расходы на партнёров</span>
+                </a>
+                <a href="support.html" class="sidebar-link">
+                    <i class="fas fa-headset"></i>
+                    <span>Поддержка</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <div class="create-offer-header">
+                <h1>Создать новый оффер</h1>
+                <p class="create-offer-subtitle">Заполните шаги по порядку. Все поля с <span class="required-mark">*</span> обязательны.</p>
+            </div>
+
+            <!-- Индикатор шагов -->
+            <div class="wizard-steps">
+                <div class="wizard-step active" data-step="1">
+                    <span class="wizard-step-num">1</span>
+                    <span class="wizard-step-label">Основное</span>
+                </div>
+                <div class="wizard-step" data-step="2">
+                    <span class="wizard-step-num">2</span>
+                    <span class="wizard-step-label">Описание и условия</span>
+                </div>
+                <div class="wizard-step" data-step="3">
+                    <span class="wizard-step-num">3</span>
+                    <span class="wizard-step-label">Финансы</span>
+                </div>
+                <div class="wizard-step" data-step="4">
+                    <span class="wizard-step-num">4</span>
+                    <span class="wizard-step-label">Трафик и правила</span>
+                </div>
+                <div class="wizard-step" data-step="5">
+                    <span class="wizard-step-num">5</span>
+                    <span class="wizard-step-label">Трекинг</span>
+                </div>
+            </div>
+
+            <form id="createOfferForm" class="create-offer-form">
+                <!-- Шаг 1: Основное -->
+                <div class="wizard-panel active" data-panel="1">
+                    <h2>Основные данные</h2>
+                    <div class="form-group">
+                        <label for="offerName">Название оффера <span class="required-mark">*</span></label>
+                        <input type="text" id="offerName" required placeholder="Например: Стройматериалы оптом — CPA 500 ₽ за заказ">
+                    </div>
+                    <div class="form-group">
+                        <label for="offerLandingUrl">Ссылка на лендинг (URL для партнёров)</label>
+                        <input type="url" id="offerLandingUrl" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label for="offerInn">ИНН рекламодателя (отображается на странице оффера)</label>
+                        <input type="text" id="offerInn" placeholder="Например: ПАО «Компания» ИНН 7700123456">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="offerCategory">Категория <span class="required-mark">*</span></label>
+                            <select id="offerCategory" required>
+                                <option value="">Загрузка...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="offerActionType">Тип действия (за что платим) <span class="required-mark">*</span></label>
+                            <select id="offerActionType" required>
+                                <option value="">Выберите тип</option>
+                                <option value="order">Подтверждённый заказ</option>
+                                <option value="lead">Подтверждённая заявка / лид</option>
+                                <option value="payment">Оплаченный счёт</option>
+                                <option value="meeting">Встреча / демонстрация</option>
+                                <option value="contract">Подписанный договор</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Шаг 2: Описание и условия -->
+                <div class="wizard-panel" data-panel="2">
+                    <h2>Описание и условия</h2>
+                    <div class="form-group">
+                        <label for="offerShortDesc">Краткое описание (1–2 предложения) <span class="required-mark">*</span></label>
+                        <input type="text" id="offerShortDesc" required placeholder="Что продаёте, кому, в каком формате (опт/B2B)">
+                    </div>
+                    <div class="form-group">
+                        <label for="offerFullDesc">Общая информация (полное описание)</label>
+                        <textarea id="offerFullDesc" rows="4" placeholder="Целевая аудитория, тип сделки, особенности логистики и оплаты. Будет показано в блоке «Общая информация» на странице оффера."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="offerAttentionImportant">Обратите внимание — Важно</label>
+                        <textarea id="offerAttentionImportant" rows="2" placeholder="Важные замечания для партнёров (по одному с новой строки)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="offerAttentionProhibited">Обратите внимание — Запрещается</label>
+                        <textarea id="offerAttentionProhibited" rows="3" placeholder="Что запрещено: мошеннический трафик, брендовый контекст, несогласованные материалы и т.д. (по одному пункту с новой строки)"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="offerGeo">География <span class="required-mark">*</span></label>
+                            <select id="offerGeo" required>
+                                <option value="">Выберите регион</option>
+                                <option value="russia">Вся РФ</option>
+                                <option value="moscow">Москва и МО</option>
+                                <option value="spb">Санкт-Петербург и ЛО</option>
+                                <option value="central">ЦФО</option>
+                                <option value="other">Другие регионы</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="offerVolumeUnit">Единица объёма сделки</label>
+                            <select id="offerVolumeUnit">
+                                <option value="">Не указано</option>
+                                <option value="order">Заказ</option>
+                                <option value="pallet">Паллета</option>
+                                <option value="box">Короб / упаковка</option>
+                                <option value="kg">кг</option>
+                                <option value="m2">м²</option>
+                                <option value="m3">м³</option>
+                                <option value="contract">Контракт</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="offerMinOrder">Минимальная сумма заказа (₽)</label>
+                            <input type="number" id="offerMinOrder" min="0" step="1000" placeholder="Например: 10000">
+                        </div>
+                        <div class="form-group">
+                            <label for="offerAvgCheck">Средний чек (₽)</label>
+                            <input type="number" id="offerAvgCheck" min="0" step="1000" placeholder="Например: 30000">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Шаг 3: Финансы и ставки -->
+                <div class="wizard-panel" data-panel="3">
+                    <h2>Финансы, ставки и условия</h2>
+                    <div class="form-group">
+                        <label>Ставки (название действия и сумма)</label>
+                        <div class="offer-rates-fields" id="offerRatesFields">
+                            <div class="form-row offer-rate-row">
+                                <input type="text" class="offer-rate-name" placeholder="Например: Подтверждённый заказ" name="offerRateName[]">
+                                <input type="text" class="offer-rate-value" placeholder="500 ₽" name="offerRateValue[]">
+                            </div>
+                            <div class="form-row offer-rate-row">
+                                <input type="text" class="offer-rate-name" placeholder="Второе действие (если есть)" name="offerRateName[]">
+                                <input type="text" class="offer-rate-value" placeholder="300 ₽" name="offerRateValue[]">
+                            </div>
+                        </div>
+                        <p class="form-hint">Первая строка обязательна. Пустые строки не показываются на странице оффера.</p>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="offerCpa">Основная CPA-ставка (₽) <span class="required-mark">*</span></label>
+                            <input type="number" id="offerCpa" required min="1" step="50" placeholder="Например: 500 (для карточки в каталоге)">
+                        </div>
+                        <div class="form-group">
+                            <label for="offerConfirmPercent">% подтверждения</label>
+                            <input type="text" id="offerConfirmPercent" placeholder="Например: 90%">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="offerConversion">Конверсия (%)</label>
+                            <input type="text" id="offerConversion" placeholder="Например: 1%">
+                        </div>
+                        <div class="form-group">
+                            <label for="offerPaymentTerm">Срок оплаты (дней)</label>
+                            <input type="number" id="offerPaymentTerm" min="0" placeholder="Например: 60">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="offerCookieLifetime">Время жизни cookie (дней)</label>
+                            <input type="number" id="offerCookieLifetime" min="0" value="30" placeholder="30">
+                        </div>
+                        <div class="form-group">
+                            <label for="offerConfirmDays">Среднее время подтверждения заказа (дней)</label>
+                            <input type="number" id="offerConfirmDays" min="0" value="14" placeholder="14">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="offerMobileTracking">Трекинг в мобильном приложении</label>
+                            <select id="offerMobileTracking">
+                                <option value="no">Нет</option>
+                                <option value="yes">Да</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="offerBudget">Общий бюджет (₽)</label>
+                            <input type="number" id="offerBudget" min="0" step="1000" placeholder="Например: 100000">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="offerCapDay">Лимит заказов/лидов в день</label>
+                            <input type="number" id="offerCapDay" min="0" placeholder="Пусто — без лимита">
+                        </div>
+                        <div class="form-group">
+                            <label for="offerCapMonth">Лимит в месяц</label>
+                            <input type="number" id="offerCapMonth" min="0" placeholder="Пусто — без лимита">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="offerHoldDays">Холдинг (дней до подтверждения)</label>
+                        <input type="number" id="offerHoldDays" min="0" value="14" placeholder="14">
+                    </div>
+                </div>
+
+                <!-- Шаг 4: Трафик и правила -->
+                <div class="wizard-panel" data-panel="4">
+                    <h2>Трафик и правила</h2>
+                    <div class="form-group">
+                        <label>Источники трафика — по согласованию</label>
+                        <p class="form-hint">Отметьте источники, которые допускаются по согласованию с рекламодателем.</p>
+                        <div class="offer-traffic-checkboxes" id="offerTrafficAgreementList">
+                            <label><input type="checkbox" name="trafficAgreement" value="Telegram"> Telegram</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="Купонные/промокодные агрегаторы"> Купонные/промокодные агрегаторы</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="Контекстная реклама"> Контекстная реклама</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="Баннерная реклама"> Баннерная реклама</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="Мотивированный трафик"> Мотивированный трафик</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="YouTube-каналы"> YouTube-каналы</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="Контентные сайты"> Контентные сайты</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="Тизерные сети"> Тизерные сети</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="E-mail рассылка"> E-mail рассылка</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="Таргетированная реклама"> Таргетированная реклама</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="SEO"> SEO</label>
+                            <label><input type="checkbox" name="trafficAgreement" value="Публичные группы в соц. сетях"> Публичные группы в соц. сетях</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Источники трафика — запрещено</label>
+                        <p class="form-hint">Отметьте источники, которые запрещены.</p>
+                        <div class="offer-traffic-checkboxes" id="offerTrafficForbiddenList">
+                            <label><input type="checkbox" name="trafficForbidden" value="Контекстная реклама на бренд"> Контекстная реклама на бренд</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Любой мошеннический трафик"> Любой мошеннический трафик</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Incent"> Incent</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Adult"> Adult</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Дорвеи"> Дорвеи</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Clickunder/Popunder"> Clickunder/Popunder</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Ремаркетинг"> Ремаркетинг</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Брокерский трафик"> Брокерский трафик</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Спам"> Спам</label>
+                            <label><input type="checkbox" name="trafficForbidden" value="Тулбары и плагины"> Тулбары и плагины</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="offerAllowedSources">Разрешённые источники (текст, если нужно)</label>
+                        <input type="text" id="offerAllowedSources" placeholder="Например: SEO, контекст, Telegram-каналы B2B">
+                    </div>
+                    <div class="form-group">
+                        <label for="offerForbiddenSources">Запрещённые источники (текст, если нужно)</label>
+                        <input type="text" id="offerForbiddenSources" placeholder="Дополнительно к отмеченным выше">
+                    </div>
+                    <div class="form-group">
+                        <label for="offerCreativeRules">Требования к креативам</label>
+                        <textarea id="offerCreativeRules" rows="3" placeholder="Можно/нельзя использовать бренд, цены, обязательные оговорки"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="offerLeadCriteria">Критерии зачёта лида / отказ</label>
+                        <textarea id="offerLeadCriteria" rows="3" placeholder="Что считается качественным лидом; какие заявки не оплачиваются"></textarea>
+                    </div>
+                </div>
+
+                <!-- Шаг 5: Трекинг -->
+                <div class="wizard-panel" data-panel="5">
+                    <h2>Трекинг и интеграция</h2>
+                    <div class="form-group">
+                        <label for="offerTrackingUrl">Трекинг-ссылка (URL для партнёров)</label>
+                        <input type="url" id="offerTrackingUrl" placeholder="https://... или будет сгенерирована после создания">
+                    </div>
+                    <div class="form-group">
+                        <label for="offerPostback">Postback / Webhook URL</label>
+                        <input type="url" id="offerPostback" placeholder="Для уведомлений о конверсиях">
+                    </div>
+                    <div class="form-group">
+                        <label for="offerConversionWindow">Окно конверсии (дней)</label>
+                        <input type="number" id="offerConversionWindow" min="1" value="30" placeholder="30">
+                    </div>
+                    <div class="form-group">
+                        <label for="offerIntegrationType">Тип интеграции</label>
+                        <select id="offerIntegrationType">
+                            <option value="manual">Ручная загрузка лидов</option>
+                            <option value="api">API</option>
+                            <option value="file">Выгрузка файлом</option>
+                            <option value="crm">Интеграция с CRM</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Кнопки навигации -->
+                <div class="wizard-actions">
+                    <button type="button" class="btn btn-secondary" id="wizardPrev" style="display: none;">Назад</button>
+                    <div class="wizard-actions-right">
+                        <button type="button" class="btn btn-secondary" id="wizardNext">Далее</button>
+                        <button type="submit" class="btn btn-primary" id="wizardSubmit" style="display: none;">
+                            <i class="fas fa-check"></i> Отправить на модерацию
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>RealCPA Hub</h4>
+                    <p>Агрегатор CPA-офферов для реального сектора экономики</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="about.html">О компании</a></li>
+                        <li><a href="offers.html">Офферы</a></li>
+                        <li><a href="demo.html">Демо</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="login.html">Вход</a></li>
+                        <li><a href="register.html">Регистрация</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Документы</h4>
+                    <ul>
+                        <li><a href="policy.html">Политика конфиденциальности</a></li>
+                        <li><a href="personal-data.html">Обработка персональных данных</a></li>
+                        <li><a href="terms.html">Пользовательское соглашение</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="support.html">FAQ</a></li>
+                        <li><a href="contacts.html">Контакты</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RealCPA Hub. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="api.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'supplier') {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('create-offer.html');
+            return;
+        }
+        window.RealCPA.categories().then(function(cats) {
+            var sel = document.getElementById('offerCategory');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Выберите категорию</option>' +
+                (cats || []).map(function(c) {
+                    return '<option value="' + c.id + '">' + (c.name || c.slug) + '</option>';
+                }).join('');
+        }).catch(function() {
+            var sel = document.getElementById('offerCategory');
+            if (sel) sel.innerHTML = '<option value="">Не удалось загрузить категории</option>';
+        });
+    })();
+    </script>
+    <script src="script.js"></script>
+    <script>
+    (function() {
+        var currentStep = 1;
+        var totalSteps = 5;
+        var steps = document.querySelectorAll('.wizard-step');
+        var panels = document.querySelectorAll('.wizard-panel');
+        var btnPrev = document.getElementById('wizardPrev');
+        var btnNext = document.getElementById('wizardNext');
+        var btnSubmit = document.getElementById('wizardSubmit');
+        var form = document.getElementById('createOfferForm');
+
+        function goToStep(step) {
+            currentStep = step;
+            steps.forEach(function(s) {
+                s.classList.toggle('active', parseInt(s.dataset.step, 10) === step);
+                s.classList.toggle('done', parseInt(s.dataset.step, 10) < step);
+            });
+            panels.forEach(function(p) {
+                p.classList.toggle('active', parseInt(p.dataset.panel, 10) === step);
+            });
+            btnPrev.style.display = step === 1 ? 'none' : 'inline-block';
+            btnNext.style.display = step === totalSteps ? 'none' : 'inline-block';
+            btnSubmit.style.display = step === totalSteps ? 'inline-block' : 'none';
+        }
+
+        if (btnPrev) btnPrev.addEventListener('click', function() { goToStep(currentStep - 1); });
+        if (btnNext) btnNext.addEventListener('click', function() {
+            var panel = document.querySelector('.wizard-panel[data-panel="' + currentStep + '"]');
+            var required = panel ? panel.querySelectorAll('[required]') : [];
+            var valid = true;
+            required.forEach(function(el) {
+                if (!el.value.trim()) { valid = false; el.reportValidity ? el.reportValidity() : true; }
+            });
+            if (valid) goToStep(currentStep + 1);
+        });
+
+        steps.forEach(function(s) {
+            s.addEventListener('click', function() {
+                var step = parseInt(this.dataset.step, 10);
+                if (step <= currentStep) goToStep(step);
+            });
+        });
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'supplier') {
+                    alert('Войдите как поставщик.');
+                    window.location.href = 'login.html?redirect=' + encodeURIComponent('create-offer.html');
+                    return;
+                }
+                var categoryId = document.getElementById('offerCategory') && document.getElementById('offerCategory').value;
+                var title = (document.getElementById('offerName') || {}).value;
+                var landingUrl = (document.getElementById('offerLandingUrl') || {}).value;
+                var description = (document.getElementById('offerFullDesc') || {}).value || (document.getElementById('offerShortDesc') || {}).value || '';
+                var geoSelect = document.getElementById('offerGeo');
+                var targetGeo = geoSelect ? geoSelect.options[geoSelect.selectedIndex].text : '';
+                var rateVal = (document.querySelector('.offer-rate-value') || {}).value || '';
+                var payoutAmount = parseFloat(rateVal.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                if (!categoryId || !title || !landingUrl) {
+                    alert('Заполните категорию, название и ссылку на лендинг.');
+                    return;
+                }
+                window.RealCPA.supplier.createOffer({
+                    categoryId: categoryId,
+                    title: title,
+                    description: description,
+                    landingUrl: landingUrl,
+                    targetGeo: targetGeo || undefined,
+                    payoutModel: 'CPA',
+                    payoutAmount: payoutAmount,
+                    currency: 'RUB'
+                }).then(function() {
+                    alert('Оффер создан. Он сохранён как черновик — измените статус на «Активен» в разделе «Мои офферы».');
+                    window.location.href = 'dashboard-supplier-offers.html';
+                }).catch(function(err) {
+                    alert(err.message || err.payload?.error || 'Ошибка создания оффера');
+                });
+            });
+        }
+
+        goToStep(1);
+    })();
+    </script>
+    <script>
+    (function() {
+        var role = typeof localStorage !== 'undefined' && localStorage.getItem('userRole');
+        var link = document.getElementById('sidebarMainLink');
+        if (link && role === 'supplier') link.href = 'dashboard-supplier.html';
+        else if (link && role === 'affiliate') link.href = 'dashboard-affiliate.html';
+    })();
+    </script>
+</body>
+</html>

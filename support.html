@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поддержка — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link">Офферы</a>
+                    <a href="index.html#suppliers" class="nav-link">Для поставщиков</a>
+                    <a href="index.html#affiliates" class="nav-link">Для affiliates</a>
+                    <a href="demo.html" class="nav-link">Демо</a>
+                    <a href="support.html" class="nav-link active">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link" id="sidebarMainLink">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </a>
+                <a href="offers.html" class="sidebar-link">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Офферы</span>
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Аналитика</span>
+                </a>
+                <a href="payments.html" class="sidebar-link">
+                    <i class="fas fa-wallet"></i>
+                    <span>Выплаты</span>
+                </a>
+                <a href="support.html" class="sidebar-link active">
+                    <i class="fas fa-question-circle"></i>
+                    <span>FAQ</span>
+                </a>
+                <a href="contacts.html" class="sidebar-link">
+                    <i class="fas fa-address-book"></i>
+                    <span>Контакты</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <div class="dashboard-header">
+                <div>
+                    <h1>FAQ</h1>
+                    <p class="dashboard-header-desc">Часто задаваемые вопросы. <a href="contacts.html">Контакты</a> — на отдельной странице.</p>
+                </div>
+            </div>
+
+            <section class="faq-block" id="faq-block">
+                <h2 class="faq-block-title">Часто задаваемые вопросы</h2>
+            <!-- Поиск по FAQ -->
+            <div class="faq-search">
+                <input type="text" class="search-input" placeholder="Поиск по FAQ..." id="faqSearch">
+                <button class="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+
+            <div class="faq-section" id="faq">
+                <div class="faq-item">
+                    <div class="faq-question" role="button" tabindex="0">
+                        <span>Как создать оффер?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Для создания оффера необходимо:</p>
+                        <ol>
+                            <li>Зарегистрироваться в системе как поставщик и заполнить профиль компании (ИНН, юридические данные, контактное лицо).</li>
+                            <li>Перейти в раздел «Офферы» и нажать кнопку «Создать новый оффер».</li>
+                            <li>Пройти мастер из нескольких шагов:
+                                <ul>
+                                    <li><strong>Шаг 1.</strong> Выбрать категорию (еда, стройматериалы, авто и т.д.).</li>
+                                    <li><strong>Шаг 2.</strong> Описать товар/услугу, указать CPA‑ставку (сколько платите за заказ/лид) и целевую аудиторию.</li>
+                                    <li><strong>Шаг 3.</strong> Настроить трекинг (ссылка, postback, интеграция с CRM/API).</li>
+                                    <li><strong>Шаг 4.</strong> Задать бюджет кампании и сроки действия оффера.</li>
+                                </ul>
+                            </li>
+                            <li>Отправить оффер на модерацию. Обычно проверка занимает до 1 рабочего дня.</li>
+                            <li>После одобрения оффер становится доступен партнёрам в каталоге, вы видите статистику по лидам и расходам в дашборде.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" role="button" tabindex="0">
+                        <span>Что такое CPA?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p><strong>CPA (Cost Per Action)</strong> — модель, при которой вы платите не за показы и не за клики, а только за целевое действие: оформленный заказ, оплаченный счёт, отправленную заявку и т.п.</p>
+                        <p>Формула простая: вы заранее фиксируете ставку, например 500 ₽ за заказ стройматериалов. Партнёр приводит 10 заказов — вы платите 5000 ₽, при этом весь «холостой» трафик для вас бесплатный.</p>
+                        <p>На RealCPA Hub под действием чаще всего понимаются:
+                            <ul>
+                                <li>подтверждённый оптовый заказ (по телефону или через CRM);</li>
+                                <li>подтверждённая заявка / лид (для сложных B2B‑сделок);</li>
+                                <li>другие действия, которые вы прописываете в условиях оффера.</li>
+                            </ul>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" role="button" tabindex="0">
+                        <span>Как происходит выплата средств?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Для партнёров (affiliates) выплаты происходят по следующей схеме:</p>
+                        <ol>
+                            <li>Вы приводите трафик и получаете подтверждённые заказы/лиды по офферам.</li>
+                            <li>После подтверждения заказов баланс в личном кабинете увеличивается.</li>
+                            <li>Когда сумма на балансе достигает <strong>1000 ₽</strong> и выше, вы можете создать заявку на вывод.</li>
+                            <li>Заявки обрабатываются в установленный регламентом срок (например, раз в неделю или два раза в месяц).</li>
+                        </ol>
+                        <p><strong>Доступные методы вывода:</strong></p>
+                        <ul>
+                            <li>Яндекс.Касса — на карту или кошелёк;</li>
+                            <li>Тинькофф — на банковскую карту;</li>
+                            <li>Банковский перевод — на расчётный счёт ИП/ООО.</li>
+                        </ul>
+                        <p>Все комиссии и сроки отображаются в разделе «Выплаты» вашего личного кабинета.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" role="button" tabindex="0">
+                        <span>Как подключиться к офферу?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Подключение к офферу занимает несколько минут:</p>
+                        <ol>
+                            <li>Зарегистрируйтесь как affiliate и заполните информацию об источниках трафика.</li>
+                            <li>Перейдите в раздел «Офферы», воспользуйтесь фильтрами по категории, CPA‑ставке и региону.</li>
+                            <li>Откройте карточку оффера и внимательно изучите правила: разрешённые источники, требования к креативам, гео, ограничения.</li>
+                            <li>Нажмите «Подключиться» — после одобрения оффера для вас появится уникальная трекинг‑ссылка.</li>
+                            <li>Разместите ссылку в своих источниках трафика и отслеживайте статистику в дашборде.</li>
+                        </ol>
+                        <p>Оплата производится только за подтверждённые заказы/лиды в соответствии с условиями конкретного оффера.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" role="button" tabindex="0">
+                        <span>Какие категории товаров поддерживаются?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Мы фокусируемся на реальном секторе экономики и поддерживаем следующие направления:</p>
+                        <ul>
+                            <li>Продукты питания (FMCG, HoReCa, оптовые поставки).</li>
+                            <li>Стройматериалы и товары для ремонта.</li>
+                            <li>Автозапчасти и автоаксессуары для СТО и дилеров.</li>
+                            <li>Оборудование и техника (производственное, торговое, складское).</li>
+                            <li>Химия и бытовая химия (клининг, моющие средства, B2B‑упаковка).</li>
+                            <li>Текстиль и одежда (в том числе спецодежда).</li>
+                            <li>Упаковка и тара.</li>
+                            <li>Электроника B2B (офисная техника, серверы, комплектующие).</li>
+                            <li>Мебель и интерьер для бизнеса.</li>
+                        </ul>
+                        <p>При необходимости мы можем добавить новые категории под запрос конкретных поставщиков.</p>
+                    </div>
+                </div>
+            </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>RealCPA Hub</h4>
+                    <p>Агрегатор CPA-офферов для реального сектора экономики</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="about.html">О компании</a></li>
+                        <li><a href="offers.html">Офферы</a></li>
+                        <li><a href="demo.html">Демо</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="login.html">Вход</a></li>
+                        <li><a href="register.html">Регистрация</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Документы</h4>
+                    <ul>
+                        <li><a href="policy.html">Политика конфиденциальности</a></li>
+                        <li><a href="personal-data.html">Обработка персональных данных</a></li>
+                        <li><a href="terms.html">Пользовательское соглашение</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="support.html">FAQ</a></li>
+                        <li><a href="contacts.html">Контакты</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RealCPA Hub. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Чат-бот (плавающая кнопка) -->
+    <div class="chatbot-button" onclick="openChatbot()">
+        <i class="fas fa-comments"></i>
+    </div>
+
+    <div class="chatbot-window" id="chatbotWindow">
+        <div class="chatbot-header">
+            <h3>Чат-бот поддержки</h3>
+            <button class="chatbot-close" onclick="closeChatbot()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chatbot-message bot">
+                <p>Здравствуйте! Чем могу помочь?</p>
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" placeholder="Введите сообщение..." id="chatbotInput">
+            <button onclick="sendChatbotMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+    (function() {
+        function initFaq() {
+            var section = document.getElementById('faq');
+            if (!section) return;
+            section.addEventListener('click', function(e) {
+                var q = e.target.closest('.faq-question');
+                if (!q) return;
+                e.preventDefault();
+                e.stopPropagation();
+                var item = q.closest('.faq-item');
+                if (!item) return;
+                var wasOpen = item.classList.contains('active');
+                section.querySelectorAll('.faq-item').forEach(function(i) { i.classList.remove('active'); });
+                if (!wasOpen) item.classList.add('active');
+            });
+            section.addEventListener('keydown', function(e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                var q = e.target.closest('.faq-question');
+                if (!q) return;
+                e.preventDefault();
+                var item = q.closest('.faq-item');
+                if (!item) return;
+                var wasOpen = item.classList.contains('active');
+                section.querySelectorAll('.faq-item').forEach(function(i) { i.classList.remove('active'); });
+                if (!wasOpen) item.classList.add('active');
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initFaq);
+        } else {
+            initFaq();
+        }
+    })();
+    </script>
+    <script>
+    (function() {
+        var role = typeof localStorage !== 'undefined' && localStorage.getItem('userRole');
+        var link = document.getElementById('sidebarMainLink');
+        if (link && role === 'supplier') link.href = 'dashboard-supplier.html';
+        else if (link && role === 'affiliate') link.href = 'dashboard-affiliate.html';
+    })();
+    </script>
+</body>
+</html>

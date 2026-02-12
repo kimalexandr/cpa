@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кабинет поставщика — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link">Офферы</a>
+                    <a href="dashboard-supplier.html" class="nav-link active">Кабинет поставщика</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <div class="user-menu">
+                    <span class="user-role-badge supplier">Поставщик</span>
+                    <span>Добро пожаловать!</span>
+                </div>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard-supplier.html" class="sidebar-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </a>
+                <a href="dashboard-supplier-offers.html" class="sidebar-link">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Мои офферы</span>
+                </a>
+                <a href="create-offer.html" class="sidebar-link">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Создать оффер</span>
+                </a>
+                <a href="dashboard-supplier-requests.html" class="sidebar-link">
+                    <i class="fas fa-user-check"></i>
+                    <span>Заявки партнёров</span>
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Аналитика</span>
+                </a>
+                <a href="payments.html" class="sidebar-link">
+                    <i class="fas fa-wallet"></i>
+                    <span>Расходы на партнёров</span>
+                </a>
+                <a href="support.html" class="sidebar-link">
+                    <i class="fas fa-headset"></i>
+                    <span>Поддержка</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Кабинет поставщика</h1>
+                    <p class="dashboard-header-desc">Управляйте офферами и заявками партнёров. Добавляйте новые офферы и отслеживайте лиды.</p>
+                </div>
+                <a href="create-offer.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Создать оффер
+                </a>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-briefcase"></i></div>
+                    <div class="stat-content">
+                        <h3>Активных офферов</h3>
+                        <p class="stat-value" id="statOffers">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-content">
+                        <h3>Заявок от партнёров</h3>
+                        <p class="stat-value" id="statRequests">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-mouse-pointer"></i></div>
+                    <div class="stat-content">
+                        <h3>Лидов за период</h3>
+                        <p class="stat-value" id="statLeads">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
+                    <div class="stat-content">
+                        <h3>Расходы на партнёров</h3>
+                        <p class="stat-value" id="statPayout">0 ₽</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-block">
+                <div class="dashboard-block-header">
+                    <h2>Мои офферы</h2>
+                    <a href="create-offer.html" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Добавить оффер
+                    </a>
+                </div>
+                <div class="dashboard-empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <p>Пока нет офферов. Создайте первый оффер — партнёры смогут подключаться и приводить заявки.</p>
+                    <a href="create-offer.html" class="btn btn-primary">Создать оффер</a>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-card">
+                    <h2>Лиды и расходы</h2>
+                    <div class="chart-container" style="height: 260px;">
+                        <canvas id="supplierChart"></canvas>
+                    </div>
+                    <p class="chart-note">График заполнится после появления лидов по вашим офферам.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>RealCPA Hub</h4>
+                    <p>Агрегатор CPA-офферов для реального сектора экономики</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="about.html">О компании</a></li>
+                        <li><a href="offers.html">Офферы</a></li>
+                        <li><a href="demo.html">Демо</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="login.html">Вход</a></li>
+                        <li><a href="register.html">Регистрация</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Документы</h4>
+                    <ul>
+                        <li><a href="policy.html">Политика конфиденциальности</a></li>
+                        <li><a href="personal-data.html">Обработка персональных данных</a></li>
+                        <li><a href="terms.html">Пользовательское соглашение</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="support.html">FAQ</a></li>
+                        <li><a href="contacts.html">Контакты</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RealCPA Hub. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="api.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-supplier.html');
+            return;
+        }
+        if (window.RealCPA.getRole() !== 'supplier') {
+            if (window.RealCPA.getRole() === 'affiliate') window.location.href = 'dashboard-affiliate.html';
+            else window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-supplier.html');
+            return;
+        }
+        window.RealCPA.supplier.stats().then(function(s) {
+            var o = document.getElementById('statOffers'); if (o) o.textContent = String(s.offersCount || 0);
+            var r = document.getElementById('statRequests'); if (r) r.textContent = '0';
+            var l = document.getElementById('statLeads'); if (l) l.textContent = String(s.leads || 0);
+            var p = document.getElementById('statPayout'); if (p) p.textContent = (s.totalPayout || 0) + ' ₽';
+        });
+    })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+    <script>
+    if (typeof Chart !== 'undefined') {
+        var ctx = document.getElementById('supplierChart');
+        if (ctx) {
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                    datasets: [
+                        { label: 'Лиды', data: [0, 0, 0, 0, 0, 0, 0], borderColor: '#2563eb', fill: true, backgroundColor: 'rgba(37, 99, 235, 0.1)', tension: 0.4 },
+                        { label: 'Расходы (₽)', data: [0, 0, 0, 0, 0, 0, 0], borderColor: '#64748b', fill: true, backgroundColor: 'rgba(100, 116, 139, 0.1)', tension: 0.4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+    }
+    </script>
+</body>
+</html>

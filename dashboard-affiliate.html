@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кабинет партнёра — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link">Офферы</a>
+                    <a href="dashboard-affiliate.html" class="nav-link active">Кабинет партнёра</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <div class="user-menu" id="headerUserMenu">
+                    <span class="user-role-badge affiliate">Партнёр</span>
+                    <span id="headerBalance">Баланс: 0 ₽</span>
+                </div>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard-affiliate.html" class="sidebar-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </a>
+                <a href="offers.html" class="sidebar-link">
+                    <i class="fas fa-th-large"></i>
+                    <span>Каталог офферов</span>
+                </a>
+                <a href="dashboard-affiliate-connections.html" class="sidebar-link">
+                    <i class="fas fa-link"></i>
+                    <span>Мои подключения</span>
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Аналитика</span>
+                </a>
+                <a href="payments.html" class="sidebar-link">
+                    <i class="fas fa-wallet"></i>
+                    <span>Выплаты</span>
+                </a>
+                <a href="support.html" class="sidebar-link">
+                    <i class="fas fa-headset"></i>
+                    <span>Поддержка</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Кабинет партнёра</h1>
+                    <p class="dashboard-header-desc">Подключайтесь к офферам, приводите трафик и зарабатывайте по CPA.</p>
+                </div>
+                <a href="offers.html" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Найти офферы
+                </a>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
+                    <div class="stat-content">
+                        <h3>Заработано</h3>
+                        <p class="stat-value" id="statEarned">0 ₽</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-link"></i></div>
+                    <div class="stat-content">
+                        <h3>Подключённых офферов</h3>
+                        <p class="stat-value" id="statConnected">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-mouse-pointer"></i></div>
+                    <div class="stat-content">
+                        <h3>Лидов за период</h3>
+                        <p class="stat-value" id="statLeads">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-content">
+                        <h3>Конверсия</h3>
+                        <p class="stat-value" id="statConversion">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-block">
+                <div class="dashboard-block-header">
+                    <h2>Подключиться к офферам</h2>
+                    <a href="offers.html" class="btn btn-primary btn-sm">Каталог офферов</a>
+                </div>
+                <p class="dashboard-block-desc">В каталоге выберите оффер, подайте заявку на подключение и после одобрения получите трекинг-ссылку.</p>
+                <div class="offers-grid" style="margin-top: 1rem;">
+                    <div class="offer-card-mini">
+                        <div class="offer-category">Услуги</div>
+                        <h3>МТС eSIM — до 1500 ₽</h3>
+                        <p class="offer-cpa">CPA: до 1875 ₽</p>
+                        <a href="offer.html?id=1" class="btn btn-sm btn-primary">Подключиться</a>
+                    </div>
+                    <div class="offer-card-mini">
+                        <div class="offer-category">Стройматериалы</div>
+                        <h3>Стройматериалы оптом</h3>
+                        <p class="offer-cpa">CPA: 500 ₽</p>
+                        <a href="offer.html?id=2" class="btn btn-sm btn-primary">Подключиться</a>
+                    </div>
+                    <div class="offer-card-mini">
+                        <div class="offer-category">Продукты питания</div>
+                        <h3>Продукты питания оптом</h3>
+                        <p class="offer-cpa">CPA: 300 ₽</p>
+                        <a href="offer.html?id=3" class="btn btn-sm btn-primary">Подключиться</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-block">
+                <h2>Мои подключения</h2>
+                <div class="dashboard-empty-state">
+                    <i class="fas fa-link"></i>
+                    <p>Вы ещё не подключились ни к одному офферу. Перейдите в каталог и выберите оффер.</p>
+                    <a href="offers.html" class="btn btn-primary">Перейти в каталог</a>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-card">
+                    <h2>График заработка</h2>
+                    <div class="chart-container" style="height: 260px;">
+                        <canvas id="affiliateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>RealCPA Hub</h4>
+                    <p>Агрегатор CPA-офферов для реального сектора экономики</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="about.html">О компании</a></li>
+                        <li><a href="offers.html">Офферы</a></li>
+                        <li><a href="demo.html">Демо</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="login.html">Вход</a></li>
+                        <li><a href="register.html">Регистрация</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Документы</h4>
+                    <ul>
+                        <li><a href="policy.html">Политика конфиденциальности</a></li>
+                        <li><a href="personal-data.html">Обработка персональных данных</a></li>
+                        <li><a href="terms.html">Пользовательское соглашение</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="support.html">FAQ</a></li>
+                        <li><a href="contacts.html">Контакты</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RealCPA Hub. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="api.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-affiliate.html');
+            return;
+        }
+        if (window.RealCPA.getRole() !== 'affiliate') {
+            if (window.RealCPA.getRole() === 'supplier') window.location.href = 'dashboard-supplier.html';
+            else window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-affiliate.html');
+            return;
+        }
+        var balanceEl = document.getElementById('headerBalance');
+        if (balanceEl) balanceEl.textContent = 'Загрузка...';
+        window.RealCPA.affiliate.stats().then(function(s) {
+            var e = document.getElementById('statEarned'); if (e) e.textContent = (s.earned || 0) + ' ₽';
+            var c = document.getElementById('statConnected'); if (c) c.textContent = String(s.connectedOffers || 0);
+            var l = document.getElementById('statLeads'); if (l) l.textContent = String(s.leads || 0);
+            var conv = document.getElementById('statConversion');
+            if (conv) conv.textContent = s.clicks ? ((s.leads || 0) / s.clicks * 100).toFixed(1) + '%' : '—';
+            if (balanceEl) balanceEl.textContent = 'Заработано: ' + (s.earned || 0) + ' ₽';
+        }).catch(function() { if (balanceEl) balanceEl.textContent = 'Баланс: —'; });
+    })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+    <script>
+    if (typeof Chart !== 'undefined') {
+        var ctx = document.getElementById('affiliateChart');
+        if (ctx) {
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                    datasets: [{
+                        label: 'Заработок (₽)',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: '#2563eb',
+                        fill: true,
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+    }
+    </script>
+</body>
+</html>

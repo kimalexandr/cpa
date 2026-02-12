@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оффер — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page offer-detail-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link active">Офферы</a>
+                    <a href="index.html#suppliers" class="nav-link">Для поставщиков</a>
+                    <a href="index.html#affiliates" class="nav-link">Для affiliates</a>
+                    <a href="demo.html" class="nav-link">Демо</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="offer-detail-layout">
+        <!-- Боковая панель оффера -->
+        <aside class="offer-sidebar" id="offerSidebar">
+            <div class="offer-sidebar-logo" id="offerSidebarLogo">
+                <i class="fas fa-box-open"></i>
+            </div>
+            <p class="offer-sidebar-url" id="offerSidebarUrl">—</p>
+            <h1 class="offer-sidebar-title" id="offerSidebarTitle">Загрузка...</h1>
+            <span class="offer-sidebar-category" id="offerSidebarCategory">—</span>
+            <a href="#" class="btn btn-primary btn-block offer-sidebar-cta" id="offerSidebarCta">Начать работу</a>
+            <nav class="offer-sidebar-nav">
+                <a href="#section-info" class="offer-sidebar-link">Общая информация</a>
+                <a href="#section-attention" class="offer-sidebar-link">Обратите внимание</a>
+                <a href="#section-rates" class="offer-sidebar-link">Ставки</a>
+                <a href="#section-conditions" class="offer-sidebar-link">Условия</a>
+                <a href="#section-traffic" class="offer-sidebar-link">Требования к источникам трафика</a>
+            </nav>
+            <div class="offer-sidebar-footer">
+                <span class="offer-inn" id="offerSidebarInn">—</span>
+                <button type="button" class="offer-copy-inn" id="offerCopyInn" title="Копировать"><i class="fas fa-copy"></i></button>
+            </div>
+        </aside>
+
+        <!-- Основной контент -->
+        <main class="offer-detail-main">
+            <div class="offer-kpi-grid" id="offerKpiGrid">
+                <div class="offer-kpi-card"><span class="offer-kpi-label">Ставка</span><span class="offer-kpi-value" id="kpiRate">—</span></div>
+                <div class="offer-kpi-card"><span class="offer-kpi-label">% подтверждения</span><span class="offer-kpi-value" id="kpiConfirm">—</span></div>
+                <div class="offer-kpi-card"><span class="offer-kpi-label">Конверсия</span><span class="offer-kpi-value" id="kpiConversion">—</span></div>
+                <div class="offer-kpi-card"><span class="offer-kpi-label">Срок оплаты</span><span class="offer-kpi-value" id="kpiPayment">—</span></div>
+                <div class="offer-kpi-card"><span class="offer-kpi-label">Время жизни cookie</span><span class="offer-kpi-value" id="kpiCookie">—</span></div>
+            </div>
+
+            <section class="offer-collapse-section active" id="section-info">
+                <button type="button" class="offer-collapse-head" aria-expanded="true">
+                    <span>Общая информация</span>
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <div class="offer-collapse-body">
+                    <div class="offer-section-content" id="offerSectionInfo"></div>
+                </div>
+            </section>
+
+            <section class="offer-collapse-section" id="section-attention">
+                <button type="button" class="offer-collapse-head" aria-expanded="false">
+                    <span>Обратите внимание</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="offer-collapse-body">
+                    <div class="offer-section-content" id="offerSectionAttention"></div>
+                </div>
+            </section>
+
+            <section class="offer-collapse-section" id="section-rates">
+                <button type="button" class="offer-collapse-head" aria-expanded="false">
+                    <span>Ставки</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="offer-collapse-body">
+                    <div class="offer-rates-table-wrap">
+                        <table class="offer-rates-table" id="offerRatesTable">
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="offer-collapse-section" id="section-conditions">
+                <button type="button" class="offer-collapse-head" aria-expanded="false">
+                    <span>Условия</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="offer-collapse-body">
+                    <div class="offer-conditions-table-wrap">
+                        <table class="offer-conditions-table" id="offerConditionsTable">
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="offer-collapse-section" id="section-traffic">
+                <button type="button" class="offer-collapse-head" aria-expanded="false">
+                    <span>Требования к источникам трафика</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="offer-collapse-body">
+                    <div class="offer-traffic-section">
+                        <h4 class="offer-traffic-subtitle"><i class="fas fa-info-circle offer-traffic-icon agreement"></i> По согласованию:</h4>
+                        <ul class="offer-traffic-list offer-traffic-agreement" id="offerTrafficAgreement"></ul>
+                        <h4 class="offer-traffic-subtitle"><i class="fas fa-times-circle offer-traffic-icon forbidden"></i> Запрещено:</h4>
+                        <ul class="offer-traffic-list offer-traffic-forbidden" id="offerTrafficForbidden"></ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>RealCPA Hub</h4>
+                    <p>Агрегатор CPA-офферов для реального сектора экономики</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="about.html">О компании</a></li>
+                        <li><a href="offers.html">Офферы</a></li>
+                        <li><a href="demo.html">Демо</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="login.html">Вход</a></li>
+                        <li><a href="register.html">Регистрация</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Документы</h4>
+                    <ul>
+                        <li><a href="policy.html">Политика конфиденциальности</a></li>
+                        <li><a href="personal-data.html">Обработка персональных данных</a></li>
+                        <li><a href="terms.html">Пользовательское соглашение</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="support.html">FAQ</a></li>
+                        <li><a href="contacts.html">Контакты</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RealCPA Hub. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+    <script>
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var id = params.get('id');
+        function setText(elId, text) {
+            var el = document.getElementById(elId);
+            if (el) el.textContent = text;
+        }
+        function defaultOffer() {
+            return {
+                title: 'Оффер не найден',
+                category: '—',
+                landingUrl: '—',
+                inn: '—',
+                rate: '—',
+                confirmPercent: '—',
+                conversion: '—',
+                paymentTerm: '—',
+                cookieLifetime: '—',
+                generalInfo: '<p>Оффер с указанным ID не найден. <a href="offers.html">Вернуться к каталогу</a>.</p>',
+                attention: { important: [], prohibited: [] },
+                rates: [],
+                conditions: [],
+                trafficAgreement: [],
+                trafficForbidden: [],
+                ctaLink: 'login.html?redirect=' + encodeURIComponent('offer.html?id=' + (id || ''))
+            };
+        }
+        function mapApiOfferToPage(api) {
+            var supplier = api.supplier || {};
+            var profile = supplier.supplierProfile || {};
+            var cat = api.category ? api.category.name : '—';
+            var rateStr = api.payoutAmount != null ? api.payoutAmount + ' ' + (api.currency || '₽') : '—';
+            return {
+                title: api.title || '—',
+                category: cat,
+                landingUrl: api.landingUrl || '—',
+                inn: profile.legalEntity && profile.inn ? profile.legalEntity + ' ИНН ' + profile.inn : (profile.inn || '—'),
+                rate: rateStr,
+                confirmPercent: '—',
+                conversion: '—',
+                paymentTerm: '—',
+                cookieLifetime: '—',
+                generalInfo: '<p>' + (api.description || '').replace(/\n/g, '</p><p>') + '</p>',
+                attention: { important: [], prohibited: [] },
+                rates: [{ name: api.payoutModel || 'CPA', value: rateStr }],
+                conditions: api.targetGeo ? [{ name: 'Геотаргетинг', value: api.targetGeo }] : [],
+                trafficAgreement: ['По согласованию с рекламодателем'],
+                trafficForbidden: [],
+                ctaLink: window.RealCPA && window.RealCPA.isLoggedIn() && window.RealCPA.getRole() === 'affiliate'
+                    ? '#' : ('login.html?redirect=' + encodeURIComponent('offer.html?id=' + api.id)),
+                offerId: api.id
+            };
+        }
+        function fillSidebar(offer) {
+            setText('offerSidebarTitle', offer.title);
+            setText('offerSidebarCategory', offer.category);
+            setText('offerSidebarUrl', offer.landingUrl);
+            setText('offerSidebarInn', offer.inn);
+            var logoEl = document.getElementById('offerSidebarLogo');
+            if (logoEl) logoEl.innerHTML = '<i class="fas fa-box-open"></i>';
+            var cta = document.getElementById('offerSidebarCta');
+            if (cta) {
+                cta.href = offer.ctaLink || '#';
+                cta.textContent = offer.ctaLink === '#' ? 'Подключиться к офферу' : 'Войти для подключения';
+            }
+        }
+        function fillKpi(offer) {
+            setText('kpiRate', offer.rate);
+            setText('kpiConfirm', offer.confirmPercent);
+            setText('kpiConversion', offer.conversion);
+            setText('kpiPayment', offer.paymentTerm);
+            setText('kpiCookie', offer.cookieLifetime);
+        }
+        function fillSections(offer) {
+            var infoEl = document.getElementById('offerSectionInfo');
+            if (infoEl) infoEl.innerHTML = offer.generalInfo || '';
+            var attEl = document.getElementById('offerSectionAttention');
+            if (attEl) attEl.innerHTML = '<p>Нет дополнительных ограничений.</p>';
+            var tbody = document.querySelector('#offerRatesTable tbody');
+            if (tbody && offer.rates && offer.rates.length) {
+                tbody.innerHTML = offer.rates.map(function(r) {
+                    return '<tr><td>' + r.name + '</td><td class="offer-table-value">' + r.value + '</td></tr>';
+                }).join('');
+            }
+            var condTbody = document.querySelector('#offerConditionsTable tbody');
+            if (condTbody && offer.conditions && offer.conditions.length) {
+                condTbody.innerHTML = offer.conditions.map(function(c) {
+                    return '<tr><td>' + c.name + '</td><td class="offer-table-value">' + c.value + '</td></tr>';
+                }).join('');
+            }
+            var agreeList = document.getElementById('offerTrafficAgreement');
+            if (agreeList) agreeList.innerHTML = (offer.trafficAgreement || []).map(function(s) { return '<li>' + s + '</li>'; }).join('') || '<li>По согласованию</li>';
+            var forbList = document.getElementById('offerTrafficForbidden');
+            if (forbList) forbList.innerHTML = (offer.trafficForbidden || []).map(function(s) { return '<li>' + s + '</li>'; }).join('') || '<li>Нет</li>';
+        }
+        function initCollapse() {
+            document.querySelectorAll('.offer-collapse-head').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var section = this.closest('.offer-collapse-section');
+                    var open = section.classList.contains('active');
+                    document.querySelectorAll('.offer-collapse-section').forEach(function(s) {
+                        s.classList.remove('active');
+                        var h = s.querySelector('.offer-collapse-head');
+                        if (h) { h.setAttribute('aria-expanded', 'false'); var i = h.querySelector('i'); if (i) i.className = 'fas fa-chevron-down'; }
+                    });
+                    if (!open) {
+                        section.classList.add('active');
+                        this.setAttribute('aria-expanded', 'true');
+                        var icon = this.querySelector('i');
+                        if (icon) icon.className = 'fas fa-chevron-up';
+                    }
+                });
+            });
+        }
+        var copyBtn = document.getElementById('offerCopyInn');
+        if (copyBtn) copyBtn.addEventListener('click', function() {
+            var inn = document.getElementById('offerSidebarInn').textContent;
+            if (inn && inn !== '—') navigator.clipboard.writeText(inn).then(function() { alert('ИНН скопирован'); });
+        });
+
+        if (!id) {
+            var offer = defaultOffer();
+            fillSidebar(offer); fillKpi(offer); fillSections(offer); initCollapse();
+            return;
+        }
+        if (typeof window.RealCPA === 'undefined') {
+            var offer = defaultOffer();
+            offer.generalInfo = '<p>Подключите api.js и запустите бэкенд.</p>';
+            fillSidebar(offer); fillKpi(offer); fillSections(offer); initCollapse();
+            return;
+        }
+        window.RealCPA.offer(id)
+            .then(function(api) {
+                var offer = mapApiOfferToPage(api);
+                if (window.RealCPA.isLoggedIn() && window.RealCPA.getRole() === 'affiliate') {
+                    var cta = document.getElementById('offerSidebarCta');
+                    if (cta) {
+                        cta.textContent = 'Подключиться к офферу';
+                        cta.href = '#';
+                        cta.onclick = function(e) {
+                            e.preventDefault();
+                            window.RealCPA.affiliate.joinOffer(api.id).then(function() {
+                                alert('Заявка на подключение отправлена. Ожидайте одобрения поставщика.');
+                                window.location.reload();
+                            }).catch(function(err) { alert(err.message || err.payload?.error || 'Ошибка'); });
+                        };
+                    }
+                }
+                fillSidebar(offer); fillKpi(offer); fillSections(offer); initCollapse();
+            })
+            .catch(function() {
+                var offer = defaultOffer();
+                fillSidebar(offer); fillKpi(offer); fillSections(offer); initCollapse();
+            });
+    })();
+    </script>
+</body>
+</html>

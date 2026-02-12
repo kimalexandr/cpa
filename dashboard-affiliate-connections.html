@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои подключения — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link">Офферы</a>
+                    <a href="dashboard-affiliate.html" class="nav-link active">Кабинет партнёра</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <div class="user-menu"><span class="user-role-badge affiliate">Партнёр</span><span>Баланс: 0 ₽</span></div>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard-affiliate.html" class="sidebar-link"><i class="fas fa-home"></i><span>Главная</span></a>
+                <a href="offers.html" class="sidebar-link"><i class="fas fa-th-large"></i><span>Каталог офферов</span></a>
+                <a href="dashboard-affiliate-connections.html" class="sidebar-link active"><i class="fas fa-link"></i><span>Мои подключения</span></a>
+                <a href="analytics.html" class="sidebar-link"><i class="fas fa-chart-line"></i><span>Аналитика</span></a>
+                <a href="payments.html" class="sidebar-link"><i class="fas fa-wallet"></i><span>Выплаты</span></a>
+                <a href="support.html" class="sidebar-link"><i class="fas fa-headset"></i><span>Поддержка</span></a>
+            </nav>
+        </aside>
+        <main class="dashboard-main">
+            <div class="dashboard-header">
+                <h1>Мои подключения</h1>
+                <p class="dashboard-header-desc">Офферы, к которым вы подключены. Здесь появятся трекинг-ссылки и статистика после одобрения заявок.</p>
+                <a href="offers.html" class="btn btn-primary"><i class="fas fa-plus"></i> Подключиться к офферу</a>
+            </div>
+            <div id="connectionsContent">
+                <div class="dashboard-empty-state">
+                    <i class="fas fa-link"></i>
+                    <p>Пока нет активных подключений. Выберите оффер в каталоге и подайте заявку — после одобрения вы получите ссылку для трафика.</p>
+                    <a href="offers.html" class="btn btn-primary">Каталог офферов</a>
+                </div>
+            </div>
+        </main>
+    </div>
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section"><h4>RealCPA Hub</h4><p>Агрегатор CPA-офферов для реального сектора экономики</p></div>
+                <div class="footer-section"><h4>Навигация</h4><ul><li><a href="about.html">О компании</a></li><li><a href="offers.html">Офферы</a></li><li><a href="support.html">Поддержка</a></li><li><a href="login.html">Вход</a></li><li><a href="register.html">Регистрация</a></li></ul></div>
+                <div class="footer-section"><h4>Документы</h4><ul><li><a href="policy.html">Политика конфиденциальности</a></li><li><a href="terms.html">Пользовательское соглашение</a></li></ul></div>
+                <div class="footer-section"><h4>Информация</h4><ul><li><a href="support.html">FAQ</a></li><li><a href="contacts.html">Контакты</a></li></ul></div>
+            </div>
+            <div class="footer-bottom"><p>&copy; 2026 RealCPA Hub. Все права защищены.</p></div>
+        </div>
+    </footer>
+    <script src="api.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'affiliate') {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-affiliate-connections.html');
+            return;
+        }
+        var container = document.getElementById('connectionsContent');
+        window.RealCPA.affiliate.myOffers().then(function(list) {
+            var approved = list.filter(function(p) { return p.status === 'approved' && p.trackingLink; });
+            if (approved.length === 0) return;
+            container.innerHTML = '<div class="dashboard-block"><h2>Подключённые офферы</h2><ul class="connections-list">' +
+                approved.map(function(p) {
+                    var name = p.offer ? p.offer.title : p.offerId;
+                    var link = p.trackingLink || '—';
+                    return '<li class="connection-item"><strong>' + escapeHtml(name) + '</strong><br><span class="connection-status">Одобрено</span>' +
+                        (link !== '—' ? '<br><small>Трекинг: <a href="' + escapeHtml(link) + '" target="_blank">' + escapeHtml(link) + '</a></small>' +
+                        '<button type="button" class="btn btn-sm btn-secondary copy-link" data-url="' + escapeHtml(link) + '">Копировать</button>' : '') + '</li>';
+                }).join('') + '</ul></div>';
+            container.querySelectorAll('.copy-link').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    navigator.clipboard.writeText(this.dataset.url).then(function() { alert('Ссылка скопирована'); });
+                });
+            });
+        }).catch(function() {});
+        function escapeHtml(s) {
+            var d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+        }
+    })();
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

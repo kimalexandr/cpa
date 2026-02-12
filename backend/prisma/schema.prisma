@@ -1,0 +1,236 @@
+// RealCPA Hub — схема БД по BACKEND_SPEC.md
+// PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum UserRole {
+  affiliate
+  supplier
+  admin
+}
+
+enum UserStatus {
+  active
+  blocked
+  pending_email_confirmation
+}
+
+enum PayoutModel {
+  CPL
+  CPA
+  RevShare
+}
+
+enum OfferStatus {
+  draft
+  active
+  paused
+  closed
+}
+
+enum ParticipationStatus {
+  pending
+  approved
+  rejected
+  blocked
+}
+
+enum EventType {
+  click
+  lead
+  sale
+}
+
+enum EventStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PayoutStatus {
+  pending
+  processing
+  paid
+  canceled
+}
+
+// --- Models ---
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String     @map("password_hash")
+  role          UserRole
+  name          String?
+  companyName   String?    @map("company_name")
+  phone         String?
+  country       String?
+  city          String?
+  status        UserStatus @default(active)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  affiliateProfile   AffiliateProfile?
+  supplierProfile    SupplierProfile?
+  offersAsSupplier   Offer[]              @relation("OfferSupplier")
+  participations     AffiliateOfferParticipation[]
+  trackingLinks      TrackingLink[]
+  events             Event[]              @relation("EventAffiliate") // через TrackingLink
+  payouts            Payout[]
+
+  @@index([email])
+}
+
+model AffiliateProfile {
+  userId        String   @id @map("user_id")
+  payoutDetails String?  @map("payout_details") @db.Text
+  trafficSources String? @map("traffic_sources") @db.Text
+  notes         String?  @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("affiliate_profiles")
+}
+
+model SupplierProfile {
+  userId      String   @id @map("user_id")
+  legalEntity String   @map("legal_entity")
+  inn         String?
+  kpp         String?
+  vatId       String?  @map("vat_id")
+  website     String?
+  payoutTerms String?  @map("payout_terms") @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_profiles")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+
+  offers Offer[]
+
+  @@map("categories")
+}
+
+model Offer {
+  id           String      @id @default(uuid())
+  supplierId   String      @map("supplier_id")
+  categoryId   String      @map("category_id")
+  title        String
+  description  String      @db.Text
+  targetGeo    String?     @map("target_geo") @db.Text
+  payoutModel  PayoutModel @map("payout_model")
+  payoutAmount Decimal    @map("payout_amount") @db.Decimal(12, 2)
+  currency     String     @default("RUB")
+  landingUrl   String     @map("landing_url")
+  status       OfferStatus @default(draft)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  supplier       User     @relation("OfferSupplier", fields: [supplierId], references: [id], onDelete: Restrict)
+  category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  participations AffiliateOfferParticipation[]
+  trackingLinks  TrackingLink[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([supplierId])
+  @@map("offers")
+}
+
+model AffiliateOfferParticipation {
+  id          String             @id @default(uuid())
+  offerId     String             @map("offer_id")
+  affiliateId String             @map("affiliate_id")
+  status      ParticipationStatus @default(pending)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  offer     Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  affiliate User   @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+
+  @@unique([offerId, affiliateId])
+  @@index([offerId])
+  @@index([affiliateId])
+  @@map("affiliate_offer_participations")
+}
+
+model TrackingLink {
+  id          String   @id @default(uuid())
+  offerId     String   @map("offer_id")
+  affiliateId String   @map("affiliate_id")
+  token       String   @unique
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  offer   Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  affiliate User @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  events  Event[]
+
+  @@index([offerId])
+  @@index([affiliateId])
+  @@map("tracking_links")
+}
+
+model Event {
+  id              String      @id @default(uuid())
+  trackingLinkId  String      @map("tracking_link_id")
+  eventType       EventType   @map("event_type")
+  amount          Decimal?    @db.Decimal(12, 2)
+  currency        String?
+  status          EventStatus @default(pending)
+  externalId      String?     @map("external_id")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  trackingLink TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Restrict)
+
+  @@index([trackingLinkId])
+  @@index([eventType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("events")
+}
+
+model Payout {
+  id          String       @id @default(uuid())
+  affiliateId String       @map("affiliate_id")
+  periodStart DateTime     @map("period_start") @db.Date
+  periodEnd   DateTime     @map("period_end") @db.Date
+  amount      Decimal      @db.Decimal(12, 2)
+  currency    String       @default("RUB")
+  status      PayoutStatus @default(pending)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  paidAt      DateTime?    @map("paid_at")
+
+  affiliate User @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+
+  @@index([affiliateId])
+  @@index([status])
+  @@map("payouts")
+}
+
+model StaticPage {
+  id        String   @id @default(uuid())
+  slug      String
+  title     String
+  content   String   @db.Text
+  language  String   @default("ru")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([slug, language])
+  @@map("static_pages")
+}

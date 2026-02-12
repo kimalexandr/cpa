@@ -1,0 +1,34 @@
+# RealCPA Hub — БД и приложение (без API)
+# Запуск: docker-compose up -d
+# Миграции: docker-compose run app npm run db:migrate
+# Сид: docker-compose run app npm run db:seed
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: realcpa
+      POSTGRES_PASSWORD: realcpa
+      POSTGRES_DB: realcpa
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U realcpa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://realcpa:realcpa@db:5432/realcpa?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["node", "dist/index.js"]
+
+volumes:
+  pgdata:

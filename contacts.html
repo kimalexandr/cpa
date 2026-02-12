@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контакты — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link">Офферы</a>
+                    <a href="index.html#suppliers" class="nav-link">Для поставщиков</a>
+                    <a href="index.html#affiliates" class="nav-link">Для affiliates</a>
+                    <a href="demo.html" class="nav-link">Демо</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </a>
+                <a href="offers.html" class="sidebar-link">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Офферы</span>
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Аналитика</span>
+                </a>
+                <a href="payments.html" class="sidebar-link">
+                    <i class="fas fa-wallet"></i>
+                    <span>Выплаты</span>
+                </a>
+                <a href="support.html" class="sidebar-link">
+                    <i class="fas fa-question-circle"></i>
+                    <span>FAQ</span>
+                </a>
+                <a href="contacts.html" class="sidebar-link active">
+                    <i class="fas fa-address-book"></i>
+                    <span>Контакты</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <div class="dashboard-header">
+                <h1>Контакты</h1>
+            </div>
+
+            <section class="contacts-section" id="contacts">
+                <h2>Свяжитесь с нами</h2>
+                <div class="contacts-grid">
+                    <div class="contact-card">
+                        <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                        <h3>Email</h3>
+                        <p><a href="mailto:support@realcpahub.ru">support@realcpahub.ru</a></p>
+                        <p class="contact-note">По общим вопросам и партнёрству</p>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon"><i class="fas fa-phone-alt"></i></div>
+                        <h3>Телефон</h3>
+                        <p><a href="tel:+78001234567">8 800 123-45-67</a></p>
+                        <p class="contact-note">Бесплатно по РФ, пн–пт 9:00–18:00 (МСК)</p>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon"><i class="fab fa-telegram"></i></div>
+                        <h3>Telegram</h3>
+                        <p><a href="https://t.me/realcpahub_support" target="_blank" rel="noopener">@realcpahub_support</a></p>
+                        <p class="contact-note">Поддержка и новости платформы</p>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon"><i class="fab fa-vk"></i></div>
+                        <h3>ВКонтакте</h3>
+                        <p><a href="https://vk.com/realcpahub" target="_blank" rel="noopener">vk.com/realcpahub</a></p>
+                        <p class="contact-note">Сообщество и обсуждения</p>
+                    </div>
+                </div>
+                <div class="contacts-address">
+                    <h3>Офис</h3>
+                    <p><i class="fas fa-map-marker-alt"></i> г. Москва, ул. Примерная, д. 1, офис 100</p>
+                    <p class="contact-note">Встречи по предварительной записи</p>
+                </div>
+            </section>
+
+            <div class="contact-form-section">
+                <h2>Обратная связь</h2>
+                <form class="contact-form" id="contactForm">
+                    <div class="form-group">
+                        <label>Тема</label>
+                        <select required>
+                            <option value="">Выберите тему</option>
+                            <option value="technical">Техническая поддержка</option>
+                            <option value="payment">Вопросы по выплатам</option>
+                            <option value="offer">Вопросы по офферам</option>
+                            <option value="other">Другое</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Сообщение</label>
+                        <textarea rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Отправить</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>RealCPA Hub</h4>
+                    <p>Агрегатор CPA-офферов для реального сектора экономики</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="about.html">О компании</a></li>
+                        <li><a href="offers.html">Офферы</a></li>
+                        <li><a href="demo.html">Демо</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="login.html">Вход</a></li>
+                        <li><a href="register.html">Регистрация</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Документы</h4>
+                    <ul>
+                        <li><a href="policy.html">Политика конфиденциальности</a></li>
+                        <li><a href="personal-data.html">Обработка персональных данных</a></li>
+                        <li><a href="terms.html">Пользовательское соглашение</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="support.html">FAQ</a></li>
+                        <li><a href="contacts.html">Контакты</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Социальные сети</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 RealCPA Hub. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

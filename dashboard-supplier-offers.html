@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои офферы — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link">Офферы</a>
+                    <a href="dashboard-supplier.html" class="nav-link active">Кабинет поставщика</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <a href="login.html" class="nav-link">Вход</a>
+                    <a href="register.html" class="nav-link">Регистрация</a>
+                </nav>
+                <div class="user-menu"><span class="user-role-badge supplier">Поставщик</span></div>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard-supplier.html" class="sidebar-link"><i class="fas fa-home"></i><span>Главная</span></a>
+                <a href="dashboard-supplier-offers.html" class="sidebar-link active"><i class="fas fa-briefcase"></i><span>Мои офферы</span></a>
+                <a href="create-offer.html" class="sidebar-link"><i class="fas fa-plus-circle"></i><span>Создать оффер</span></a>
+                <a href="dashboard-supplier-requests.html" class="sidebar-link"><i class="fas fa-user-check"></i><span>Заявки партнёров</span></a>
+                <a href="analytics.html" class="sidebar-link"><i class="fas fa-chart-line"></i><span>Аналитика</span></a>
+                <a href="payments.html" class="sidebar-link"><i class="fas fa-wallet"></i><span>Расходы на партнёров</span></a>
+                <a href="support.html" class="sidebar-link"><i class="fas fa-headset"></i><span>Поддержка</span></a>
+            </nav>
+        </aside>
+        <main class="dashboard-main">
+            <div class="dashboard-header">
+                <h1>Мои офферы</h1>
+                <a href="create-offer.html" class="btn btn-primary"><i class="fas fa-plus"></i> Создать оффер</a>
+            </div>
+            <div class="dashboard-empty-state">
+                <i class="fas fa-briefcase"></i>
+                <p>Здесь будут отображаться ваши офферы. Добавьте первый оффер, чтобы партнёры могли к нему подключаться.</p>
+                <a href="create-offer.html" class="btn btn-primary">Создать оффер</a>
+            </div>
+        </main>
+    </div>
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section"><h4>RealCPA Hub</h4><p>Агрегатор CPA-офферов для реального сектора экономики</p></div>
+                <div class="footer-section"><h4>Навигация</h4><ul><li><a href="about.html">О компании</a></li><li><a href="offers.html">Офферы</a></li><li><a href="support.html">Поддержка</a></li><li><a href="login.html">Вход</a></li><li><a href="register.html">Регистрация</a></li></ul></div>
+                <div class="footer-section"><h4>Документы</h4><ul><li><a href="policy.html">Политика конфиденциальности</a></li><li><a href="terms.html">Пользовательское соглашение</a></li></ul></div>
+                <div class="footer-section"><h4>Информация</h4><ul><li><a href="support.html">FAQ</a></li><li><a href="contacts.html">Контакты</a></li></ul></div>
+            </div>
+            <div class="footer-bottom"><p>&copy; 2026 RealCPA Hub. Все права защищены.</p></div>
+        </div>
+    </footer>
+    <script>try { localStorage.setItem('userRole', 'supplier'); } catch (e) {}</script>
+    <script src="script.js"></script>
+</body>
+</html>
