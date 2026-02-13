@@ -23,8 +23,15 @@
                     <a href="demo.html" class="nav-link">Демо</a>
                     <a href="support.html" class="nav-link">Поддержка</a>
                     <a href="about.html" class="nav-link">О компании</a>
-                    <a href="login.html" class="nav-link">Вход</a>
-                    <a href="register.html" class="nav-link">Регистрация</a>
+                    <span class="nav-auth nav-auth-guest">
+                        <a href="login.html" class="nav-link">Войти</a>
+                        <a href="register.html" class="nav-link">Регистрация</a>
+                    </span>
+                    <span class="nav-auth nav-auth-user" style="display:none">
+                        <span class="nav-greeting">Здравствуйте, <span class="nav-user-name"></span>!</span>
+                        <a href="dashboard.html" class="nav-link">Профиль</a>
+                        <a href="#" class="nav-link nav-logout-btn">Выход</a>
+                    </span>
                 </nav>
                 <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
             </div>

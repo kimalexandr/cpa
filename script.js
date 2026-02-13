@@ -1,3 +1,56 @@
+// Навигация: для гостей — «Войти» и «Регистрация», для авторизованных — приветствие, «Профиль», «Выход»
+document.addEventListener('DOMContentLoaded', function() {
+    var guestBlocks = document.querySelectorAll('.nav-auth-guest');
+    var userBlocks = document.querySelectorAll('.nav-auth-user');
+    var nameSpans = document.querySelectorAll('.nav-user-name');
+    var logoutBtns = document.querySelectorAll('.nav-logout-btn');
+    var isLoggedIn = typeof window.RealCPA !== 'undefined' && window.RealCPA.isLoggedIn();
+
+    if (isLoggedIn) {
+        var user = window.RealCPA.getUser();
+        var displayName = (user && (user.name || user.email)) || '';
+        guestBlocks.forEach(function(el) { el.style.display = 'none'; });
+        userBlocks.forEach(function(el) { el.style.display = 'inline-flex'; });
+        nameSpans.forEach(function(el) { el.textContent = displayName; });
+        document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
+    } else {
+        guestBlocks.forEach(function(el) { el.style.display = 'inline-flex'; });
+        userBlocks.forEach(function(el) { el.style.display = 'none'; });
+        document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = 'none'; });
+    }
+
+    logoutBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof window.RealCPA !== 'undefined') window.RealCPA.clearAuth();
+            window.location.href = 'index.html';
+        });
+    });
+});
+
+// Профиль и выход в кабинете (блок .user-menu)
+document.addEventListener('DOMContentLoaded', function() {
+    var emailEl = document.getElementById('headerUserEmail');
+    var roleBadge = document.getElementById('headerRoleBadge');
+    var logoutBtn = document.getElementById('btnLogout');
+    if (typeof window.RealCPA !== 'undefined' && window.RealCPA.isLoggedIn()) {
+        var user = window.RealCPA.getUser();
+        if (emailEl) emailEl.textContent = (user && (user.name || user.email)) || '';
+        if (roleBadge) {
+            var role = window.RealCPA.getRole();
+            roleBadge.textContent = role === 'supplier' ? 'Поставщик' : role === 'affiliate' ? 'Партнёр' : '';
+            roleBadge.className = 'user-role-badge ' + (role || '');
+        }
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.RealCPA.clearAuth();
+                window.location.href = 'index.html';
+            });
+        }
+    }
+});
+
 // Мобильное меню и языки
 document.addEventListener('DOMContentLoaded', function() {
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
