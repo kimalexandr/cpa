@@ -1,0 +1,29 @@
+# Автодеплой на VPS при пуше в main
+# Секреты в GitHub: Settings → Secrets and variables → Actions
+
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # ручной запуск из вкладки Actions
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /root/cpa || exit 1
+            git fetch origin main
+            git reset --hard origin/main
+            cd backend
+            docker-compose up -d --build
+            docker-compose run --rm app npm run db:migrate 2>/dev/null || true
