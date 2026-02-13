@@ -24,13 +24,22 @@
                     <a href="support.html" class="nav-link">Поддержка</a>
                     <a href="about.html" class="nav-link">О компании</a>
                     <span class="nav-auth nav-auth-guest">
-                        <a href="login.html" class="nav-link">Войти</a>
-                        <a href="register.html" class="nav-link">Регистрация</a>
+                        <a href="login.html" class="nav-link btn-nav-login">Войти</a>
+                        <a href="register.html" class="nav-link btn-nav-register">Регистрация</a>
                     </span>
                     <span class="nav-auth nav-auth-user" style="display:none">
-                        <span class="nav-greeting">Здравствуйте, <span class="nav-user-name"></span>!</span>
-                        <a href="dashboard.html" class="nav-link">Профиль</a>
-                        <a href="#" class="nav-link nav-logout-btn">Выход</a>
+                        <div class="user-block" id="userBlockDropdownTrigger" tabindex="0" role="button" aria-haspopup="true">
+                            <span class="user-role-badge nav-role-badge" id="navRoleBadge"></span>
+                            <span class="nav-user-short" id="navUserShortName"></span>
+                            <span class="user-avatar"><i class="fas fa-user-circle"></i></span>
+                            <i class="fas fa-chevron-down user-chevron"></i>
+                        </div>
+                        <div class="user-dropdown" id="userDropdown" aria-hidden="true">
+                            <a href="dashboard.html" class="user-dropdown-item">Профиль</a>
+                            <a href="#" class="user-dropdown-item user-dropdown-settings">Настройки</a>
+                            <div class="user-dropdown-divider"></div>
+                            <button type="button" class="user-dropdown-item user-dropdown-logout">Выйти</button>
+                        </div>
                     </span>
                 </nav>
                 <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
@@ -38,7 +47,15 @@
         </div>
     </header>
 
-    <div class="offer-detail-layout">
+    <!-- Для гостя: оффер недоступен, одна CTA -->
+    <div class="offer-guest-stub guest-stub-card" id="offerGuestStub" style="display:none">
+        <i class="fas fa-lock guest-stub-icon"></i>
+        <h2>Оффер недоступен</h2>
+        <p>Войдите в кабинет партнёра, чтобы просматривать оффер и подключаться к нему.</p>
+        <a href="login.html" class="btn btn-primary" id="offerGuestLoginBtn">Войти для подключения</a>
+    </div>
+
+    <div class="offer-detail-layout" id="offerDetailContent">
         <!-- Боковая панель оффера -->
         <aside class="offer-sidebar" id="offerSidebar">
             <div class="offer-sidebar-logo" id="offerSidebarLogo">
@@ -189,6 +206,16 @@
     (function() {
         var params = new URLSearchParams(window.location.search);
         var id = params.get('id');
+        var detailContent = document.getElementById('offerDetailContent');
+        var guestStub = document.getElementById('offerGuestStub');
+        var guestLoginBtn = document.getElementById('offerGuestLoginBtn');
+        if (typeof window.RealCPA !== 'undefined' && !window.RealCPA.isLoggedIn()) {
+            if (detailContent) detailContent.style.display = 'none';
+            if (guestStub) guestStub.style.display = 'block';
+            if (guestLoginBtn) guestLoginBtn.href = 'login.html?redirect=' + encodeURIComponent('offer.html' + (id ? '?id=' + id : ''));
+            return;
+        }
+        if (guestStub) guestStub.style.display = 'none';
         function setText(elId, text) {
             var el = document.getElementById(elId);
             if (el) el.textContent = text;

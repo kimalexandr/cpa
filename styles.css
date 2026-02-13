@@ -128,25 +128,130 @@ body {
     color: var(--text-color);
 }
 
-/* Блоки навигации: гости (Войти, Регистрация) / авторизованные (приветствие, Профиль, Выход) */
+/* Блоки навигации: гости (Войти, Регистрация) / авторизованные (блок пользователя + дропдаун) */
 .nav-auth {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
 }
-.nav-greeting {
-    font-size: 0.9rem;
-    color: var(--text-light);
-    margin-right: 0.25rem;
+.nav-auth-guest .nav-link:first-of-type { margin-right: 0.25rem; }
+/* Кнопки в шапке для гостя: Войти — вторичная (контур), Регистрация — основная */
+.nav-auth-guest .nav-link.btn-nav-login {
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.375rem;
+    border: 2px solid var(--primary-color);
+    background: transparent;
+    color: var(--primary-color);
 }
-.nav-greeting .nav-user-name {
-    font-weight: 600;
+.nav-auth-guest .nav-link.btn-nav-login:hover { background: rgba(37, 99, 235, 0.08); color: var(--primary-color); }
+.nav-auth-guest .nav-link.btn-nav-register {
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.375rem;
+    border: 2px solid var(--primary-color);
+    background: var(--primary-color);
+    color: var(--white);
+}
+.nav-auth-guest .nav-link.btn-nav-register:hover { background: #1e40af; color: var(--white); }
+.nav-greeting { font-size: 0.9rem; color: var(--text-light); margin-right: 0.25rem; }
+.nav-greeting .nav-user-name { font-weight: 600; color: var(--text-color); }
+.nav-logout-btn { cursor: pointer; }
+
+/* Блок пользователя в хедере (бейдж, имя, аватар, chevron) */
+.nav-auth-user { position: relative; }
+.user-block {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--border-color);
+    background: var(--white);
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+}
+.user-block:hover { border-color: var(--primary-color); background: rgba(37, 99, 235, 0.04); }
+.user-block:focus { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+.nav-role-badge { font-size: 0.75rem; }
+.nav-user-short {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.user-avatar { font-size: 1.25rem; color: var(--text-light); }
+.user-chevron { font-size: 0.7rem; color: var(--text-light); transition: transform 0.2s; }
+.user-block[aria-expanded="true"] .user-chevron { transform: rotate(180deg); }
+
+/* Дропдаун пользователя */
+.user-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.25rem;
+    min-width: 180px;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+    z-index: 1000;
+    display: none;
+}
+.user-dropdown.is-open { display: block; }
+.user-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    text-decoration: none;
+    border: none;
+    background: none;
+    cursor: pointer;
+    min-height: 44px;
+    box-sizing: border-box;
+}
+.user-dropdown-item:hover { background: var(--background-color); }
+.user-dropdown-divider { height: 1px; background: var(--border-color); margin: 0.25rem 0; }
+.user-dropdown-logout { color: #b91c1c; font-weight: 500; }
+.user-dropdown-logout:hover { background: rgba(185, 28, 28, 0.08); }
+
+/* Заглушки для гостей: каталог и оффер недоступны */
+.offers-guest-stub,
+.offer-guest-stub {
+    max-width: 420px;
+    margin: 2rem auto;
+    padding: 2rem;
+}
+.guest-stub-card {
+    text-align: center;
+    background: var(--white);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid var(--border-color);
+}
+.guest-stub-card .guest-stub-icon {
+    font-size: 3rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+.guest-stub-card h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
     color: var(--text-color);
 }
-.nav-logout-btn {
-    cursor: pointer;
+.guest-stub-card p {
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
 }
+.guest-stub-card .btn { min-width: 200px; }
 
 .user-menu {
     display: flex;

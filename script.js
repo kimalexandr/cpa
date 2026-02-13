@@ -1,17 +1,27 @@
-// Навигация: для гостей — «Войти» и «Регистрация», для авторизованных — приветствие, «Профиль», «Выход»
+// Навигация: гости — «Войти», «Регистрация»; авторизованные — блок пользователя с дропдауном (Профиль, Настройки, Выйти)
 document.addEventListener('DOMContentLoaded', function() {
     var guestBlocks = document.querySelectorAll('.nav-auth-guest');
     var userBlocks = document.querySelectorAll('.nav-auth-user');
     var nameSpans = document.querySelectorAll('.nav-user-name');
+    var shortNameEls = document.querySelectorAll('.nav-user-short, #navUserShortName');
+    var roleBadges = document.querySelectorAll('.nav-role-badge, #navRoleBadge');
     var logoutBtns = document.querySelectorAll('.nav-logout-btn');
     var isLoggedIn = typeof window.RealCPA !== 'undefined' && window.RealCPA.isLoggedIn();
 
     if (isLoggedIn) {
         var user = window.RealCPA.getUser();
+        var role = typeof window.RealCPA.getRole === 'function' ? window.RealCPA.getRole() : '';
         var displayName = (user && (user.name || user.email)) || '';
+        var profileHref = role === 'supplier' ? 'dashboard-supplier.html' : 'dashboard-affiliate.html';
         guestBlocks.forEach(function(el) { el.style.display = 'none'; });
         userBlocks.forEach(function(el) { el.style.display = 'inline-flex'; });
         nameSpans.forEach(function(el) { el.textContent = displayName; });
+        shortNameEls.forEach(function(el) { el.textContent = displayName; });
+        roleBadges.forEach(function(el) {
+            el.textContent = role === 'supplier' ? 'Поставщик' : 'Аффилиат';
+            el.className = 'user-role-badge nav-role-badge ' + (role || '');
+        });
+        document.querySelectorAll('.user-dropdown-item[href="dashboard.html"]').forEach(function(a) { a.href = profileHref; });
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
     } else {
         guestBlocks.forEach(function(el) { el.style.display = 'inline-flex'; });
@@ -20,12 +30,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     logoutBtns.forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (typeof window.RealCPA !== 'undefined') window.RealCPA.clearAuth();
-            window.location.href = 'index.html';
-        });
+        btn.addEventListener('click', function(e) { e.preventDefault(); if (typeof window.RealCPA !== 'undefined') window.RealCPA.clearAuth(); window.location.href = 'index.html'; });
     });
+
+    // Дропдаун пользователя в хедере
+    var trigger = document.getElementById('userBlockDropdownTrigger');
+    var dropdown = document.getElementById('userDropdown');
+    if (trigger && dropdown) {
+        function closeDropdown() { dropdown.classList.remove('is-open'); trigger.setAttribute('aria-expanded', 'false'); }
+        function openDropdown() { dropdown.classList.add('is-open'); trigger.setAttribute('aria-expanded', 'true'); }
+        trigger.addEventListener('click', function(e) { e.stopPropagation(); if (dropdown.classList.contains('is-open')) closeDropdown(); else openDropdown(); });
+        trigger.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger.click(); } });
+        document.addEventListener('click', function(e) { if (!trigger.contains(e.target) && !dropdown.contains(e.target)) closeDropdown(); });
+        var logoutItem = dropdown.querySelector('.user-dropdown-logout');
+        if (logoutItem) logoutItem.addEventListener('click', function(e) { e.preventDefault(); if (typeof window.RealCPA !== 'undefined') window.RealCPA.clearAuth(); window.location.href = 'index.html'; });
+        var settingsItem = dropdown.querySelector('.user-dropdown-settings');
+        if (settingsItem) settingsItem.addEventListener('click', function(e) { e.preventDefault(); closeDropdown(); alert('Раздел «Настройки» в разработке.'); });
+    }
 });
 
 // Профиль и выход в кабинете (блок .user-menu)

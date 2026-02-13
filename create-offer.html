@@ -24,13 +24,22 @@
                     <a href="support.html" class="nav-link">Поддержка</a>
                     <a href="about.html" class="nav-link">О компании</a>
                     <span class="nav-auth nav-auth-guest">
-                        <a href="login.html" class="nav-link">Войти</a>
-                        <a href="register.html" class="nav-link">Регистрация</a>
+                        <a href="login.html" class="nav-link btn-nav-login">Войти</a>
+                        <a href="register.html" class="nav-link btn-nav-register">Регистрация</a>
                     </span>
                     <span class="nav-auth nav-auth-user" style="display:none">
-                        <span class="nav-greeting">Здравствуйте, <span class="nav-user-name"></span>!</span>
-                        <a href="dashboard.html" class="nav-link">Профиль</a>
-                        <a href="#" class="nav-link nav-logout-btn">Выход</a>
+                        <div class="user-block" id="userBlockDropdownTrigger" tabindex="0" role="button" aria-haspopup="true">
+                            <span class="user-role-badge nav-role-badge" id="navRoleBadge"></span>
+                            <span class="nav-user-short" id="navUserShortName"></span>
+                            <span class="user-avatar"><i class="fas fa-user-circle"></i></span>
+                            <i class="fas fa-chevron-down user-chevron"></i>
+                        </div>
+                        <div class="user-dropdown" id="userDropdown" aria-hidden="true">
+                            <a href="dashboard.html" class="user-dropdown-item">Профиль</a>
+                            <a href="#" class="user-dropdown-item user-dropdown-settings">Настройки</a>
+                            <div class="user-dropdown-divider"></div>
+                            <button type="button" class="user-dropdown-item user-dropdown-logout">Выйти</button>
+                        </div>
                     </span>
                 </nav>
                 <div class="user-menu" id="headerUserMenu">

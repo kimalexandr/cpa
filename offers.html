@@ -24,13 +24,22 @@
                     <a href="support.html" class="nav-link">Поддержка</a>
                     <a href="about.html" class="nav-link">О компании</a>
                     <span class="nav-auth nav-auth-guest">
-                        <a href="login.html" class="nav-link">Войти</a>
-                        <a href="register.html" class="nav-link">Регистрация</a>
+                        <a href="login.html" class="nav-link btn-nav-login">Войти</a>
+                        <a href="register.html" class="nav-link btn-nav-register">Регистрация</a>
                     </span>
                     <span class="nav-auth nav-auth-user" style="display:none">
-                        <span class="nav-greeting">Здравствуйте, <span class="nav-user-name"></span>!</span>
-                        <a href="dashboard.html" class="nav-link">Профиль</a>
-                        <a href="#" class="nav-link nav-logout-btn">Выход</a>
+                        <div class="user-block" id="userBlockDropdownTrigger" tabindex="0" role="button" aria-haspopup="true">
+                            <span class="user-role-badge nav-role-badge" id="navRoleBadge"></span>
+                            <span class="nav-user-short" id="navUserShortName"></span>
+                            <span class="user-avatar"><i class="fas fa-user-circle"></i></span>
+                            <i class="fas fa-chevron-down user-chevron"></i>
+                        </div>
+                        <div class="user-dropdown" id="userDropdown" aria-hidden="true">
+                            <a href="dashboard.html" class="user-dropdown-item">Профиль</a>
+                            <a href="#" class="user-dropdown-item user-dropdown-settings">Настройки</a>
+                            <div class="user-dropdown-divider"></div>
+                            <button type="button" class="user-dropdown-item user-dropdown-logout">Выйти</button>
+                        </div>
                     </span>
                 </nav>
                 <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
@@ -65,6 +74,15 @@
         </aside>
 
         <main class="dashboard-main">
+            <!-- Для гостя: каталог недоступен, одна CTA -->
+            <div class="offers-guest-stub guest-stub-card" id="offersGuestStub" style="display:none">
+                <i class="fas fa-lock guest-stub-icon"></i>
+                <h2>Каталог доступен после входа</h2>
+                <p>Войдите в кабинет партнёра, чтобы просматривать офферы и подключаться к ним.</p>
+                <a href="login.html" class="btn btn-primary" id="offersGuestLoginBtn">Войти для подключения</a>
+            </div>
+
+            <div id="offersCatalogContent">
             <div class="offers-page-header">
                 <div>
                     <h1>Офферы</h1>
@@ -114,6 +132,7 @@
             <!-- Список офферов (загружается из API) -->
             <div class="offers-list" id="offersList">
                 <p class="loading-offers">Загрузка офферов...</p>
+            </div>
             </div>
         </main>
     </div>
@@ -189,12 +208,26 @@
     (function() {
         var listEl = document.getElementById('offersList');
         var createBtn = document.getElementById('createOfferBtn');
+        var catalogContent = document.getElementById('offersCatalogContent');
+        var guestStub = document.getElementById('offersGuestStub');
+        var loginBtn = document.getElementById('offersGuestLoginBtn');
         if (typeof window.RealCPA === 'undefined') {
             if (listEl) listEl.innerHTML = '<p>Подключите api.js и запустите бэкенд (npm run dev в папке backend).</p>';
             return;
         }
+        if (!window.RealCPA.isLoggedIn()) {
+            if (catalogContent) catalogContent.style.display = 'none';
+            if (guestStub) guestStub.style.display = 'block';
+            if (loginBtn) loginBtn.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname.split('/').pop() || 'offers.html');
+            return;
+        }
         var role = window.RealCPA.getRole();
-        if (createBtn) createBtn.style.display = (role === 'supplier') ? '' : 'none';
+        if (role === 'supplier') {
+            window.location.replace('dashboard-supplier.html');
+            return;
+        }
+        if (guestStub) guestStub.style.display = 'none';
+        if (createBtn) createBtn.style.display = 'none';
 
         function iconForSlug(slug) {
             if (slug === 'construction') return 'fa-box-open';
