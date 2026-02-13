@@ -21,9 +21,15 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-            cd /root/cpa || exit 1
+            if [ ! -d /root/cpa ]; then
+              git clone https://github.com/kimalexandr/cpa.git /root/cpa
+            fi
+            cd /root/cpa
             git fetch origin main
             git reset --hard origin/main
             cd backend
+            if [ ! -f .env ]; then
+              cp .env.example .env
+            fi
             docker-compose up -d --build
             docker-compose run --rm app npm run db:migrate 2>/dev/null || true
