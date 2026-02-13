@@ -22,3 +22,7 @@ Thumbs.db
 # Prisma
 backend/prisma/*.db
 backend/prisma/*.db-journal
+
+# Deploy SSH key (never commit)
+deploy_key
+deploy_key.pub
