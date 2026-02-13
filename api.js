@@ -56,7 +56,10 @@
       return data.then(function (payload) {
         if (res.status === 401 && path.indexOf('/auth/') === -1) clearAuth();
         if (!res.ok) {
-          var err = new Error(payload && payload.error ? payload.error : 'Ошибка запроса');
+          var msg = 'Ошибка запроса';
+          if (payload && typeof payload === 'object' && payload.error) msg = payload.error;
+          if (res.status >= 502 && res.status <= 504) msg = 'Сервер временно недоступен. Попробуйте позже.';
+          var err = new Error(msg);
           err.status = res.status;
           err.payload = payload;
           throw err;

@@ -57,7 +57,8 @@ router.post('/register', async (req: Request, res: Response) => {
     });
   } catch (e) {
     console.error('Register error:', e);
-    res.status(500).json({ error: 'Ошибка регистрации' });
+    const message = e instanceof Error ? e.message : 'Ошибка регистрации';
+    res.status(500).json({ error: 'Ошибка регистрации', detail: message });
   }
 });
 
