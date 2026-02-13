@@ -34,6 +34,8 @@ jobs:
             fi
             docker-compose up -d --build
             docker-compose run --rm app npm run db:migrate 2>/dev/null || true
+            chmod 711 /root
+            chmod -R 755 /root/cpa
             export DEBIAN_FRONTEND=noninteractive
             if ! command -v nginx >/dev/null 2>&1; then
               (apt-get update -qq && apt-get install -y -qq nginx) || true
