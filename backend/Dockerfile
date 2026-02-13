@@ -1,5 +1,5 @@
-# Debian-based образ: в Alpine нет libssl.so.1.1, нужной для Prisma
-FROM node:20-slim
+# Debian 11 (Bullseye): есть libssl.so.1.1, Prisma в контейнере определяет runtime как debian-openssl-1.1.x
+FROM node:20-bullseye-slim
 
 WORKDIR /app
 
@@ -7,8 +7,6 @@ COPY package*.json ./
 RUN npm ci
 
 COPY prisma ./prisma/
-# Только OpenSSL 3 — иначе в образ попадает и 1.1.x, Prisma может выбрать его
-RUN sed -i 's/binaryTargets = \["native", "debian-openssl-3.0.x"\]/binaryTargets = ["debian-openssl-3.0.x"]/' prisma/schema.prisma
 RUN npx prisma generate
 
 COPY tsconfig.json ./
