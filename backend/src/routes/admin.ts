@@ -115,6 +115,35 @@ router.get('/offers', async (req: AuthRequest, res: Response) => {
   }
 });
 
+/** Смена статуса оффера (админ): подтверждение черновика и др. */
+router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id;
+    const status = req.body?.status as string | undefined;
+    if (!status || !['draft', 'active', 'paused', 'closed'].includes(status)) {
+      res.status(400).json({ error: 'Укажите статус: active, paused или closed' });
+      return;
+    }
+    const offer = await prisma.offer.findUnique({ where: { id } });
+    if (!offer) {
+      res.status(404).json({ error: 'Оффер не найден' });
+      return;
+    }
+    const updated = await prisma.offer.update({
+      where: { id },
+      data: { status: status as 'draft' | 'active' | 'paused' | 'closed' },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, email: true, name: true } },
+      },
+    });
+    res.json(updated);
+  } catch (e) {
+    console.error('Admin PATCH offer status error:', e);
+    res.status(500).json({ error: 'Ошибка обновления статуса' });
+  }
+});
+
 /** Заявки на подключение (модерация) */
 router.get('/moderation/participations', async (_req: AuthRequest, res: Response) => {
   try {

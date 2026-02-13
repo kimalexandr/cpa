@@ -1029,6 +1029,17 @@ body.role-admin #navAdminLink { display: block !important; }
     color: var(--primary-color);
 }
 
+.offer-status {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+.offer-status.status-active { background: #d1fae5; color: #065f46; }
+.offer-status.status-draft { background: #fef3c7; color: #92400e; }
+.offer-status:not(.status-active):not(.status-draft) { background: #e2e8f0; color: #475569; }
+
 /* Статистика */
 .stats-grid {
     display: grid;

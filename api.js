@@ -165,6 +165,9 @@
         if (params && params.search) q.push('search=' + encodeURIComponent(params.search));
         return request('GET', '/api/admin/offers' + (q.length ? '?' + q.join('&') : ''));
       },
+      setOfferStatus: function (offerId, status) {
+        return request('PATCH', '/api/admin/offers/' + encodeURIComponent(offerId), { status: status });
+      },
       moderationParticipations: function () { return request('GET', '/api/admin/moderation/participations'); }
     }
   };

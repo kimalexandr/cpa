@@ -26,9 +26,19 @@
                         <a href="register.html" class="nav-link btn-nav-register">Регистрация</a>
                     </span>
                     <span class="nav-auth nav-auth-user" style="display:none">
-                        <span class="nav-greeting">Здравствуйте, <span class="nav-user-name"></span>!</span>
-                        <a href="dashboard.html" class="nav-link">Профиль</a>
-                        <a href="#" class="nav-link nav-logout-btn">Выход</a>
+                        <div class="user-block" id="userBlockDropdownTrigger" tabindex="0" role="button" aria-haspopup="true">
+                            <span class="user-role-badge nav-role-badge" id="navRoleBadge"></span>
+                            <span class="nav-user-short" id="navUserShortName"></span>
+                            <span class="user-avatar"><i class="fas fa-user-circle"></i></span>
+                            <i class="fas fa-chevron-down user-chevron"></i>
+                        </div>
+                        <div class="user-dropdown" id="userDropdown" aria-hidden="true">
+                            <a href="dashboard.html" class="user-dropdown-item user-dropdown-profile">Профиль</a>
+                            <a href="admin/index.html" class="user-dropdown-item" id="navAdminLink" style="display:none">Админка</a>
+                            <a href="#" class="user-dropdown-item user-dropdown-settings">Настройки</a>
+                            <div class="user-dropdown-divider"></div>
+                            <button type="button" class="user-dropdown-item user-dropdown-logout">Выйти</button>
+                        </div>
                     </span>
                 </nav>
                 <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
@@ -52,10 +62,25 @@
                 <h1>Мои офферы</h1>
                 <a href="create-offer.html" class="btn btn-primary"><i class="fas fa-plus"></i> Создать оффер</a>
             </div>
-            <div class="dashboard-empty-state">
+            <div class="dashboard-empty-state" id="supplierOffersEmpty">
                 <i class="fas fa-briefcase"></i>
                 <p>Здесь будут отображаться ваши офферы. Добавьте первый оффер, чтобы партнёры могли к нему подключаться.</p>
                 <a href="create-offer.html" class="btn btn-primary">Создать оффер</a>
+            </div>
+            <div class="table-wrapper" id="supplierOffersList" style="display:none">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Статус</th>
+                            <th>Ставка</th>
+                            <th>Обновлён</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplierOffersTableBody"></tbody>
+                </table>
             </div>
         </main>
     </div>
@@ -82,6 +107,38 @@
             else window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-supplier-offers.html');
             return;
         }
+
+        function loadMyOffers() {
+            var emptyEl = document.getElementById('supplierOffersEmpty');
+            var listEl = document.getElementById('supplierOffersList');
+            var tbody = document.getElementById('supplierOffersTableBody');
+            if (!tbody || !listEl || !emptyEl) return;
+            window.RealCPA.supplier.getOffers()
+                .then(function(offers) {
+                    if (!offers || offers.length === 0) {
+                        emptyEl.style.display = 'block';
+                        listEl.style.display = 'none';
+                        return;
+                    }
+                    emptyEl.style.display = 'none';
+                    listEl.style.display = 'block';
+                    var statusLabels = { draft: 'Черновик', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
+                    tbody.innerHTML = offers.map(function(o) {
+                        var cat = o.category ? o.category.name : '—';
+                        var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
+                        var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleDateString('ru') : '—';
+                        var statusCl = o.status === 'active' ? 'status-active' : (o.status === 'draft' ? 'status-draft' : '');
+                        return '<tr><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—') + '</a></td><td>' + cat + '</td><td><span class="offer-status ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + updated + '</td><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
+                    }).join('');
+                })
+                .catch(function(err) {
+                    emptyEl.style.display = 'block';
+                    listEl.style.display = 'none';
+                    var p = emptyEl.querySelector('p');
+                    if (p) p.textContent = 'Ошибка загрузки: ' + (err.message || 'попробуйте обновить страницу');
+                });
+        }
+        loadMyOffers();
     })();
     </script>
     <script src="script.js"></script>

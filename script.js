@@ -21,7 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
             el.textContent = role === 'admin' ? 'Админ' : (role === 'supplier' ? 'Поставщик' : 'Аффилиат');
             el.className = 'user-role-badge nav-role-badge ' + (role || '');
         });
-        document.querySelectorAll('.user-dropdown-item[href="dashboard.html"]').forEach(function(a) { a.href = profileHref; });
+        // Профиль и Настройки ведут в кабинет (дашборд) по роли
+        document.querySelectorAll('.user-dropdown-profile, .user-dropdown-item[href="dashboard.html"]').forEach(function(a) { a.href = profileHref; a.classList.add('user-dropdown-profile'); });
+        document.querySelectorAll('.user-dropdown-settings').forEach(function(a) { if (a.tagName === 'A') a.href = profileHref; });
         if (role === 'admin') document.body.classList.add('role-admin');
         else document.body.classList.remove('role-admin');
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
@@ -48,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var logoutItem = dropdown.querySelector('.user-dropdown-logout');
         if (logoutItem) logoutItem.addEventListener('click', function(e) { e.preventDefault(); if (typeof window.RealCPA !== 'undefined') window.RealCPA.clearAuth(); window.location.href = 'index.html'; });
         var settingsItem = dropdown.querySelector('.user-dropdown-settings');
-        if (settingsItem) settingsItem.addEventListener('click', function(e) { e.preventDefault(); closeDropdown(); alert('Раздел «Настройки» в разработке.'); });
+        if (settingsItem && settingsItem.tagName === 'A') settingsItem.addEventListener('click', function() { closeDropdown(); });
     }
 });
 

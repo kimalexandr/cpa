@@ -18,27 +18,40 @@ router.get('/offers', async (req: AuthRequest, res: Response) => {
 });
 
 router.post('/offers', async (req: AuthRequest, res: Response) => {
-  const b = req.body;
-  if (!b.categoryId || !b.title || !b.landingUrl) {
-    res.status(400).json({ error: 'Укажите категорию, название и ссылку на лендинг' });
-    return;
+  try {
+    const b = req.body;
+    if (!b.categoryId || !b.title || !b.landingUrl) {
+      res.status(400).json({ error: 'Укажите категорию, название и ссылку на лендинг' });
+      return;
+    }
+    const categoryExists = await prisma.category.findUnique({
+      where: { id: String(b.categoryId), isActive: true },
+    });
+    if (!categoryExists) {
+      res.status(400).json({ error: 'Выбранная категория не найдена. Обновите страницу и выберите категорию снова.' });
+      return;
+    }
+    const offer = await prisma.offer.create({
+      data: {
+        supplierId: req.user!.userId,
+        categoryId: String(b.categoryId),
+        title: String(b.title),
+        description: String(b.description || ''),
+        targetGeo: b.targetGeo ? String(b.targetGeo) : null,
+        payoutModel: (b.payoutModel as 'CPA' | 'CPL' | 'RevShare') || 'CPA',
+        payoutAmount: Number(b.payoutAmount) || 0,
+        currency: String(b.currency || 'RUB'),
+        landingUrl: String(b.landingUrl),
+        status: 'draft',
+      },
+      include: { category: { select: { id: true, name: true, slug: true } } },
+    });
+    res.status(201).json(offer);
+  } catch (e) {
+    console.error('POST /offers error:', e);
+    const message = e instanceof Error ? e.message : 'Ошибка создания оффера';
+    res.status(500).json({ error: message });
   }
-  const offer = await prisma.offer.create({
-    data: {
-      supplierId: req.user!.userId,
-      categoryId: b.categoryId,
-      title: b.title,
-      description: b.description || '',
-      targetGeo: b.targetGeo || null,
-      payoutModel: b.payoutModel || 'CPA',
-      payoutAmount: Number(b.payoutAmount) || 0,
-      currency: b.currency || 'RUB',
-      landingUrl: b.landingUrl,
-      status: 'draft',
-    },
-    include: { category: { select: { id: true, name: true, slug: true } } },
-  });
-  res.status(201).json(offer);
 });
 
 router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {

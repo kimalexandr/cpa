@@ -35,7 +35,7 @@
                             <i class="fas fa-chevron-down user-chevron"></i>
                         </div>
                         <div class="user-dropdown" id="userDropdown" aria-hidden="true">
-                            <a href="dashboard.html" class="user-dropdown-item">Профиль</a>
+                            <a href="dashboard.html" class="user-dropdown-item user-dropdown-profile">Профиль</a>
                             <a href="admin/index.html" class="user-dropdown-item" id="navAdminLink" style="display:none">Админка</a>
                             <a href="#" class="user-dropdown-item user-dropdown-settings">Настройки</a>
                             <div class="user-dropdown-divider"></div>
@@ -519,7 +519,9 @@
                 var geoSelect = document.getElementById('offerGeo');
                 var targetGeo = geoSelect ? geoSelect.options[geoSelect.selectedIndex].text : '';
                 var rateVal = (document.querySelector('.offer-rate-value') || {}).value || '';
-                var payoutAmount = parseFloat(rateVal.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                var cpaInput = document.getElementById('offerCpa');
+                var cpaVal = cpaInput ? cpaInput.value : '';
+                var payoutAmount = parseFloat(String(rateVal).replace(/[^\d.,]/g, '').replace(',', '.')) || parseFloat(String(cpaVal).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
                 if (!categoryId || !title || !landingUrl) {
                     alert('Заполните категорию, название и ссылку на лендинг.');
                     return;
@@ -536,11 +538,13 @@
                 }
                 var cpaEl = document.getElementById('offerCpa');
                 var cpaVal = cpaEl ? cpaEl.value : '';
-                if (!cpaVal || parseFloat(cpaVal) < 1) {
+                if (!cpaVal || parseFloat(String(cpaVal).replace(/[^\d.,]/g, '').replace(',', '.')) < 1) {
                     alert('Укажите основную CPA-ставку (шаг 3).');
                     if (cpaEl) cpaEl.focus();
                     return;
                 }
+                var submitBtn = document.getElementById('wizardSubmit');
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Создание…'; }
                 window.RealCPA.supplier.createOffer({
                     categoryId: categoryId,
                     title: title,
@@ -554,7 +558,11 @@
                     alert('Оффер создан. Он сохранён как черновик — измените статус на «Активен» в разделе «Мои офферы».');
                     window.location.href = 'dashboard-supplier-offers.html';
                 }).catch(function(err) {
-                    alert(err.message || err.payload?.error || 'Ошибка создания оффера');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Отправить на модерацию'; }
+                    var msg = (err && err.message) || (err && err.payload && err.payload.error) || 'Ошибка создания оффера';
+                    if (err && err.status) msg += ' (код ' + err.status + ')';
+                    console.error('Create offer error:', err);
+                    alert(msg);
                 });
             });
         }

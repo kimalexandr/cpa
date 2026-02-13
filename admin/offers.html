@@ -59,10 +59,11 @@
                             <th>Статус</th>
                             <th>Ставка</th>
                             <th>Обновлён</th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody id="offersTableBody">
-                        <tr><td colspan="7">Загрузка...</td></tr>
+                        <tr><td colspan="8">Загрузка...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -89,7 +90,7 @@
             window.RealCPA.admin.offers(params)
                 .then(function(list) {
                     var tbody = document.getElementById('offersTableBody');
-                    if (!list.length) { tbody.innerHTML = '<tr><td colspan="7">Нет офферов</td></tr>'; return; }
+                    if (!list.length) { tbody.innerHTML = '<tr><td colspan="8">Нет офферов</td></tr>'; return; }
                     var statusLabels = { draft: 'Черновик', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
                     tbody.innerHTML = list.map(function(o) {
                         var cat = o.category ? o.category.name : '—';
@@ -97,11 +98,31 @@
                         var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || '₽') : '—';
                         var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleDateString('ru') : '—';
                         var statusCl = o.status === 'active' ? 'admin-badge-active' : (o.status === 'draft' ? 'admin-badge-pending' : 'admin-badge-blocked');
-                        return '<tr><td>' + (o.id || '').slice(0, 8) + '…</td><td><a href="../offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—').slice(0, 40) + '</a></td><td>' + sup + '</td><td>' + cat + '</td><td><span class="admin-badge ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + updated + '</td></tr>';
+                        var actions = '';
+                        if (o.status === 'draft') {
+                            actions = '<button type="button" class="btn btn-primary btn-sm admin-offer-confirm" data-offer-id="' + (o.id || '') + '" title="Активировать оффер">Подтвердить</button>';
+                        } else {
+                            actions = '—';
+                        }
+                        return '<tr><td>' + (o.id || '').slice(0, 8) + '…</td><td><a href="../offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—').slice(0, 40) + '</a></td><td>' + sup + '</td><td>' + cat + '</td><td><span class="admin-badge ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + updated + '</td><td>' + actions + '</td></tr>';
                     }).join('');
+                    tbody.querySelectorAll('.admin-offer-confirm').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var id = this.getAttribute('data-offer-id');
+                            if (!id) return;
+                            this.disabled = true;
+                            this.textContent = '…';
+                            window.RealCPA.admin.setOfferStatus(id, 'active').then(function() {
+                                loadOffers();
+                            }).catch(function(err) {
+                                alert((err && err.message) || 'Ошибка подтверждения');
+                                loadOffers();
+                            });
+                        });
+                    });
                 })
                 .catch(function(err) {
-                    document.getElementById('offersTableBody').innerHTML = '<tr><td colspan="7">Ошибка: ' + (err.message || 'загрузка') + '</td></tr>';
+                    document.getElementById('offersTableBody').innerHTML = '<tr><td colspan="8">Ошибка: ' + (err.message || 'загрузка') + '</td></tr>';
                 });
         }
         document.getElementById('offerApplyFilters').addEventListener('click', loadOffers);
