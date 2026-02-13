@@ -13,9 +13,10 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-RUN npm prune --production
+# Не удаляем devDependencies: для db:seed в CI нужны prisma и ts-node
+# RUN npm prune --production
 
-# Миграции и сид не запускаем автоматически — выполняются вручную или в CI
+# Миграции и сид выполняются в деплое (см. .github/workflows/deploy.yml)
 # docker-compose run app npm run db:migrate
 # docker-compose run app npm run db:seed
 
