@@ -10,7 +10,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const status = (req.query.status as string) || 'active';
     const search = (req.query.search as string) || '';
     const where: Record<string, unknown> = {};
-    if (status) where.status = status;
+    if (status === 'active') {
+      where.status = { in: ['active', 'paused'] };
+    } else if (status) {
+      where.status = status;
+    }
     if (categorySlug) {
       where.category = { slug: categorySlug };
     }
