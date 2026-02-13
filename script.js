@@ -49,29 +49,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Профиль и выход в кабинете (блок .user-menu)
-document.addEventListener('DOMContentLoaded', function() {
-    var emailEl = document.getElementById('headerUserEmail');
-    var roleBadge = document.getElementById('headerRoleBadge');
-    var logoutBtn = document.getElementById('btnLogout');
-    if (typeof window.RealCPA !== 'undefined' && window.RealCPA.isLoggedIn()) {
-        var user = window.RealCPA.getUser();
-        if (emailEl) emailEl.textContent = (user && (user.name || user.email)) || '';
-        if (roleBadge) {
-            var role = window.RealCPA.getRole();
-            roleBadge.textContent = role === 'supplier' ? 'Поставщик' : role === 'affiliate' ? 'Партнёр' : '';
-            roleBadge.className = 'user-role-badge ' + (role || '');
-        }
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                window.RealCPA.clearAuth();
-                window.location.href = 'index.html';
-            });
-        }
-    }
-});
-
 // Мобильное меню и языки
 document.addEventListener('DOMContentLoaded', function() {
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');

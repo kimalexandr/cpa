@@ -40,12 +40,6 @@
                         </div>
                     </span>
                 </nav>
-                <div class="user-menu" id="headerUserMenu">
-                    <span class="user-role-badge affiliate">Партнёр</span>
-                    <span class="user-profile-email" id="headerUserEmail"></span>
-                    <span id="headerBalance">Баланс: 0 ₽</span>
-                    <a href="#" id="btnLogout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Выход</a>
-                </div>
                 <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
             </div>
         </div>
@@ -231,16 +225,13 @@
             else window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-affiliate.html');
             return;
         }
-        var balanceEl = document.getElementById('headerBalance');
-        if (balanceEl) balanceEl.textContent = 'Загрузка...';
         window.RealCPA.affiliate.stats().then(function(s) {
             var e = document.getElementById('statEarned'); if (e) e.textContent = (s.earned || 0) + ' ₽';
             var c = document.getElementById('statConnected'); if (c) c.textContent = String(s.connectedOffers || 0);
             var l = document.getElementById('statLeads'); if (l) l.textContent = String(s.leads || 0);
             var conv = document.getElementById('statConversion');
             if (conv) conv.textContent = s.clicks ? ((s.leads || 0) / s.clicks * 100).toFixed(1) + '%' : '—';
-            if (balanceEl) balanceEl.textContent = 'Заработано: ' + (s.earned || 0) + ' ₽';
-        }).catch(function() { if (balanceEl) balanceEl.textContent = 'Баланс: —'; });
+        }).catch(function() {});
     })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
