@@ -128,6 +128,33 @@ body {
     color: var(--text-color);
 }
 
+/* Кабинет аффилиата: верхнее меню скрыто, навигация внизу */
+.affiliate-cabinet .header .nav > a {
+    display: none !important;
+}
+.affiliate-bottom-nav {
+    background-color: var(--white);
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 0;
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.08);
+}
+.affiliate-nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem 2rem;
+    align-items: center;
+}
+.affiliate-nav-links a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.affiliate-nav-links a:hover {
+    color: var(--primary-color);
+}
+
 /* Блоки навигации: гости (Войти, Регистрация) / авторизованные (блок пользователя + дропдаун) */
 .nav-auth {
     display: inline-flex;

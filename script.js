@@ -27,6 +27,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (role === 'admin') document.body.classList.add('role-admin');
         else document.body.classList.remove('role-admin');
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
+
+        // Кабинет аффилиата: верхнее меню убрать, навигацию перенести вниз
+        if (role === 'affiliate' && document.querySelector('.dashboard-layout')) {
+            document.body.classList.add('affiliate-cabinet');
+            var headerNavLinks = document.querySelectorAll('.header .nav > a');
+            headerNavLinks.forEach(function(el) { el.style.display = 'none'; });
+            var footer = document.querySelector('footer.footer');
+            if (footer && !document.querySelector('.affiliate-bottom-nav')) {
+                var bottomNav = document.createElement('div');
+                bottomNav.className = 'affiliate-bottom-nav';
+                bottomNav.innerHTML = '<div class="container"><nav class="affiliate-nav-links"><a href="dashboard-affiliate.html">Главная</a><a href="offers.html">Офферы</a><a href="about.html">О компании</a><a href="contacts.html">Контакты</a></nav></div>';
+                footer.parentNode.insertBefore(bottomNav, footer);
+            }
+        }
     } else {
         guestBlocks.forEach(function(el) { el.style.display = 'inline-flex'; });
         userBlocks.forEach(function(el) { el.style.display = 'none'; });

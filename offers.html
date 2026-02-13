@@ -67,7 +67,7 @@
                     <i class="fas fa-wallet"></i>
                     <span>Выплаты</span>
                 </a>
-                <a href="support.html" class="sidebar-link">
+                <a href="support.html" class="sidebar-link sidebar-hide-for-affiliate">
                     <i class="fas fa-headset"></i>
                     <span>Поддержка</span>
                 </a>
@@ -291,6 +291,13 @@
                 }
             });
     });
+    </script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA !== 'undefined' && window.RealCPA.getRole() === 'affiliate') {
+            document.querySelectorAll('.sidebar-hide-for-affiliate').forEach(function(el) { el.style.display = 'none'; });
+        }
+    })();
     </script>
 </body>
 </html>

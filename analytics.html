@@ -57,11 +57,11 @@
                     <i class="fas fa-briefcase"></i>
                     <span>Мои офферы</span>
                 </a>
-                <a href="create-offer.html" class="sidebar-link">
+                <a href="create-offer.html" class="sidebar-link sidebar-supplier-only">
                     <i class="fas fa-plus-circle"></i>
                     <span>Создать оффер</span>
                 </a>
-                <a href="dashboard-supplier-requests.html" class="sidebar-link">
+                <a href="dashboard-supplier-requests.html" class="sidebar-link sidebar-supplier-only">
                     <i class="fas fa-user-check"></i>
                     <span>Заявки партнёров</span>
                 </a>
@@ -72,10 +72,6 @@
                 <a href="payments.html" class="sidebar-link">
                     <i class="fas fa-wallet"></i>
                     <span>Расходы на партнёров</span>
-                </a>
-                <a href="support.html" class="sidebar-link">
-                    <i class="fas fa-headset"></i>
-                    <span>Поддержка</span>
                 </a>
             </nav>
         </aside>
@@ -238,9 +234,11 @@
             return;
         }
         var role = window.RealCPA.getRole();
-        var link = document.getElementById('sidebarMainLink');
-        if (link && role === 'supplier') link.href = 'dashboard-supplier.html';
-        else if (link && role === 'affiliate') link.href = 'dashboard-affiliate.html';
+        if (role === 'affiliate') {
+            document.querySelectorAll('.sidebar-supplier-only').forEach(function(el) { el.style.display = 'none'; });
+            var mainLink = document.querySelector('.sidebar-nav a[href="dashboard-supplier.html"]');
+            if (mainLink) mainLink.href = 'dashboard-affiliate.html';
+        }
     })();
     </script>
 </body>
