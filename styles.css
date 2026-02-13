@@ -1916,6 +1916,24 @@ body.role-admin #navAdminLink { display: block !important; }
 .contacts-page { padding: 2rem 0 3rem; }
 .contacts-page .container { max-width: 900px; }
 .contacts-page-title { font-size: 2rem; margin-bottom: 1.5rem; color: var(--text-color); }
+
+/* Поддержка (страница без сайдбара, как контакты) */
+.support-page { padding: 2rem 0 3rem; }
+.support-page .container { max-width: 900px; }
+.support-page-title { font-size: 2rem; margin-bottom: 1.5rem; color: var(--text-color); }
+.support-section {
+    background-color: var(--white);
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.support-section-title { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-color); }
+.support-section-desc { margin-bottom: 1.25rem; color: var(--text-light); }
+.support-section-desc a { color: var(--primary-color); text-decoration: none; }
+.support-section-desc a:hover { text-decoration: underline; }
+.support-section .faq-search { margin-bottom: 1.25rem; background-color: var(--background-color); box-shadow: none; }
+.support-section .faq-section { margin-bottom: 0; background-color: transparent; box-shadow: none; padding: 0; }
+
 .contacts-section {
     background-color: var(--white);
     padding: 2rem;

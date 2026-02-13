@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="dashboard-page">
+<body>
     <header class="header">
         <div class="container">
             <div class="header-content">
@@ -23,6 +23,7 @@
                     <a href="demo.html" class="nav-link">Демо</a>
                     <a href="support.html" class="nav-link active">Поддержка</a>
                     <a href="about.html" class="nav-link">О компании</a>
+                    <a href="contacts.html" class="nav-link">Контакты</a>
                     <span class="nav-auth nav-auth-guest">
                         <a href="login.html" class="nav-link btn-nav-login">Войти</a>
                         <a href="register.html" class="nav-link btn-nav-register">Регистрация</a>
@@ -48,46 +49,12 @@
         </div>
     </header>
 
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="sidebar-link" id="sidebarMainLink">
-                    <i class="fas fa-home"></i>
-                    <span>Главная</span>
-                </a>
-                <a href="offers.html" class="sidebar-link">
-                    <i class="fas fa-briefcase"></i>
-                    <span>Офферы</span>
-                </a>
-                <a href="analytics.html" class="sidebar-link">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Аналитика</span>
-                </a>
-                <a href="payments.html" class="sidebar-link">
-                    <i class="fas fa-wallet"></i>
-                    <span>Выплаты</span>
-                </a>
-                <a href="support.html" class="sidebar-link active">
-                    <i class="fas fa-question-circle"></i>
-                    <span>FAQ</span>
-                </a>
-                <a href="contacts.html" class="sidebar-link">
-                    <i class="fas fa-address-book"></i>
-                    <span>Контакты</span>
-                </a>
-            </nav>
-        </aside>
-
-        <main class="dashboard-main">
-            <div class="dashboard-header">
-                <div>
-                    <h1>FAQ</h1>
-                    <p class="dashboard-header-desc">Часто задаваемые вопросы. <a href="contacts.html">Контакты</a> — на отдельной странице.</p>
-                </div>
-            </div>
-
-            <section class="faq-block" id="faq-block">
-                <h2 class="faq-block-title">Часто задаваемые вопросы</h2>
+    <main class="support-page">
+        <div class="container">
+            <h1 class="support-page-title">Поддержка</h1>
+            <section class="support-section" id="faq-block">
+                <h2 class="support-section-title">Часто задаваемые вопросы</h2>
+                <p class="support-section-desc">Ответы на популярные вопросы. <a href="contacts.html">Контакты</a> — на отдельной странице.</p>
             <!-- Поиск по FAQ -->
             <div class="faq-search">
                 <input type="text" class="search-input" placeholder="Поиск по FAQ..." id="faqSearch">
@@ -203,8 +170,8 @@
                 </div>
             </div>
             </section>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <footer class="footer">
         <div class="container">
@@ -313,14 +280,6 @@
         } else {
             initFaq();
         }
-    })();
-    </script>
-    <script>
-    (function() {
-        var role = window.RealCPA && window.RealCPA.getRole();
-        var link = document.getElementById('sidebarMainLink');
-        if (link && role === 'supplier') link.href = 'dashboard-supplier.html';
-        else if (link && role === 'affiliate') link.href = 'dashboard-affiliate.html';
     })();
     </script>
 </body>
