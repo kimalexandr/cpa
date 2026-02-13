@@ -7,6 +7,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY prisma ./prisma/
+ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
 RUN npx prisma generate
 
 COPY tsconfig.json ./
