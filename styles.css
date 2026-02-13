@@ -830,12 +830,18 @@ body.role-admin #navAdminLink { display: block !important; }
 }
 
 .auth-container {
-    max-width: 500px;
+    width: 100%;
+    max-width: 520px;
+    min-width: 480px;
     margin: 0 auto;
     background-color: var(--white);
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+}
+
+@media (max-width: 520px) {
+    .auth-container { min-width: 0; }
 }
 
 .auth-tabs {
