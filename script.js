@@ -28,6 +28,15 @@ document.addEventListener('DOMContentLoaded', function() {
         else document.body.classList.remove('role-admin');
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
 
+        // Для поставщика скрыть пункт «Кабинет партнёра» в верхнем меню
+        if (role === 'supplier') {
+            document.querySelectorAll('.header .nav a[href="dashboard-affiliate.html"]').forEach(function(el) { el.style.display = 'none'; });
+        }
+        // Для аффилиата скрыть пункт «Кабинет поставщика» в верхнем меню
+        if (role === 'affiliate') {
+            document.querySelectorAll('.header .nav a[href="dashboard-supplier.html"]').forEach(function(el) { el.style.display = 'none'; });
+        }
+
         // Кабинет аффилиата: верхнее меню убрать, навигацию перенести вниз
         if (role === 'affiliate' && document.querySelector('.dashboard-layout')) {
             document.body.classList.add('affiliate-cabinet');
