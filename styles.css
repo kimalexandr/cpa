@@ -128,9 +128,17 @@ body {
     color: var(--text-color);
 }
 
-/* Кабинет аффилиата: верхнее меню скрыто, навигация внизу */
+/* Кабинет аффилиата: верхнее меню — только Главная и Каталог офферов, остальное внизу */
 .affiliate-cabinet .header .nav > a {
     display: none !important;
+}
+.affiliate-top-nav-links {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+.affiliate-top-nav-links .nav-link {
+    white-space: nowrap;
 }
 .affiliate-bottom-nav {
     background-color: var(--white);

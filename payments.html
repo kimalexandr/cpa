@@ -53,7 +53,7 @@
                     <i class="fas fa-home"></i>
                     <span>Главная</span>
                 </a>
-                <a href="dashboard-supplier-offers.html" class="sidebar-link">
+                <a href="dashboard-supplier-offers.html" class="sidebar-link sidebar-supplier-only">
                     <i class="fas fa-briefcase"></i>
                     <span>Мои офферы</span>
                 </a>
@@ -69,7 +69,7 @@
                     <i class="fas fa-chart-line"></i>
                     <span>Аналитика</span>
                 </a>
-                <a href="payments.html" class="sidebar-link active">
+                <a href="payments.html" class="sidebar-link active sidebar-payments-label">
                     <i class="fas fa-wallet"></i>
                     <span>Расходы на партнёров</span>
                 </a>
@@ -273,7 +273,15 @@
         if (role === 'affiliate') {
             document.querySelectorAll('.sidebar-supplier-only').forEach(function(el) { el.style.display = 'none'; });
             var mainLink = document.querySelector('.sidebar-nav a[href="dashboard-supplier.html"]');
-            if (mainLink) mainLink.href = 'dashboard-affiliate.html';
+            if (mainLink) {
+                mainLink.href = 'dashboard-affiliate.html';
+                mainLink.insertAdjacentHTML('afterend',
+                    '<a href="offers.html" class="sidebar-link"><i class="fas fa-th-large"></i><span>Каталог офферов</span></a>' +
+                    '<a href="dashboard-affiliate-connections.html" class="sidebar-link"><i class="fas fa-link"></i><span>Мои подключения</span></a>'
+                );
+            }
+            var paymentsLabel = document.querySelector('.sidebar-payments-label span');
+            if (paymentsLabel) paymentsLabel.textContent = 'Выплаты';
         }
     })();
     </script>

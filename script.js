@@ -37,16 +37,23 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.header .nav a[href="dashboard-supplier.html"]').forEach(function(el) { el.style.display = 'none'; });
         }
 
-        // Кабинет аффилиата: верхнее меню убрать, навигацию перенести вниз
+        // Кабинет аффилиата: верхнее меню заменить на Главная / Каталог офферов, остальное — внизу
         if (role === 'affiliate' && document.querySelector('.dashboard-layout')) {
             document.body.classList.add('affiliate-cabinet');
+            var headerNav = document.querySelector('.header .nav');
             var headerNavLinks = document.querySelectorAll('.header .nav > a');
             headerNavLinks.forEach(function(el) { el.style.display = 'none'; });
+            if (headerNav && !document.querySelector('.affiliate-top-nav-links')) {
+                var topLinks = document.createElement('span');
+                topLinks.className = 'affiliate-top-nav-links';
+                topLinks.innerHTML = '<a href="dashboard-affiliate.html" class="nav-link">Главная</a><a href="offers.html" class="nav-link">Каталог офферов</a>';
+                headerNav.insertBefore(topLinks, headerNav.firstChild);
+            }
             var footer = document.querySelector('footer.footer');
             if (footer && !document.querySelector('.affiliate-bottom-nav')) {
                 var bottomNav = document.createElement('div');
                 bottomNav.className = 'affiliate-bottom-nav';
-                bottomNav.innerHTML = '<div class="container"><nav class="affiliate-nav-links"><a href="dashboard-affiliate.html">Главная</a><a href="offers.html">Офферы</a><a href="about.html">О компании</a><a href="contacts.html">Контакты</a></nav></div>';
+                bottomNav.innerHTML = '<div class="container"><nav class="affiliate-nav-links"><a href="dashboard-affiliate.html">Главная</a><a href="offers.html">Каталог офферов</a><a href="about.html">О компании</a><a href="contacts.html">Контакты</a></nav></div>';
                 footer.parentNode.insertBefore(bottomNav, footer);
             }
         }

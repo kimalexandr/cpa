@@ -121,25 +121,8 @@
                     <a href="offers.html" class="btn btn-primary btn-sm">Каталог офферов</a>
                 </div>
                 <p class="dashboard-block-desc">В каталоге выберите оффер, подайте заявку на подключение и после одобрения получите трекинг-ссылку.</p>
-                <div class="offers-grid" style="margin-top: 1rem;">
-                    <div class="offer-card-mini">
-                        <div class="offer-category">Услуги</div>
-                        <h3>МТС eSIM — до 1500 ₽</h3>
-                        <p class="offer-cpa">CPA: до 1875 ₽</p>
-                        <a href="offer.html?id=1" class="btn btn-sm btn-primary">Подключиться</a>
-                    </div>
-                    <div class="offer-card-mini">
-                        <div class="offer-category">Стройматериалы</div>
-                        <h3>Стройматериалы оптом</h3>
-                        <p class="offer-cpa">CPA: 500 ₽</p>
-                        <a href="offer.html?id=2" class="btn btn-sm btn-primary">Подключиться</a>
-                    </div>
-                    <div class="offer-card-mini">
-                        <div class="offer-category">Продукты питания</div>
-                        <h3>Продукты питания оптом</h3>
-                        <p class="offer-cpa">CPA: 300 ₽</p>
-                        <a href="offer.html?id=3" class="btn btn-sm btn-primary">Подключиться</a>
-                    </div>
+                <div class="offers-grid" id="affiliateDashboardOffersList" style="margin-top: 1rem;">
+                    <p class="loading-offers">Загрузка офферов...</p>
                 </div>
             </div>
 
@@ -229,6 +212,36 @@
             var conv = document.getElementById('statConversion');
             if (conv) conv.textContent = s.clicks ? ((s.leads || 0) / s.clicks * 100).toFixed(1) + '%' : '—';
         }).catch(function() {});
+
+        var listEl = document.getElementById('affiliateDashboardOffersList');
+        if (listEl && typeof window.RealCPA !== 'undefined' && window.RealCPA.offers) {
+            function escapeHtml(s) {
+                if (s == null) return '';
+                var div = document.createElement('div');
+                div.textContent = s;
+                return div.innerHTML;
+            }
+            window.RealCPA.offers({ status: 'active' })
+                .then(function(offers) {
+                    if (!Array.isArray(offers) || !offers.length) {
+                        listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов. Офферы появятся после публикации поставщиками.</p>';
+                        return;
+                    }
+                    listEl.innerHTML = offers.map(function(o) {
+                        var cat = o.category ? o.category.name : '—';
+                        var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || '₽') : '—';
+                        return '<div class="offer-card-mini">' +
+                            '<div class="offer-category">' + escapeHtml(cat) + '</div>' +
+                            '<h3>' + escapeHtml(o.title) + '</h3>' +
+                            '<p class="offer-cpa">CPA: ' + escapeHtml(String(rate)) + '</p>' +
+                            '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-primary">Подключиться</a>' +
+                            '</div>';
+                    }).join('');
+                })
+                .catch(function(err) {
+                    listEl.innerHTML = '<p class="offers-empty-msg">Не удалось загрузить офферы. <a href="offers.html">Открыть каталог</a></p>';
+                });
+        }
     })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
