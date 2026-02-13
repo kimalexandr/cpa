@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         // Профиль и Настройки ведут в кабинет (дашборд) по роли
         document.querySelectorAll('.user-dropdown-profile, .user-dropdown-item[href="dashboard.html"]').forEach(function(a) { a.href = profileHref; a.classList.add('user-dropdown-profile'); });
-        document.querySelectorAll('.user-dropdown-settings').forEach(function(a) { if (a.tagName === 'A') a.href = profileHref; });
+        document.querySelectorAll('.user-dropdown-settings').forEach(function(a) { if (a.tagName === 'A') a.href = 'profile.html'; });
         if (role === 'admin') document.body.classList.add('role-admin');
         else document.body.classList.remove('role-admin');
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });

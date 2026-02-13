@@ -196,10 +196,7 @@
     <script src="script.js"></script>
     <script>
     (function() {
-        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
-            window.location.href = 'login.html?redirect=' + encodeURIComponent('contacts.html');
-            return;
-        }
+        /* FAQ и Контакты доступны без регистрации */
     })();
     </script>
 </body>

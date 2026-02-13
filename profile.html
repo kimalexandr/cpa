@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="profile-page">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="offers.html" class="nav-link">Офферы</a>
+                    <a href="dashboard-affiliate.html" class="nav-link">Кабинет партнёра</a>
+                    <a href="dashboard-supplier.html" class="nav-link">Кабинет поставщика</a>
+                    <a href="support.html" class="nav-link">Поддержка</a>
+                    <a href="about.html" class="nav-link">О компании</a>
+                    <span class="nav-auth nav-auth-guest">
+                        <a href="login.html" class="nav-link btn-nav-login">Войти</a>
+                        <a href="register.html" class="nav-link btn-nav-register">Регистрация</a>
+                    </span>
+                    <span class="nav-auth nav-auth-user" style="display:none">
+                        <div class="user-block" id="userBlockDropdownTrigger" tabindex="0" role="button" aria-haspopup="true">
+                            <span class="user-role-badge nav-role-badge" id="navRoleBadge"></span>
+                            <span class="nav-user-short" id="navUserShortName"></span>
+                            <span class="user-avatar"><i class="fas fa-user-circle"></i></span>
+                            <i class="fas fa-chevron-down user-chevron"></i>
+                        </div>
+                        <div class="user-dropdown" id="userDropdown" aria-hidden="true">
+                            <a href="dashboard.html" class="user-dropdown-item user-dropdown-profile">Профиль</a>
+                            <a href="admin/index.html" class="user-dropdown-item" id="navAdminLink" style="display:none">Админка</a>
+                            <a href="profile.html" class="user-dropdown-item user-dropdown-settings">Настройки</a>
+                            <div class="user-dropdown-divider"></div>
+                            <button type="button" class="user-dropdown-item user-dropdown-logout">Выйти</button>
+                        </div>
+                    </span>
+                </nav>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main class="profile-main container">
+        <h1 class="profile-page-title">Профиль</h1>
+
+        <div class="profile-cards">
+            <!-- Личные данные -->
+            <section class="profile-card">
+                <h2 class="profile-card-title">Личные данные</h2>
+                <div class="profile-card-personal">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-personal-fields">
+                        <div class="profile-field">
+                            <span class="profile-field-label">Имя</span>
+                            <span class="profile-field-value" id="profileName">—</span>
+                        </div>
+                        <div class="profile-field">
+                            <span class="profile-field-label">Страна, город</span>
+                            <span class="profile-field-value" id="profileLocation">Не выбрано</span>
+                        </div>
+                        <a href="#" class="profile-link" id="profileEditPersonal">Изменить личные данные</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Учетная запись -->
+            <section class="profile-card">
+                <div class="profile-card-head">
+                    <h2 class="profile-card-title">Учетная запись</h2>
+                    <span class="profile-user-id" id="profileUserId">#—</span>
+                </div>
+                <div class="profile-account-fields">
+                    <div class="profile-field">
+                        <span class="profile-field-label">Пароль</span>
+                        <a href="#" class="profile-link" id="profilePasswordLink">Изменить пароль</a>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-label">E-Mail / Логин</span>
+                        <span class="profile-field-value" id="profileEmail">—</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-field-label">Номер телефона</span>
+                        <span class="profile-field-value" id="profilePhone">—</span>
+                        <a href="#" class="profile-link profile-link-inline" id="profilePhoneLink">Указать номер телефона</a>
+                    </div>
+                    <a href="#" class="profile-link profile-link-danger" id="profileDeleteAccount">Удалить аккаунт</a>
+                </div>
+            </section>
+
+            <!-- Уведомления -->
+            <section class="profile-card">
+                <h2 class="profile-card-title">Уведомления</h2>
+                <div class="profile-notifications">
+                    <div class="profile-notify-row">
+                        <span class="profile-notify-label">Присылать новости</span>
+                        <label class="profile-toggle">
+                            <input type="checkbox" id="notifyNews" class="profile-toggle-input">
+                            <span class="profile-toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="profile-notify-row">
+                        <span class="profile-notify-label">Присылать уведомления системы</span>
+                        <label class="profile-toggle">
+                            <input type="checkbox" id="notifySystem" class="profile-toggle-input">
+                            <span class="profile-toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Модалка редактирования личных данных -->
+        <div class="modal profile-modal" id="profileEditModal">
+            <div class="modal-content profile-modal-content">
+                <h3>Изменить личные данные</h3>
+                <form id="profileEditForm">
+                    <div class="form-group">
+                        <label for="editName">Имя</label>
+                        <input type="text" id="editName" class="form-control" placeholder="Имя Фамилия">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCountry">Страна</label>
+                        <input type="text" id="editCountry" class="form-control" placeholder="Страна">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCity">Город</label>
+                        <input type="text" id="editCity" class="form-control" placeholder="Город">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <button type="button" class="btn btn-secondary profile-modal-cancel">Отмена</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom"><p>&copy; 2026 RealCPA Hub. Все права защищены.</p></div>
+        </div>
+    </footer>
+
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('profile.html');
+            return;
+        }
+
+        var modal = document.getElementById('profileEditModal');
+        var editForm = document.getElementById('profileEditForm');
+        var btnCancel = document.querySelector('.profile-modal-cancel');
+
+        function loadProfile() {
+            window.RealCPA.me().then(function(user) {
+                document.getElementById('profileName').textContent = user.name || user.email || '—';
+                var loc = [user.country, user.city].filter(Boolean).join(', ') || 'Не выбрано';
+                document.getElementById('profileLocation').textContent = loc;
+                document.getElementById('profileEmail').textContent = user.email || '—';
+                document.getElementById('profilePhone').textContent = user.phone || '—';
+                var idShort = user.id ? '#' + String(user.id).slice(-7) : '#—';
+                document.getElementById('profileUserId').textContent = idShort;
+                document.getElementById('editName').value = user.name || '';
+                document.getElementById('editCountry').value = user.country || '';
+                document.getElementById('editCity').value = user.city || '';
+            }).catch(function() {
+                document.getElementById('profileName').textContent = 'Ошибка загрузки';
+            });
+        }
+
+        document.getElementById('profileEditPersonal').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (modal) modal.classList.add('active');
+        });
+        if (btnCancel && modal) btnCancel.addEventListener('click', function() { modal.classList.remove('active'); });
+        if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) modal.classList.remove('active'); });
+
+        if (editForm) {
+            editForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var data = {
+                    name: document.getElementById('editName').value.trim() || undefined,
+                    country: document.getElementById('editCountry').value.trim() || undefined,
+                    city: document.getElementById('editCity').value.trim() || undefined
+                };
+                window.RealCPA.patchMe(data).then(function(user) {
+                    document.getElementById('profileName').textContent = user.name || user.email || '—';
+                    var loc = [user.country, user.city].filter(Boolean).join(', ') || 'Не выбрано';
+                    document.getElementById('profileLocation').textContent = loc;
+                    if (modal) modal.classList.remove('active');
+                }).catch(function(err) {
+                    alert(err.message || err.payload?.error || 'Ошибка сохранения');
+                });
+            });
+        }
+
+        document.getElementById('profilePasswordLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Смена пароля будет доступна в следующей версии.');
+        });
+        document.getElementById('profilePhoneLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Указание телефона будет доступно в следующей версии.');
+        });
+        document.getElementById('profileDeleteAccount').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Вы уверены, что хотите удалить аккаунт? Это действие необратимо.')) {
+                alert('Удаление аккаунта пока не реализовано. Обратитесь в поддержку.');
+            }
+        });
+
+        var notifyNews = document.getElementById('notifyNews');
+        var notifySystem = document.getElementById('notifySystem');
+        if (notifyNews) {
+            notifyNews.checked = localStorage.getItem('profile_notify_news') === '1';
+            notifyNews.addEventListener('change', function() { localStorage.setItem('profile_notify_news', this.checked ? '1' : '0'); });
+        }
+        if (notifySystem) {
+            notifySystem.checked = localStorage.getItem('profile_notify_system') === '1';
+            notifySystem.addEventListener('change', function() { localStorage.setItem('profile_notify_system', this.checked ? '1' : '0'); });
+        }
+
+        loadProfile();
+    })();
+    </script>
+</body>
+</html>

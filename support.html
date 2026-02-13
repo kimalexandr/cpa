@@ -282,10 +282,6 @@
     <script src="script.js"></script>
     <script>
     (function() {
-        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
-            window.location.href = 'login.html?redirect=' + encodeURIComponent('support.html');
-            return;
-        }
         function initFaq() {
             var section = document.getElementById('faq');
             if (!section) return;
