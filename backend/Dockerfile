@@ -7,7 +7,8 @@ COPY package*.json ./
 RUN npm ci
 
 COPY prisma ./prisma/
-ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
+# Только OpenSSL 3 — иначе в образ попадает и 1.1.x, Prisma может выбрать его
+RUN sed -i 's/binaryTargets = \["native", "debian-openssl-3.0.x"\]/binaryTargets = ["debian-openssl-3.0.x"]/' prisma/schema.prisma
 RUN npx prisma generate
 
 COPY tsconfig.json ./
