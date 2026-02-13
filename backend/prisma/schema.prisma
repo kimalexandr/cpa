@@ -84,7 +84,6 @@ model User {
   offersAsSupplier   Offer[]              @relation("OfferSupplier")
   participations     AffiliateOfferParticipation[]
   trackingLinks      TrackingLink[]
-  events             Event[]              @relation("EventAffiliate") // через TrackingLink
   payouts            Payout[]
 
   @@index([email])
