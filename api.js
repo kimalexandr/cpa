@@ -1,11 +1,16 @@
 /**
  * Клиент API RealCPA Hub.
- * Базовый URL: window.REALCPA_API_URL или http://localhost:3000
+ * Базовый URL: window.REALCPA_API_URL или относительный (текущий хост) или http://localhost:3000 для локальной разработки
  */
 (function () {
-  var BASE = typeof window !== 'undefined' && window.REALCPA_API_URL
-    ? window.REALCPA_API_URL
-    : 'http://localhost:3000';
+  var BASE;
+  if (typeof window !== 'undefined' && window.REALCPA_API_URL) {
+    BASE = window.REALCPA_API_URL;
+  } else if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    BASE = ''; // тот же хост (Nginx проксирует /api/ на бэкенд)
+  } else {
+    BASE = 'http://localhost:3000';
+  }
   var TOKEN_KEY = 'realcpa_access_token';
   var REFRESH_KEY = 'realcpa_refresh_token';
   var USER_KEY = 'realcpa_user';
