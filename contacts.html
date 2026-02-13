@@ -175,6 +175,15 @@
         </div>
     </footer>
 
+    <script src="api.js"></script>
     <script src="script.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('contacts.html');
+            return;
+        }
+    })();
+    </script>
 </body>
 </html>

@@ -64,12 +64,17 @@
         </div>
     </footer>
 
+    <script src="api.js"></script>
     <script src="script.js"></script>
     <script>
     (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard.html');
+            return;
+        }
         var params = new URLSearchParams(window.location.search);
         var roleParam = params.get('role');
-        var role = roleParam || (typeof localStorage !== 'undefined' && localStorage.getItem('userRole'));
+        var role = roleParam || (window.RealCPA.getRole()) || (typeof localStorage !== 'undefined' && localStorage.getItem('userRole'));
         if (role === 'supplier') {
             window.location.replace('dashboard-supplier.html');
             return;

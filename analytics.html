@@ -205,11 +205,16 @@
         </div>
     </footer>
 
+    <script src="api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
     <script>
     (function() {
-        var role = typeof localStorage !== 'undefined' && localStorage.getItem('userRole');
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('analytics.html');
+            return;
+        }
+        var role = window.RealCPA.getRole();
         var link = document.getElementById('sidebarMainLink');
         if (link && role === 'supplier') link.href = 'dashboard-supplier.html';
         else if (link && role === 'affiliate') link.href = 'dashboard-affiliate.html';

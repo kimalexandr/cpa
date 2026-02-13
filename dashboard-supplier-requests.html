@@ -63,7 +63,20 @@
             <div class="footer-bottom"><p>&copy; 2026 RealCPA Hub. Все права защищены.</p></div>
         </div>
     </footer>
-    <script>try { localStorage.setItem('userRole', 'supplier'); } catch (e) {}</script>
+    <script src="api.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-supplier-requests.html');
+            return;
+        }
+        if (window.RealCPA.getRole() !== 'supplier') {
+            if (window.RealCPA.getRole() === 'affiliate') window.location.href = 'dashboard-affiliate.html';
+            else window.location.href = 'login.html?redirect=' + encodeURIComponent('dashboard-supplier-requests.html');
+            return;
+        }
+    })();
+    </script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -261,9 +261,14 @@
         </div>
     </div>
 
+    <script src="api.js"></script>
     <script src="script.js"></script>
     <script>
     (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('support.html');
+            return;
+        }
         function initFaq() {
             var section = document.getElementById('faq');
             if (!section) return;
@@ -299,7 +304,7 @@
     </script>
     <script>
     (function() {
-        var role = typeof localStorage !== 'undefined' && localStorage.getItem('userRole');
+        var role = window.RealCPA && window.RealCPA.getRole();
         var link = document.getElementById('sidebarMainLink');
         if (link && role === 'supplier') link.href = 'dashboard-supplier.html';
         else if (link && role === 'affiliate') link.href = 'dashboard-affiliate.html';
