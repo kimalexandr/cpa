@@ -36,6 +36,7 @@
                         </div>
                         <div class="user-dropdown" id="userDropdown" aria-hidden="true">
                             <a href="dashboard.html" class="user-dropdown-item">Профиль</a>
+                            <a href="admin/index.html" class="user-dropdown-item" id="navAdminLink" style="display:none">Админка</a>
                             <a href="#" class="user-dropdown-item user-dropdown-settings">Настройки</a>
                             <div class="user-dropdown-divider"></div>
                             <button type="button" class="user-dropdown-item user-dropdown-logout">Выйти</button>
@@ -133,6 +134,7 @@
                             <select id="offerCategory" required>
                                 <option value="">Загрузка...</option>
                             </select>
+                            <p id="offerCategoryHint" class="form-hint" style="display:none; margin-top:0.5rem; color:var(--text-light); font-size:0.9rem;">Категорий пока нет. В папке backend выполните: <code>npm run db:seed</code></p>
                         </div>
                         <div class="form-group">
                             <label for="offerActionType">Тип действия (за что платим) <span class="required-mark">*</span></label>
@@ -433,13 +435,18 @@
         window.RealCPA.categories().then(function(cats) {
             var sel = document.getElementById('offerCategory');
             if (!sel) return;
+            var list = cats && cats.length ? cats : [];
             sel.innerHTML = '<option value="">Выберите категорию</option>' +
-                (cats || []).map(function(c) {
+                list.map(function(c) {
                     return '<option value="' + c.id + '">' + (c.name || c.slug) + '</option>';
                 }).join('');
+            var hint = document.getElementById('offerCategoryHint');
+            if (hint) hint.style.display = list.length ? 'none' : 'block';
         }).catch(function() {
             var sel = document.getElementById('offerCategory');
             if (sel) sel.innerHTML = '<option value="">Не удалось загрузить категории</option>';
+            var hint = document.getElementById('offerCategoryHint');
+            if (hint) hint.style.display = 'block';
         });
     })();
     </script>

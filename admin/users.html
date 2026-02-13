@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пользователи — Админ — RealCPA Hub</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-page">
+    <header class="admin-header">
+        <div class="admin-header-inner">
+            <a href="../index.html" class="admin-logo"><i class="fas fa-link"></i> RealCPA Hub</a>
+            <span class="admin-title">Админ-панель</span>
+            <div class="admin-header-user">
+                <span class="admin-user-name" id="adminUserName"></span>
+                <a href="../index.html" class="admin-logout" id="adminLogout">Выход</a>
+            </div>
+        </div>
+    </header>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="index.html" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Главная</a>
+                <a href="users.html" class="admin-nav-link active"><i class="fas fa-users"></i> Пользователи</a>
+                <a href="offers.html" class="admin-nav-link"><i class="fas fa-briefcase"></i> Офферы</a>
+                <a href="moderation.html" class="admin-nav-link"><i class="fas fa-clipboard-check"></i> Модерация</a>
+                <a href="finance.html" class="admin-nav-link"><i class="fas fa-wallet"></i> Финансы</a>
+                <a href="settings.html" class="admin-nav-link"><i class="fas fa-cog"></i> Настройки</a>
+                <a href="logs.html" class="admin-nav-link"><i class="fas fa-history"></i> Логи</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <div class="admin-toolbar"><h1 class="admin-page-title">Пользователи</h1></div>
+            <div class="admin-filters">
+                <input type="text" id="userSearch" placeholder="Поиск по email, имени, ID">
+                <select id="userRoleFilter">
+                    <option value="">Все роли</option>
+                    <option value="affiliate">Аффилиат</option>
+                    <option value="supplier">Поставщик</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <select id="userStatusFilter">
+                    <option value="">Все статусы</option>
+                    <option value="active">Активен</option>
+                    <option value="blocked">Заблокирован</option>
+                </select>
+                <button type="button" class="btn btn-primary" id="userApplyFilters">Применить</button>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Email</th>
+                            <th>Роль</th>
+                            <th>Статус</th>
+                            <th>Регистрация</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"><tr><td colspan="6">Загрузка...</td></tr></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    <script src="../api.js"></script>
+    <script src="admin-users.js"></script>
+</body>
+</html>

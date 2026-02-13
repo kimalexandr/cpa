@@ -10,6 +10,7 @@ import affiliateRoutes from './routes/affiliate';
 import trackingRoutes from './routes/tracking';
 import eventsRoutes from './routes/events';
 import pagesRoutes from './routes/pages';
+import adminRoutes from './routes/admin';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -24,6 +25,7 @@ app.use('/api/supplier', supplierRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/pages', pagesRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/t', trackingRoutes);
 
 app.get('/health', (_req, res) => {

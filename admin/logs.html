@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Логи — Админ — RealCPA Hub</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-page">
+    <header class="admin-header">
+        <div class="admin-header-inner">
+            <a href="../index.html" class="admin-logo"><i class="fas fa-link"></i> RealCPA Hub</a>
+            <span class="admin-title">Админ-панель</span>
+            <div class="admin-header-user">
+                <span class="admin-user-name" id="adminUserName"></span>
+                <a href="../index.html" class="admin-logout" id="adminLogout">Выход</a>
+            </div>
+        </div>
+    </header>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="index.html" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Главная</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Пользователи</a>
+                <a href="offers.html" class="admin-nav-link"><i class="fas fa-briefcase"></i> Офферы</a>
+                <a href="moderation.html" class="admin-nav-link"><i class="fas fa-clipboard-check"></i> Модерация</a>
+                <a href="finance.html" class="admin-nav-link"><i class="fas fa-wallet"></i> Финансы</a>
+                <a href="settings.html" class="admin-nav-link"><i class="fas fa-cog"></i> Настройки</a>
+                <a href="logs.html" class="admin-nav-link active"><i class="fas fa-history"></i> Логи</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <div class="admin-toolbar"><h1 class="admin-page-title">Логи и безопасность</h1></div>
+            <p class="admin-card-label">Раздел в разработке: журнал действий, сессии, 2FA.</p>
+        </main>
+    </div>
+    <script src="../api.js"></script>
+    <script>
+    if(!window.RealCPA||!window.RealCPA.isLoggedIn()||window.RealCPA.getRole()!=='admin') window.location.href='../login.html?redirect='+encodeURIComponent('admin/logs.html');
+    else { var u=window.RealCPA.getUser(); document.getElementById('adminUserName').textContent=(u&&(u.name||u.email))||'Админ'; document.getElementById('adminLogout').onclick=function(e){e.preventDefault();window.RealCPA.clearAuth();window.location.href='../index.html';}; }
+    </script>
+</body>
+</html>

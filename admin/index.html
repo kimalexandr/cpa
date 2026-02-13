@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ — RealCPA Hub</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-page">
+    <header class="admin-header">
+        <div class="admin-header-inner">
+            <a href="../index.html" class="admin-logo"><i class="fas fa-link"></i> RealCPA Hub</a>
+            <span class="admin-title">Админ-панель</span>
+            <div class="admin-header-user">
+                <span class="admin-user-name" id="adminUserName"></span>
+                <a href="../index.html" class="admin-logout" id="adminLogout">Выход</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="index.html" class="admin-nav-link active"><i class="fas fa-tachometer-alt"></i> Главная</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Пользователи</a>
+                <a href="offers.html" class="admin-nav-link"><i class="fas fa-briefcase"></i> Офферы</a>
+                <a href="moderation.html" class="admin-nav-link"><i class="fas fa-clipboard-check"></i> Модерация</a>
+                <a href="finance.html" class="admin-nav-link"><i class="fas fa-wallet"></i> Финансы</a>
+                <a href="settings.html" class="admin-nav-link"><i class="fas fa-cog"></i> Настройки</a>
+                <a href="logs.html" class="admin-nav-link"><i class="fas fa-history"></i> Логи</a>
+            </nav>
+        </aside>
+
+        <main class="admin-main">
+            <div class="admin-toolbar">
+                <h1 class="admin-page-title">Главная</h1>
+                <a href="moderation.html" class="btn btn-primary" id="adminCtaModeration" style="display:none"><i class="fas fa-clipboard-list"></i> Перейти к модерации</a>
+            </div>
+
+            <div class="admin-cards" id="adminDashboardCards">
+                <div class="admin-card admin-card-metric" data-link="users.html">
+                    <span class="admin-card-label">Аффилиаты</span>
+                    <span class="admin-card-value" id="metricAffiliates">—</span>
+                </div>
+                <div class="admin-card admin-card-metric" data-link="users.html">
+                    <span class="admin-card-label">Поставщики</span>
+                    <span class="admin-card-value" id="metricSuppliers">—</span>
+                </div>
+                <div class="admin-card admin-card-metric" data-link="users.html">
+                    <span class="admin-card-label">Админы</span>
+                    <span class="admin-card-value" id="metricAdmins">—</span>
+                </div>
+                <div class="admin-card admin-card-metric" data-link="offers.html">
+                    <span class="admin-card-label">Активные офферы</span>
+                    <span class="admin-card-value" id="metricOffersActive">—</span>
+                </div>
+                <div class="admin-card admin-card-metric" data-link="moderation.html">
+                    <span class="admin-card-label">Заявки на модерации</span>
+                    <span class="admin-card-value" id="metricModeration">—</span>
+                </div>
+                <div class="admin-card admin-card-metric">
+                    <span class="admin-card-label">Лиды (новые / одобр. / откл.)</span>
+                    <span class="admin-card-value" id="metricLeads">—</span>
+                </div>
+                <div class="admin-card admin-card-metric">
+                    <span class="admin-card-label">Выплаты в ожидании</span>
+                    <span class="admin-card-value" id="metricPayouts">—</span>
+                </div>
+                <div class="admin-card admin-card-metric">
+                    <span class="admin-card-label">Выплачено (сумма)</span>
+                    <span class="admin-card-value" id="metricPaidSum">—</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../api.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
+            window.location.href = '../login.html?redirect=' + encodeURIComponent('admin/index.html');
+            return;
+        }
+        if (window.RealCPA.getRole() !== 'admin') {
+            window.location.href = '../dashboard-affiliate.html';
+            return;
+        }
+        var user = window.RealCPA.getUser();
+        var nameEl = document.getElementById('adminUserName');
+        if (nameEl) nameEl.textContent = (user && (user.name || user.email)) || 'Админ';
+        document.getElementById('adminLogout').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.RealCPA.clearAuth();
+            window.location.href = '../index.html';
+        });
+
+        window.RealCPA.admin.dashboard()
+            .then(function(d) {
+                document.getElementById('metricAffiliates').textContent = d.users.affiliates;
+                document.getElementById('metricSuppliers').textContent = d.users.suppliers;
+                document.getElementById('metricAdmins').textContent = d.users.admins;
+                document.getElementById('metricOffersActive').textContent = d.offers.active;
+                document.getElementById('metricModeration').textContent = d.moderation.participationsPending;
+                document.getElementById('metricLeads').textContent = d.leads.new + ' / ' + d.leads.approved + ' / ' + d.leads.rejected;
+                document.getElementById('metricPayouts').textContent = d.payouts.pendingCount;
+                document.getElementById('metricPaidSum').textContent = d.payouts.paidSum + ' ₽';
+                if (d.moderation.participationsPending > 0) document.getElementById('adminCtaModeration').style.display = 'inline-flex';
+            })
+            .catch(function(err) {
+                document.getElementById('adminDashboardCards').innerHTML = '<p class="admin-error">Не удалось загрузить метрики: ' + (err.message || 'ошибка') + '</p>';
+            });
+
+        document.querySelectorAll('.admin-card-metric[data-link]').forEach(function(card) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function() { window.location.href = this.getAttribute('data-link'); });
+        });
+    })();
+    </script>
+</body>
+</html>

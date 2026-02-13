@@ -148,6 +148,24 @@
 
     page: function (slug) {
       return request('GET', '/api/pages/' + encodeURIComponent(slug));
+    },
+
+    admin: {
+      dashboard: function () { return request('GET', '/api/admin/dashboard'); },
+      users: function (params) {
+        var q = [];
+        if (params && params.role) q.push('role=' + encodeURIComponent(params.role));
+        if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        if (params && params.search) q.push('search=' + encodeURIComponent(params.search));
+        return request('GET', '/api/admin/users' + (q.length ? '?' + q.join('&') : ''));
+      },
+      offers: function (params) {
+        var q = [];
+        if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        if (params && params.search) q.push('search=' + encodeURIComponent(params.search));
+        return request('GET', '/api/admin/offers' + (q.length ? '?' + q.join('&') : ''));
+      },
+      moderationParticipations: function () { return request('GET', '/api/admin/moderation/participations'); }
     }
   };
 })();

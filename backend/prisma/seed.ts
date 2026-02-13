@@ -33,7 +33,66 @@ async function main() {
     },
   });
 
-  console.log('Categories:', catFood.slug, catConstruction.slug);
+  const catAuto = await prisma.category.upsert({
+    where: { slug: 'auto' },
+    update: {},
+    create: {
+      name: 'Автозапчасти',
+      slug: 'auto',
+      description: 'Запчасти, шины, автохимия',
+      isActive: true,
+    },
+  });
+
+  const catElectronics = await prisma.category.upsert({
+    where: { slug: 'electronics' },
+    update: {},
+    create: {
+      name: 'Электроника и техника',
+      slug: 'electronics',
+      description: 'Бытовая и цифровая техника, гаджеты',
+      isActive: true,
+    },
+  });
+
+  const catClothing = await prisma.category.upsert({
+    where: { slug: 'clothing' },
+    update: {},
+    create: {
+      name: 'Одежда и обувь',
+      slug: 'clothing',
+      description: 'Опт и дропшиппинг одежды и обуви',
+      isActive: true,
+    },
+  });
+
+  const catOther = await prisma.category.upsert({
+    where: { slug: 'other' },
+    update: {},
+    create: {
+      name: 'Другое',
+      slug: 'other',
+      description: 'Прочие офферы',
+      isActive: true,
+    },
+  });
+
+  console.log('Categories:', catFood.slug, catConstruction.slug, catAuto.slug, catElectronics.slug, catClothing.slug, catOther.slug);
+
+  // --- Админ ---
+  const adminPasswordHash = await bcrypt.hash('kAlkiujn7', 10);
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'ya@ya.ru' },
+    update: { passwordHash: adminPasswordHash, role: UserRole.admin, status: 'active' },
+    create: {
+      email: 'ya@ya.ru',
+      passwordHash: adminPasswordHash,
+      role: UserRole.admin,
+      name: 'Администратор',
+      status: 'active',
+    },
+  });
+  console.log('Admin:', adminUser.email);
 
   // --- Поставщик ---
   const supplier = await prisma.user.upsert({

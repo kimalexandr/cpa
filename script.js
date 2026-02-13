@@ -18,14 +18,17 @@ document.addEventListener('DOMContentLoaded', function() {
         nameSpans.forEach(function(el) { el.textContent = displayName; });
         shortNameEls.forEach(function(el) { el.textContent = displayName; });
         roleBadges.forEach(function(el) {
-            el.textContent = role === 'supplier' ? 'Поставщик' : 'Аффилиат';
+            el.textContent = role === 'admin' ? 'Админ' : (role === 'supplier' ? 'Поставщик' : 'Аффилиат');
             el.className = 'user-role-badge nav-role-badge ' + (role || '');
         });
         document.querySelectorAll('.user-dropdown-item[href="dashboard.html"]').forEach(function(a) { a.href = profileHref; });
+        if (role === 'admin') document.body.classList.add('role-admin');
+        else document.body.classList.remove('role-admin');
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
     } else {
         guestBlocks.forEach(function(el) { el.style.display = 'inline-flex'; });
         userBlocks.forEach(function(el) { el.style.display = 'none'; });
+        document.body.classList.remove('role-admin');
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = 'none'; });
     }
 

@@ -221,6 +221,9 @@ body {
 .user-dropdown-divider { height: 1px; background: var(--border-color); margin: 0.25rem 0; }
 .user-dropdown-logout { color: #b91c1c; font-weight: 500; }
 .user-dropdown-logout:hover { background: rgba(185, 28, 28, 0.08); }
+/* Ссылка «Админка» видна только пользователю с ролью admin (скрипт добавляет класс на body) */
+#navAdminLink { display: none !important; }
+body.role-admin #navAdminLink { display: block !important; }
 
 /* Заглушки для гостей: каталог и оффер недоступны */
 .offers-guest-stub,

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Модерация — Админ — RealCPA Hub</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-page">
+    <header class="admin-header">
+        <div class="admin-header-inner">
+            <a href="../index.html" class="admin-logo"><i class="fas fa-link"></i> RealCPA Hub</a>
+            <span class="admin-title">Админ-панель</span>
+            <div class="admin-header-user">
+                <span class="admin-user-name" id="adminUserName"></span>
+                <a href="../index.html" class="admin-logout" id="adminLogout">Выход</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="index.html" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Главная</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Пользователи</a>
+                <a href="offers.html" class="admin-nav-link"><i class="fas fa-briefcase"></i> Офферы</a>
+                <a href="moderation.html" class="admin-nav-link active"><i class="fas fa-clipboard-check"></i> Модерация</a>
+                <a href="finance.html" class="admin-nav-link"><i class="fas fa-wallet"></i> Финансы</a>
+                <a href="settings.html" class="admin-nav-link"><i class="fas fa-cog"></i> Настройки</a>
+                <a href="logs.html" class="admin-nav-link"><i class="fas fa-history"></i> Логи</a>
+            </nav>
+        </aside>
+
+        <main class="admin-main">
+            <div class="admin-toolbar">
+                <h1 class="admin-page-title">Модерация заявок</h1>
+            </div>
+            <p class="admin-card-label" style="margin-bottom:1rem">Заявки аффилиатов на подключение к офферам. Одобрение и отклонение — в разработке (API).</p>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Аффилиат</th>
+                            <th>Оффер</th>
+                            <th>Поставщик</th>
+                            <th>Дата заявки</th>
+                        </tr>
+                    </thead>
+                    <tbody id="moderationTableBody">
+                        <tr><td colspan="4">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="../api.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'admin') {
+            window.location.href = '../login.html?redirect=' + encodeURIComponent('admin/moderation.html');
+            return;
+        }
+        var user = window.RealCPA.getUser();
+        document.getElementById('adminUserName').textContent = (user && (user.name || user.email)) || 'Админ';
+        document.getElementById('adminLogout').addEventListener('click', function(e) { e.preventDefault(); window.RealCPA.clearAuth(); window.location.href = '../index.html'; });
+
+        window.RealCPA.admin.moderationParticipations()
+            .then(function(list) {
+                var tbody = document.getElementById('moderationTableBody');
+                if (!list.length) { tbody.innerHTML = '<tr><td colspan="4">Нет заявок на модерации</td></tr>'; return; }
+                tbody.innerHTML = list.map(function(p) {
+                    var aff = p.affiliate ? (p.affiliate.name || p.affiliate.email) : '—';
+                    var offerTitle = p.offer ? p.offer.title : '—';
+                    var sup = p.offer && p.offer.supplier ? (p.offer.supplier.name || p.offer.supplier.email) : '—';
+                    var date = p.createdAt ? new Date(p.createdAt).toLocaleString('ru') : '—';
+                    return '<tr><td>' + aff + '</td><td><a href="../offer.html?id=' + encodeURIComponent(p.offer.id) + '">' + offerTitle + '</a></td><td>' + sup + '</td><td>' + date + '</td></tr>';
+                }).join('');
+            })
+            .catch(function(err) {
+                document.getElementById('moderationTableBody').innerHTML = '<tr><td colspan="4">Ошибка: ' + (err.message || 'загрузка') + '</td></tr>';
+            });
+    })();
+    </script>
+</body>
+</html>
