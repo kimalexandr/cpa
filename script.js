@@ -106,18 +106,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Переключатель языков (заглушка для будущего i18n)
-    const langButtons = document.querySelectorAll('.lang-btn');
-    langButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            langButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const lang = btn.dataset.lang;
-            if (lang === 'en') {
-                alert('Переключение языка и локализация интерфейса будут реализованы на этапе бэкенда / i18n.');
-            }
-        });
-    });
 });
 
 // Переключение вкладок входа/регистрации

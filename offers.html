@@ -59,6 +59,10 @@
                     <i class="fas fa-briefcase"></i>
                     <span>Офферы</span>
                 </a>
+                <a href="dashboard-affiliate-connections.html" class="sidebar-link">
+                    <i class="fas fa-link"></i>
+                    <span>Мои подключения</span>
+                </a>
                 <a href="analytics.html" class="sidebar-link">
                     <i class="fas fa-chart-line"></i>
                     <span>Аналитика</span>
@@ -93,6 +97,38 @@
                     <i class="fas fa-plus"></i>
                     Создать новый оффер
                 </a>
+            </div>
+
+            <!-- Статистика аффилиата (как на главной) -->
+            <div class="stats-grid offers-page-stats" id="offersPageStats" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
+                    <div class="stat-content">
+                        <h3>Заработано</h3>
+                        <p class="stat-value" id="offersStatEarned">0 ₽</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-link"></i></div>
+                    <div class="stat-content">
+                        <h3>Подключённых офферов</h3>
+                        <p class="stat-value" id="offersStatConnected">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-mouse-pointer"></i></div>
+                    <div class="stat-content">
+                        <h3>Лидов за период</h3>
+                        <p class="stat-value" id="offersStatLeads">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-content">
+                        <h3>Конверсия</h3>
+                        <p class="stat-value" id="offersStatConversion">—</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Фильтры -->
@@ -187,6 +223,17 @@
         if (catalogContent) catalogContent.style.display = 'block';
         if (createBtn) createBtn.style.display = 'none';
 
+        if (role === 'affiliate') {
+            var statsEl = document.getElementById('offersPageStats');
+            if (statsEl) statsEl.style.display = '';
+            window.RealCPA.affiliate.stats().then(function(s) {
+                var e = document.getElementById('offersStatEarned'); if (e) e.textContent = (s.earned || 0) + ' ₽';
+                var c = document.getElementById('offersStatConnected'); if (c) c.textContent = String(s.connectedOffers || 0);
+                var l = document.getElementById('offersStatLeads'); if (l) l.textContent = String(s.leads || 0);
+                var conv = document.getElementById('offersStatConversion'); if (conv) conv.textContent = s.clicks ? ((s.leads || 0) / s.clicks * 100).toFixed(1) + '%' : '—';
+            }).catch(function() {});
+        }
+
         function iconForSlug(slug) {
             if (slug === 'construction') return 'fa-box-open';
             if (slug === 'products') return 'fa-shopping-basket';
@@ -199,7 +246,7 @@
                 return;
             }
             if (!offers.length) {
-                listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов.</p><p>Офферы появятся после публикации поставщиками и подтверждения в админ-панели (Админка → Офферы → кнопка «Подтвердить» у черновиков).</p>';
+                listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов.</p><p>Здесь отображаются все активные офферы. Они появятся после публикации поставщиками и подтверждения в админ-панели (Админка → Офферы → кнопка «Подтвердить» у черновиков).</p>';
                 return;
             }
             listEl.innerHTML = offers.map(function(o, i) {
@@ -237,7 +284,8 @@
         window.RealCPA.offers({ status: 'active' })
             .then(function(data) {
                 clearTimeout(loadTimeout);
-                renderOffers(data);
+                var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : [];
+                renderOffers(list);
             })
             .catch(function(err) {
                 clearTimeout(loadTimeout);

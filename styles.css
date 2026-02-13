@@ -297,29 +297,6 @@ body.role-admin #navAdminLink { display: block !important; }
     align-items: center;
 }
 
-.lang-switcher {
-    display: flex;
-    gap: 0.25rem;
-    margin-left: 1rem;
-}
-
-.lang-btn {
-    padding: 0.4rem 0.7rem;
-    border-radius: 999px;
-    border: 1px solid var(--border-color);
-    background-color: var(--white);
-    font-size: 0.8rem;
-    cursor: pointer;
-    color: var(--text-light);
-    transition: all 0.2s;
-}
-
-.lang-btn.active {
-    background-color: var(--primary-color);
-    color: var(--white);
-    border-color: var(--primary-color);
-}
-
 .balance {
     color: var(--primary-color);
     font-weight: bold;
