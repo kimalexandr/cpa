@@ -112,7 +112,7 @@
                 </div>
             </div>
 
-            <form id="createOfferForm" class="create-offer-form">
+            <form id="createOfferForm" class="create-offer-form" novalidate>
                 <!-- Шаг 1: Основное -->
                 <div class="wizard-panel active" data-panel="1">
                     <h2>Основные данные</h2>
@@ -285,47 +285,62 @@
                 <!-- Шаг 4: Трафик и правила -->
                 <div class="wizard-panel" data-panel="4">
                     <h2>Трафик и правила</h2>
-                    <div class="form-group">
-                        <label>Источники трафика — по согласованию</label>
-                        <p class="form-hint">Отметьте источники, которые допускаются по согласованию с рекламодателем.</p>
+
+                    <div class="traffic-block traffic-block-agreement">
+                        <div class="traffic-block-header">
+                            <span class="traffic-block-icon"><i class="fas fa-handshake"></i></span>
+                            <div>
+                                <h3 class="traffic-block-title">По согласованию</h3>
+                                <p class="traffic-block-hint">Источники, которые допускаются по согласованию с рекламодателем</p>
+                            </div>
+                        </div>
                         <div class="offer-traffic-checkboxes" id="offerTrafficAgreementList">
-                            <label><input type="checkbox" name="trafficAgreement" value="Telegram"> Telegram</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="Купонные/промокодные агрегаторы"> Купонные/промокодные агрегаторы</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="Контекстная реклама"> Контекстная реклама</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="Баннерная реклама"> Баннерная реклама</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="Мотивированный трафик"> Мотивированный трафик</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="YouTube-каналы"> YouTube-каналы</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="Контентные сайты"> Контентные сайты</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="Тизерные сети"> Тизерные сети</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="E-mail рассылка"> E-mail рассылка</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="Таргетированная реклама"> Таргетированная реклама</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="SEO"> SEO</label>
-                            <label><input type="checkbox" name="trafficAgreement" value="Публичные группы в соц. сетях"> Публичные группы в соц. сетях</label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Telegram"> <span>Telegram</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Купонные/промокодные агрегаторы"> <span>Купонные/промокодные агрегаторы</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Контекстная реклама"> <span>Контекстная реклама</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Баннерная реклама"> <span>Баннерная реклама</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Мотивированный трафик"> <span>Мотивированный трафик</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="YouTube-каналы"> <span>YouTube-каналы</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Контентные сайты"> <span>Контентные сайты</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Тизерные сети"> <span>Тизерные сети</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="E-mail рассылка"> <span>E-mail рассылка</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Таргетированная реклама"> <span>Таргетированная реклама</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="SEO"> <span>SEO</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficAgreement" value="Публичные группы в соц. сетях"> <span>Публичные группы в соц. сетях</span></label>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Источники трафика — запрещено</label>
-                        <p class="form-hint">Отметьте источники, которые запрещены.</p>
+
+                    <div class="traffic-block traffic-block-forbidden">
+                        <div class="traffic-block-header">
+                            <span class="traffic-block-icon"><i class="fas fa-ban"></i></span>
+                            <div>
+                                <h3 class="traffic-block-title">Запрещённые источники</h3>
+                                <p class="traffic-block-hint">Отметьте источники, которые запрещены</p>
+                            </div>
+                        </div>
                         <div class="offer-traffic-checkboxes" id="offerTrafficForbiddenList">
-                            <label><input type="checkbox" name="trafficForbidden" value="Контекстная реклама на бренд"> Контекстная реклама на бренд</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Любой мошеннический трафик"> Любой мошеннический трафик</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Incent"> Incent</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Adult"> Adult</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Дорвеи"> Дорвеи</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Clickunder/Popunder"> Clickunder/Popunder</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Ремаркетинг"> Ремаркетинг</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Брокерский трафик"> Брокерский трафик</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Спам"> Спам</label>
-                            <label><input type="checkbox" name="trafficForbidden" value="Тулбары и плагины"> Тулбары и плагины</label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Контекстная реклама на бренд"> <span>Контекстная реклама на бренд</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Любой мошеннический трафик"> <span>Любой мошеннический трафик</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Incent"> <span>Incent</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Adult"> <span>Adult</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Дорвеи"> <span>Дорвеи</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Clickunder/Popunder"> <span>Clickunder/Popunder</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Ремаркетинг"> <span>Ремаркетинг</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Брокерский трафик"> <span>Брокерский трафик</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Спам"> <span>Спам</span></label>
+                            <label class="traffic-checkbox-item"><input type="checkbox" name="trafficForbidden" value="Тулбары и плагины"> <span>Тулбары и плагины</span></label>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="offerAllowedSources">Разрешённые источники (текст, если нужно)</label>
-                        <input type="text" id="offerAllowedSources" placeholder="Например: SEO, контекст, Telegram-каналы B2B">
-                    </div>
-                    <div class="form-group">
-                        <label for="offerForbiddenSources">Запрещённые источники (текст, если нужно)</label>
-                        <input type="text" id="offerForbiddenSources" placeholder="Дополнительно к отмеченным выше">
+
+                    <div class="traffic-extra-fields">
+                        <div class="form-group">
+                            <label for="offerAllowedSources"><i class="fas fa-check-circle traffic-extra-icon"></i> Разрешённые источники (текст)</label>
+                            <input type="text" id="offerAllowedSources" class="form-input" placeholder="Например: SEO, контекст, Telegram-каналы B2B">
+                        </div>
+                        <div class="form-group">
+                            <label for="offerForbiddenSources"><i class="fas fa-times-circle traffic-extra-icon"></i> Запрещённые источники (текст)</label>
+                            <input type="text" id="offerForbiddenSources" class="form-input" placeholder="Дополнительно к отмеченным выше">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="offerCreativeRules">Требования к креативам</label>
@@ -507,6 +522,23 @@
                 var payoutAmount = parseFloat(rateVal.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
                 if (!categoryId || !title || !landingUrl) {
                     alert('Заполните категорию, название и ссылку на лендинг.');
+                    return;
+                }
+                var shortDesc = (document.getElementById('offerShortDesc') || {}).value;
+                if (!shortDesc || !shortDesc.trim()) {
+                    alert('Заполните краткое описание (шаг 2).');
+                    return;
+                }
+                var geoVal = geoSelect ? geoSelect.value : '';
+                if (!geoVal) {
+                    alert('Выберите географию (шаг 2).');
+                    return;
+                }
+                var cpaEl = document.getElementById('offerCpa');
+                var cpaVal = cpaEl ? cpaEl.value : '';
+                if (!cpaVal || parseFloat(cpaVal) < 1) {
+                    alert('Укажите основную CPA-ставку (шаг 3).');
+                    if (cpaEl) cpaEl.focus();
                     return;
                 }
                 window.RealCPA.supplier.createOffer({

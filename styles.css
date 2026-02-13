@@ -1339,7 +1339,9 @@ body.role-admin #navAdminLink { display: block !important; }
 
 .wizard-panel h2 {
     margin-bottom: 1.5rem;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color);
 }
 
 .form-row {
@@ -1364,20 +1366,98 @@ body.role-admin #navAdminLink { display: block !important; }
 }
 .offer-rate-row input { padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.35rem; }
 
-.offer-traffic-checkboxes {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 0.5rem 1.5rem;
-    margin-top: 0.5rem;
+/* Блоки «Трафик и правила» — карточки и чекбоксы */
+.traffic-block {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: box-shadow 0.2s, border-color 0.2s;
 }
-.offer-traffic-checkboxes label {
+.traffic-block:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.traffic-block-agreement { border-left: 4px solid #2563eb; }
+.traffic-block-forbidden { border-left: 4px solid #dc2626; }
+.traffic-block-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.traffic-block-icon {
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+}
+.traffic-block-agreement .traffic-block-icon { background: rgba(37, 99, 235, 0.12); color: #2563eb; }
+.traffic-block-forbidden .traffic-block-icon { background: rgba(220, 38, 38, 0.12); color: #dc2626; }
+.traffic-block-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.25rem 0;
+}
+.traffic-block-hint {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin: 0;
+    line-height: 1.4;
+}
+.offer-traffic-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.6rem 1.25rem;
+}
+.traffic-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
     font-weight: normal;
     cursor: pointer;
+    padding: 0.5rem 0.6rem;
+    border-radius: 0.5rem;
+    transition: background 0.15s;
+    min-height: 2.5rem;
 }
-.offer-traffic-checkboxes input[type="checkbox"] { margin: 0; }
+.traffic-checkbox-item:hover { background: var(--background-color); }
+.traffic-checkbox-item input[type="checkbox"] {
+    margin: 0;
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--primary-color);
+    flex-shrink: 0;
+}
+.traffic-checkbox-item span { line-height: 1.3; }
+.traffic-block-forbidden .traffic-checkbox-item input[type="checkbox"] { accent-color: #dc2626; }
+.traffic-extra-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+@media (max-width: 640px) {
+    .traffic-extra-fields { grid-template-columns: 1fr; }
+}
+.traffic-extra-fields .form-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+.traffic-extra-fields .form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.traffic-extra-icon { margin-right: 0.35rem; color: var(--text-light); font-size: 0.9rem; }
+.traffic-extra-fields label { display: block; margin-bottom: 0.35rem; font-weight: 500; }
 
 .wizard-actions {
     display: flex;
