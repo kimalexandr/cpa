@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# Debian-based образ: в Alpine нет libssl.so.1.1, нужной для Prisma
+FROM node:20-slim
 
 WORKDIR /app
 
