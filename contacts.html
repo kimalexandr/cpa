@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="dashboard-page">
+<body>
     <header class="header">
         <div class="container">
             <div class="header-content">
@@ -23,6 +23,7 @@
                     <a href="demo.html" class="nav-link">Демо</a>
                     <a href="support.html" class="nav-link">Поддержка</a>
                     <a href="about.html" class="nav-link">О компании</a>
+                    <a href="contacts.html" class="nav-link active">Контакты</a>
                     <span class="nav-auth nav-auth-guest">
                         <a href="login.html" class="nav-link btn-nav-login">Войти</a>
                         <a href="register.html" class="nav-link btn-nav-register">Регистрация</a>
@@ -48,41 +49,9 @@
         </div>
     </header>
 
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="sidebar-link">
-                    <i class="fas fa-home"></i>
-                    <span>Главная</span>
-                </a>
-                <a href="offers.html" class="sidebar-link">
-                    <i class="fas fa-briefcase"></i>
-                    <span>Офферы</span>
-                </a>
-                <a href="analytics.html" class="sidebar-link">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Аналитика</span>
-                </a>
-                <a href="payments.html" class="sidebar-link">
-                    <i class="fas fa-wallet"></i>
-                    <span>Выплаты</span>
-                </a>
-                <a href="support.html" class="sidebar-link">
-                    <i class="fas fa-question-circle"></i>
-                    <span>FAQ</span>
-                </a>
-                <a href="contacts.html" class="sidebar-link active">
-                    <i class="fas fa-address-book"></i>
-                    <span>Контакты</span>
-                </a>
-            </nav>
-        </aside>
-
-        <main class="dashboard-main">
-            <div class="dashboard-header">
-                <h1>Контакты</h1>
-            </div>
-
+    <main class="contacts-page">
+        <div class="container">
+            <h1 class="contacts-page-title">Контакты</h1>
             <section class="contacts-section" id="contacts">
                 <h2>Свяжитесь с нами</h2>
                 <div class="contacts-grid">
@@ -142,8 +111,8 @@
                     <button type="submit" class="btn btn-primary">Отправить</button>
                 </form>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <footer class="footer">
         <div class="container">

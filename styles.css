@@ -1912,7 +1912,10 @@ body.role-admin #navAdminLink { display: block !important; }
     margin-bottom: 0.5rem;
 }
 
-/* Контакты */
+/* Контакты (страница без сайдбара) */
+.contacts-page { padding: 2rem 0 3rem; }
+.contacts-page .container { max-width: 900px; }
+.contacts-page-title { font-size: 2rem; margin-bottom: 1.5rem; color: var(--text-color); }
 .contacts-section {
     background-color: var(--white);
     padding: 2rem;

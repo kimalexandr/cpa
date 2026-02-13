@@ -206,7 +206,7 @@
     <script src="api.js"></script>
     <script src="script.js"></script>
     <script>
-    (function() {
+    document.addEventListener('DOMContentLoaded', function() {
         var listEl = document.getElementById('offersList');
         var createBtn = document.getElementById('createOfferBtn');
         var catalogContent = document.getElementById('offersCatalogContent');
@@ -228,6 +228,7 @@
             return;
         }
         if (guestStub) guestStub.style.display = 'none';
+        if (catalogContent) catalogContent.style.display = 'block';
         if (createBtn) createBtn.style.display = 'none';
 
         function iconForSlug(slug) {
@@ -242,7 +243,7 @@
                 return;
             }
             if (!offers.length) {
-                listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов. Офферы появятся после публикации поставщиками и подтверждения в админ-панели.</p>';
+                listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов.</p><p>Офферы появятся после публикации поставщиками и подтверждения в админ-панели (Админка → Офферы → кнопка «Подтвердить» у черновиков).</p>';
                 return;
             }
             listEl.innerHTML = offers.map(function(o, i) {
@@ -284,9 +285,12 @@
             })
             .catch(function(err) {
                 clearTimeout(loadTimeout);
-                if (listEl) listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(err.message || 'ошибка сети') + '. Проверьте, что бэкенд запущен (или обновите страницу).</p>';
+                if (listEl) {
+                    var url = (typeof window.RealCPA !== 'undefined' && window.RealCPA.getBase) ? window.RealCPA.getBase() + '/api/offers?status=active' : '/api/offers?status=active';
+                    listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(err.message || 'ошибка сети') + '.</p><p>Запрошенный URL: <code>' + escapeHtml(url) + '</code></p><p>Проверьте, что бэкенд запущен и доступен по этому адресу, затем обновите страницу.</p>';
+                }
             });
-    })();
+    });
     </script>
 </body>
 </html>
