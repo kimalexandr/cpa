@@ -275,9 +275,15 @@
             var logoEl = document.getElementById('offerSidebarLogo');
             if (logoEl) logoEl.innerHTML = '<i class="fas fa-box-open"></i>';
             var cta = document.getElementById('offerSidebarCta');
+            var isSupplier = typeof window.RealCPA !== 'undefined' && window.RealCPA.isLoggedIn() && window.RealCPA.getRole() === 'supplier';
             if (cta) {
-                cta.href = offer.ctaLink || '#';
-                cta.textContent = offer.ctaLink === '#' ? 'Подключиться к офферу' : 'Войти для подключения';
+                if (isSupplier) {
+                    cta.style.display = 'none';
+                } else {
+                    cta.style.display = '';
+                    cta.href = offer.ctaLink || '#';
+                    cta.textContent = offer.ctaLink === '#' ? 'Подключиться к офферу' : 'Войти для подключения';
+                }
             }
         }
         function fillKpi(offer) {

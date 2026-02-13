@@ -123,13 +123,36 @@
                     emptyEl.style.display = 'none';
                     listEl.style.display = 'block';
                     var statusLabels = { draft: 'Черновик', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
+                    var statusValues = ['draft', 'active', 'paused', 'closed'];
                     tbody.innerHTML = offers.map(function(o) {
                         var cat = o.category ? o.category.name : '—';
                         var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
                         var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleDateString('ru') : '—';
-                        var statusCl = o.status === 'active' ? 'status-active' : (o.status === 'draft' ? 'status-draft' : '');
-                        return '<tr><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—') + '</a></td><td>' + cat + '</td><td><span class="offer-status ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + updated + '</td><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
+                        var opts = statusValues.map(function(s) {
+                            return '<option value="' + s + '"' + (s === o.status ? ' selected' : '') + '>' + (statusLabels[s] || s) + '</option>';
+                        }).join('');
+                        return '<tr data-offer-id="' + (o.id || '') + '"><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—') + '</a></td><td>' + cat + '</td><td><select class="offer-status-select" data-offer-id="' + (o.id || '') + '" data-prev-status="' + (o.status || '') + '" title="Изменить статус">' + opts + '</select></td><td>' + rate + '</td><td>' + updated + '</td><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
                     }).join('');
+                    tbody.querySelectorAll('.offer-status-select').forEach(function(sel) {
+                        sel.addEventListener('change', function() {
+                            var offerId = this.getAttribute('data-offer-id');
+                            var newStatus = this.value;
+                            if (!offerId || !newStatus) return;
+                            var prevVal = this.getAttribute('data-prev-status') || this.value;
+                            this.disabled = true;
+                            var selectEl = this;
+                            window.RealCPA.supplier.setOfferStatus(offerId, newStatus)
+                                .then(function() {
+                                    selectEl.setAttribute('data-prev-status', newStatus);
+                                    loadMyOffers();
+                                })
+                                .catch(function(err) {
+                                    selectEl.value = prevVal;
+                                    selectEl.disabled = false;
+                                    alert((err && err.message) || 'Не удалось изменить статус');
+                                });
+                        });
+                    });
                 })
                 .catch(function(err) {
                     emptyEl.style.display = 'block';

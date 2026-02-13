@@ -1040,6 +1040,16 @@ body.role-admin #navAdminLink { display: block !important; }
 .offer-status.status-draft { background: #fef3c7; color: #92400e; }
 .offer-status:not(.status-active):not(.status-draft) { background: #e2e8f0; color: #475569; }
 
+.offer-status-select {
+    min-width: 140px;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border-color, #e2e8f0);
+    font-size: 0.9rem;
+    background: var(--white);
+}
+.offer-status-select:disabled { opacity: 0.7; cursor: wait; }
+
 /* Статистика */
 .stats-grid {
     display: grid;
