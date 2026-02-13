@@ -34,3 +34,28 @@ jobs:
             fi
             docker-compose up -d --build
             docker-compose run --rm app npm run db:migrate 2>/dev/null || true
+            export DEBIAN_FRONTEND=noninteractive
+            if ! command -v nginx >/dev/null 2>&1; then
+              (apt-get update -qq && apt-get install -y -qq nginx) || true
+            fi
+            cat > /etc/nginx/sites-available/cpa << 'NGINX_EOF'
+            server {
+              listen 80 default_server;
+              server_name _;
+              root /root/cpa;
+              index index.html;
+              location / {
+                try_files $uri $uri/ /index.html;
+              }
+              location /api/ {
+                proxy_pass http://127.0.0.1:3000;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+              }
+            }
+            NGINX_EOF
+            sed -i 's/^            //' /etc/nginx/sites-available/cpa
+            ln -sf /etc/nginx/sites-available/cpa /etc/nginx/sites-enabled/cpa
+            rm -f /etc/nginx/sites-enabled/default
+            nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
