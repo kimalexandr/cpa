@@ -237,8 +237,12 @@
         }
         function renderOffers(offers) {
             if (!listEl) return;
-            if (!offers || !offers.length) {
-                listEl.innerHTML = '<p>Нет активных офферов.</p>';
+            if (!Array.isArray(offers)) {
+                listEl.innerHTML = '<p>Не удалось загрузить офферы: неверный ответ сервера.</p>';
+                return;
+            }
+            if (!offers.length) {
+                listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов. Офферы появятся после публикации поставщиками и подтверждения в админ-панели.</p>';
                 return;
             }
             listEl.innerHTML = offers.map(function(o, i) {
@@ -268,10 +272,19 @@
             div.textContent = s;
             return div.innerHTML;
         }
+        var loadTimeout = setTimeout(function() {
+            if (listEl && listEl.textContent.indexOf('Загрузка') !== -1) {
+                listEl.innerHTML = '<p>Загрузка занимает больше времени, чем обычно. Проверьте подключение к интернету и что бэкенд запущен, затем <a href="offers.html">обновите страницу</a>.</p>';
+            }
+        }, 12000);
         window.RealCPA.offers({ status: 'active' })
-            .then(renderOffers)
+            .then(function(data) {
+                clearTimeout(loadTimeout);
+                renderOffers(data);
+            })
             .catch(function(err) {
-                if (listEl) listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(err.message || 'ошибка сети') + '. Запустите бэкенд на порту 3000.</p>';
+                clearTimeout(loadTimeout);
+                if (listEl) listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(err.message || 'ошибка сети') + '. Проверьте, что бэкенд запущен (или обновите страницу).</p>';
             });
     })();
     </script>
