@@ -200,7 +200,7 @@ router.patch('/payouts/:id', async (req: AuthRequest, res: Response) => {
       res.status(404).json({ error: 'Выплата не найдена' });
       return;
     }
-    const data: { status: string; paidAt?: Date } = { status };
+    const data: { status: 'pending' | 'processing' | 'paid' | 'canceled'; paidAt?: Date } = { status: status as 'pending' | 'processing' | 'paid' | 'canceled' };
     if (status === 'paid') data.paidAt = new Date();
     const updated = await prisma.payout.update({
       where: { id },

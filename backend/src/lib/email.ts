@@ -9,7 +9,7 @@ const MAIL_FROM = process.env.MAIL_FROM || process.env.MAIL_USER || 'noreply@rea
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.API_BASE_URL || 'http://localhost:3000';
 const baseUrl = FRONTEND_URL.replace(/\/api\/?$/, '');
 
-function getTransporter(): { sendMail: (opts: { to: string; subject: string; html: string; text?: string }) => Promise<unknown> } | null {
+function getTransporter(): { sendMail: (opts: { from?: string; to: string; subject: string; html: string; text?: string }) => Promise<unknown> } | null {
   if (!MAIL_HOST || !MAIL_USER || !MAIL_PASS) return null;
   try {
     const nodemailer = require('nodemailer');
