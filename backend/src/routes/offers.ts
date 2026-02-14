@@ -4,6 +4,20 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 const prisma = new PrismaClient();
 
+function toNumber(v: unknown): number | null {
+  if (v == null) return null;
+  if (typeof v === 'number' && !Number.isNaN(v)) return v;
+  if (typeof v === 'object' && v !== null && 'toString' in v) return Number((v as { toString: () => string }).toString()) || null;
+  return Number(v) || null;
+}
+
+function serializeOffer(offer: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...offer };
+  if ('payoutAmount' in out) out.payoutAmount = toNumber(out.payoutAmount);
+  if ('capAmount' in out) out.capAmount = toNumber(out.capAmount);
+  return out;
+}
+
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const categorySlug = req.query.category as string | undefined;
@@ -32,9 +46,14 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json(offers);
+    res.json(offers.map((o) => serializeOffer(o as Record<string, unknown>)));
   } catch (e) {
     console.error('GET /api/offers:', e);
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('column') && msg.includes('does not exist')) {
+      res.status(500).json({ error: 'Обновите БД: выполните npx prisma db push или npm run db:migrate в папке backend' });
+      return;
+    }
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
@@ -63,9 +82,14 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
       res.status(404).json({ error: 'Оффер не найден или не опубликован' });
       return;
     }
-    res.json(offer);
+    res.json(serializeOffer(offer as Record<string, unknown>));
   } catch (e) {
     console.error('GET /api/offers/:id:', e);
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('column') && msg.includes('does not exist')) {
+      res.status(500).json({ error: 'Обновите БД: выполните npx prisma db push или npm run db:migrate в папке backend' });
+      return;
+    }
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
