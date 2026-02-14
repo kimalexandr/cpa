@@ -128,19 +128,23 @@ model Category {
 }
 
 model Offer {
-  id           String      @id @default(uuid())
-  supplierId   String      @map("supplier_id")
-  categoryId   String      @map("category_id")
-  title        String
-  description  String      @db.Text
-  targetGeo    String?     @map("target_geo") @db.Text
-  payoutModel  PayoutModel @map("payout_model")
-  payoutAmount Decimal    @map("payout_amount") @db.Decimal(12, 2)
-  currency     String     @default("RUB")
-  landingUrl   String     @map("landing_url")
-  status       OfferStatus @default(draft)
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  id              String      @id @default(uuid())
+  supplierId      String      @map("supplier_id")
+  categoryId      String      @map("category_id")
+  title           String
+  description     String      @db.Text
+  targetGeo       String?     @map("target_geo") @db.Text
+  payoutModel     PayoutModel @map("payout_model")
+  payoutAmount    Decimal     @map("payout_amount") @db.Decimal(12, 2)
+  currency        String      @default("RUB")
+  landingUrl      String      @map("landing_url")
+  status          OfferStatus @default(draft)
+  holdDays        Int?        @map("hold_days")
+  rules           String?     @db.Text
+  capAmount       Decimal?    @map("cap_amount") @db.Decimal(12, 2)
+  capConversions  Int?        @map("cap_conversions")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
 
   supplier       User     @relation("OfferSupplier", fields: [supplierId], references: [id], onDelete: Restrict)
   category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)

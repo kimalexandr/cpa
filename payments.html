@@ -81,133 +81,68 @@
                 <h1>Выплаты и Финансы</h1>
             </div>
 
-            <!-- Баланс -->
-            <div class="balance-section">
-                <div class="balance-card">
-                    <h2>Текущий баланс</h2>
-                    <p class="balance-amount">0 ₽</p>
-                    <p class="balance-note">Минимальная сумма вывода: 1000 ₽</p>
-                </div>
-                <div class="balance-actions">
-                    <button class="btn btn-primary" id="withdrawBtn">
-                        <i class="fas fa-arrow-up"></i>
-                        Вывести средства
-                    </button>
-                    <button class="btn btn-secondary" id="topupBtn">
-                        <i class="fas fa-arrow-down"></i>
-                        Пополнить баланс
-                    </button>
-                </div>
-            </div>
-
-            <!-- Методы выплат -->
-            <div class="payment-methods">
-                <h2>Доступные методы выплат</h2>
-                <div class="methods-grid">
-                    <div class="method-card">
-                        <i class="fab fa-yandex"></i>
-                        <h3>Яндекс.Касса</h3>
-                        <p>Вывод на карту или кошелек</p>
+            <!-- Блок аффилиата: баланс и выплаты -->
+            <div id="paymentsAffiliateBlock" style="display: none;">
+                <div class="balance-section">
+                    <div class="balance-card">
+                        <h2>Доступно к выводу</h2>
+                        <p class="balance-amount" id="balanceAvailable">0 ₽</p>
+                        <p class="balance-note">Заработано: <span id="balanceEarned">0</span> ₽ · Уже выведено: <span id="balancePaidOut">0</span> ₽</p>
+                        <p class="balance-note">Минимальная сумма вывода: <span id="balanceMin">1000</span> ₽</p>
                     </div>
-                    <div class="method-card">
-                        <i class="fas fa-credit-card"></i>
-                        <h3>Тинькофф</h3>
-                        <p>Вывод на карту Тинькофф</p>
+                    <div class="balance-actions">
+                        <button class="btn btn-primary" id="withdrawBtn">
+                            <i class="fas fa-arrow-up"></i>
+                            Вывести средства
+                        </button>
                     </div>
-                    <div class="method-card">
-                        <i class="fas fa-university"></i>
-                        <h3>Банковский перевод</h3>
-                        <p>Вывод на расчетный счет</p>
+                </div>
+                <div class="payment-methods">
+                    <h2>Методы выплат</h2>
+                    <p class="auth-description">Реквизиты для выплат можно указать в <a href="profile.html">профиле</a>. Выплаты обрабатываются вручную администратором.</p>
+                </div>
+                <div class="transactions-section">
+                    <h2>История выплат</h2>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Дата заявки</th>
+                                    <th>Сумма</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payoutsTableBody">
+                                <tr><td colspan="3" style="color: #64748b;">Загрузка…</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <!-- История транзакций -->
-            <div class="transactions-section">
-                <h2>История транзакций</h2>
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Дата</th>
-                                <th>Тип</th>
-                                <th>Сумма</th>
-                                <th>Статус</th>
-                                <th>Описание</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>26.01.2026 14:32</td>
-                                <td>Начисление</td>
-                                <td>+2 400 ₽</td>
-                                <td>Выполнено</td>
-                                <td>Оффер «Стройматериалы оптом» — 12 заказов</td>
-                            </tr>
-                            <tr>
-                                <td>25.01.2026 11:15</td>
-                                <td>Вывод</td>
-                                <td>−5 000 ₽</td>
-                                <td>Выполнено</td>
-                                <td>На карту Тинькофф •••• 4521</td>
-                            </tr>
-                            <tr>
-                                <td>24.01.2026 09:00</td>
-                                <td>Начисление</td>
-                                <td>+1 200 ₽</td>
-                                <td>Выполнено</td>
-                                <td>Оффер «Продукты питания оптом» — 4 заказа</td>
-                            </tr>
-                            <tr>
-                                <td>23.01.2026 16:45</td>
-                                <td>Начисление</td>
-                                <td>+1 600 ₽</td>
-                                <td>Выполнено</td>
-                                <td>Оффер «Автозапчасти от AutoPartsRU» — 4 заказа</td>
-                            </tr>
-                            <tr>
-                                <td>22.01.2026 10:20</td>
-                                <td>Вывод</td>
-                                <td>−3 000 ₽</td>
-                                <td>В обработке</td>
-                                <td>Яндекс.Касса — на кошелёк</td>
-                            </tr>
-                            <tr>
-                                <td>21.01.2026 18:00</td>
-                                <td>Бонус</td>
-                                <td>+500 ₽</td>
-                                <td>Выполнено</td>
-                                <td>Бонус за первый вывод в январе</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <!-- Блок поставщика: расходы на партнёров -->
+            <div id="paymentsSupplierBlock" style="display: none;">
+                <div class="balance-section">
+                    <div class="balance-card">
+                        <h2>Расходы на партнёров</h2>
+                        <p class="balance-amount" id="supplierTotalPayout">0 ₽</p>
+                        <p class="balance-note">Сумма начислений по офферам за одобренные заказы.</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Модальное окно вывода -->
+            <!-- Модальное окно вывода (только для аффилиата) -->
             <div class="modal" id="withdrawModal">
                 <div class="modal-content">
                     <span class="modal-close" onclick="closeModal('withdrawModal')">&times;</span>
                     <h2>Вывод средств</h2>
                     <form id="withdrawForm">
                         <div class="form-group">
-                            <label>Метод вывода</label>
-                            <select required>
-                                <option value="">Выберите метод</option>
-                                <option value="yandex">Яндекс.Касса</option>
-                                <option value="tinkoff">Тинькофф</option>
-                                <option value="bank">Банковский перевод</option>
-                            </select>
+                            <label for="withdrawAmount">Сумма (мин. <span id="withdrawMinLabel">1000</span> ₽)</label>
+                            <input type="number" id="withdrawAmount" name="amount" min="1000" step="100" required placeholder="1000">
                         </div>
-                        <div class="form-group">
-                            <label>Сумма (мин. 1000 ₽)</label>
-                            <input type="number" min="1000" step="100" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Реквизиты</label>
-                            <input type="text" placeholder="Номер карты/счета" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">Вывести</button>
+                        <p id="withdrawError" class="auth-message error" style="display: none;"></p>
+                        <button type="submit" class="btn btn-primary btn-block" id="withdrawSubmitBtn">Отправить заявку</button>
                     </form>
                 </div>
             </div>
@@ -225,6 +160,9 @@
             return;
         }
         var role = window.RealCPA.getRole();
+        var affiliateBlock = document.getElementById('paymentsAffiliateBlock');
+        var supplierBlock = document.getElementById('paymentsSupplierBlock');
+
         if (role === 'affiliate') {
             document.querySelectorAll('.sidebar-supplier-only').forEach(function(el) { el.style.display = 'none'; });
             var mainLink = document.querySelector('.sidebar-nav a[href="dashboard-supplier.html"]');
@@ -237,6 +175,85 @@
             }
             var paymentsLabel = document.querySelector('.sidebar-payments-label span');
             if (paymentsLabel) paymentsLabel.textContent = 'Выплаты';
+            if (affiliateBlock) affiliateBlock.style.display = 'block';
+
+            function fmtNum(n) { return Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+            function fmtDate(d) {
+                var x = new Date(d);
+                return x.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+            function statusLabel(s) {
+                if (s === 'paid') return 'Выплачено';
+                if (s === 'processing') return 'В обработке';
+                if (s === 'pending') return 'Ожидает';
+                if (s === 'canceled') return 'Отменено';
+                return s;
+            }
+
+            function loadBalance() {
+                window.RealCPA.affiliate.balance().then(function(b) {
+                    var el;
+                    if (el = document.getElementById('balanceAvailable')) el.textContent = fmtNum(b.availableBalance) + ' ₽';
+                    if (el = document.getElementById('balanceEarned')) el.textContent = fmtNum(b.earned);
+                    if (el = document.getElementById('balancePaidOut')) el.textContent = fmtNum(b.paidOut);
+                    if (el = document.getElementById('balanceMin')) el.textContent = String(b.minPayout || 1000);
+                    if (el = document.getElementById('withdrawMinLabel')) el.textContent = String(b.minPayout || 1000);
+                    if (el = document.getElementById('withdrawAmount')) el.max = b.availableBalance;
+                }).catch(function() {
+                    if (affiliateBlock) affiliateBlock.querySelector('.balance-amount').textContent = '—';
+                });
+            }
+            function loadPayouts() {
+                var tbody = document.getElementById('payoutsTableBody');
+                if (!tbody) return;
+                window.RealCPA.affiliate.getPayouts().then(function(list) {
+                    if (!list || !list.length) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="color: #64748b;">Пока нет выплат</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = list.map(function(p) {
+                        var amount = Number(p.amount);
+                        return '<tr><td>' + fmtDate(p.createdAt) + '</td><td>' + fmtNum(amount) + ' ₽</td><td>' + statusLabel(p.status) + '</td></tr>';
+                    }).join('');
+                }).catch(function() {
+                    tbody.innerHTML = '<tr><td colspan="3" style="color: #64748b;">Не удалось загрузить историю</td></tr>';
+                });
+            }
+
+            loadBalance();
+            loadPayouts();
+
+            var withdrawForm = document.getElementById('withdrawForm');
+            var withdrawError = document.getElementById('withdrawError');
+            var withdrawSubmitBtn = document.getElementById('withdrawSubmitBtn');
+            if (withdrawForm) {
+                withdrawForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    var amountEl = document.getElementById('withdrawAmount');
+                    var amount = amountEl ? parseFloat(amountEl.value) : 0;
+                    if (withdrawError) { withdrawError.style.display = 'none'; withdrawError.textContent = ''; }
+                    if (withdrawSubmitBtn) withdrawSubmitBtn.disabled = true;
+                    window.RealCPA.affiliate.requestPayout(amount).then(function() {
+                        closeModal('withdrawModal');
+                        if (amountEl) amountEl.value = '';
+                        loadBalance();
+                        loadPayouts();
+                    }).catch(function(err) {
+                        if (withdrawError) {
+                            withdrawError.textContent = err.message || err.payload && err.payload.error || 'Ошибка запроса';
+                            withdrawError.style.display = 'block';
+                        }
+                    }).finally(function() {
+                        if (withdrawSubmitBtn) withdrawSubmitBtn.disabled = false;
+                    });
+                });
+            }
+        } else if (role === 'supplier') {
+            if (supplierBlock) supplierBlock.style.display = 'block';
+            window.RealCPA.supplier.stats().then(function(s) {
+                var el = document.getElementById('supplierTotalPayout');
+                if (el) el.textContent = Number(s.totalPayout || 0).toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ₽';
+            }).catch(function() {});
         }
     })();
     </script>

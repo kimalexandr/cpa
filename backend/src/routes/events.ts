@@ -8,30 +8,69 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const { token, tracking_link_id, event_type, amount, external_id } = req.body;
     const linkId = tracking_link_id || null;
-    let trackingLinkId: string | null = null;
+    let link: { id: string; offerId: string } | null = null;
     if (token) {
-      const link = await prisma.trackingLink.findUnique({
+      link = await prisma.trackingLink.findUnique({
         where: { token: String(token) },
-        select: { id: true },
+        select: { id: true, offerId: true },
       });
-      trackingLinkId = link?.id || null;
     } else if (linkId) {
-      const link = await prisma.trackingLink.findUnique({
+      link = await prisma.trackingLink.findUnique({
         where: { id: String(linkId) },
-        select: { id: true },
+        select: { id: true, offerId: true },
       });
-      trackingLinkId = link?.id || null;
     }
-    if (!trackingLinkId) {
+    if (!link) {
       res.status(400).json({ error: 'Укажите token или tracking_link_id' });
       return;
     }
     const eventType = event_type === 'lead' || event_type === 'sale' ? event_type : 'lead';
+    const amountNum = amount != null ? Number(amount) : null;
+
+    if (eventType === 'sale') {
+      const offer = await prisma.offer.findUnique({
+        where: { id: link.offerId },
+        select: { capAmount: true, capConversions: true },
+      });
+      if (offer && (offer.capAmount != null || offer.capConversions != null)) {
+        const offerLinkIds = (await prisma.trackingLink.findMany({
+          where: { offerId: link.offerId },
+          select: { id: true },
+        })).map((l: { id: string }) => l.id);
+        const [sumResult, currentCount] = await Promise.all([
+          prisma.event.aggregate({
+            where: {
+              trackingLinkId: { in: offerLinkIds },
+              eventType: 'sale',
+              status: 'approved',
+            },
+            _sum: { amount: true },
+          }),
+          prisma.event.count({
+            where: {
+              trackingLinkId: { in: offerLinkIds },
+              eventType: 'sale',
+              status: 'approved',
+            },
+          }),
+        ]);
+        const currentSum = Number(sumResult._sum.amount || 0);
+        if (offer.capAmount != null && currentSum + (amountNum || 0) > Number(offer.capAmount)) {
+          res.status(400).json({ error: 'Достигнут лимит бюджета по офферу (cap)' });
+          return;
+        }
+        if (offer.capConversions != null && currentCount + 1 > Number(offer.capConversions)) {
+          res.status(400).json({ error: 'Достигнут лимит конверсий по офферу (cap)' });
+          return;
+        }
+      }
+    }
+
     const event = await prisma.event.create({
       data: {
-        trackingLinkId,
+        trackingLinkId: link.id,
         eventType,
-        amount: amount != null ? Number(amount) : null,
+        amount: amountNum,
         currency: 'RUB',
         status: 'pending',
         externalId: external_id || null,

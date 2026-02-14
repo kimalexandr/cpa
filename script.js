@@ -409,7 +409,12 @@ function buildOfferDetailsContent(offer) {
         '<li>Модель: ' + escapeHtmlForModal(model) + '</li>' +
         '<li>Ставка: ' + escapeHtmlForModal(String(rate)) + '</li>' +
         '<li>Гео: ' + escapeHtmlForModal(geo) + '</li>' +
-        '<li>Категория: ' + escapeHtmlForModal(cat) + '</li></ul>');
+        '<li>Категория: ' + escapeHtmlForModal(cat) + '</li>' +
+        (offer.holdDays != null ? '<li>Холдинг: ' + escapeHtmlForModal(String(offer.holdDays)) + ' дн.</li>' : '') +
+        (offer.capAmount != null ? '<li>Лимит бюджета: ' + escapeHtmlForModal(String(offer.capAmount)) + ' ₽</li>' : '') +
+        (offer.capConversions != null ? '<li>Лимит конверсий: ' + escapeHtmlForModal(String(offer.capConversions)) + '</li>' : '') +
+        '</ul>');
+    if (offer.rules && String(offer.rules).trim()) parts.push('<p><strong>Правила:</strong></p><p>' + escapeHtmlForModal(offer.rules) + '</p>');
     if (offer.landingUrl) parts.push('<p><strong>Лендинг:</strong> <a href="' + escapeHtmlForModal(offer.landingUrl) + '" target="_blank" rel="noopener">' + escapeHtmlForModal(offer.landingUrl) + '</a></p>');
     parts.push('<p>Трекинг-ссылка выдаётся после одобрения заявки на подключение.</p>');
     return parts.join('');
@@ -502,14 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    const withdrawForm = document.getElementById('withdrawForm');
-    if (withdrawForm) {
-        withdrawForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert('Запрос на вывод средств будет обработан на бэкенде');
-            closeModal('withdrawModal');
-        });
-    }
+    // Обработка формы вывода — на странице payments.html (API)
 });
 
 // FAQ обрабатывается только inline-скриптом на странице support.html (избегаем двойного срабатывания)

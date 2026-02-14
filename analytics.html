@@ -80,96 +80,54 @@
             <div class="dashboard-header">
                 <h1>Аналитика и Отчёты</h1>
                 <div class="filter-buttons">
-                    <select class="filter-select">
-                        <option>Последние 7 дней</option>
-                        <option>Последние 30 дней</option>
-                        <option>Последние 90 дней</option>
+                    <select class="filter-select" id="analyticsPeriod">
+                        <option value="7">Последние 7 дней</option>
+                        <option value="30" selected>Последние 30 дней</option>
+                        <option value="90">Последние 90 дней</option>
                     </select>
-                    <button class="btn btn-secondary">
-                        <i class="fas fa-download"></i>
-                        Экспорт CSV
-                    </button>
-                    <button class="btn btn-secondary">
-                        <i class="fas fa-file-pdf"></i>
-                        Экспорт PDF
-                    </button>
                 </div>
             </div>
 
-            <!-- Графики -->
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h2>Конверсии по офферам</h2>
-                    <div class="chart-container">
-                        <canvas id="conversionsChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h2>Источники трафика</h2>
-                    <div class="chart-container">
-                        <canvas id="trafficChart"></canvas>
-                    </div>
-                </div>
+            <!-- Сводка по периоду (из API) -->
+            <div class="stats-grid" id="analyticsSummary" style="display: none;">
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-mouse-pointer"></i></div><div class="stat-content"><h3>Клики</h3><p class="stat-value" id="sumClicks">0</p></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-user-plus"></i></div><div class="stat-content"><h3>Лиды</h3><p class="stat-value" id="sumLeads">0</p></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-shopping-cart"></i></div><div class="stat-content"><h3>Продажи</h3><p class="stat-value" id="sumSales">0</p></div></div>
+                <div class="stat-card"><div class="stat-icon"><i class="fas fa-ruble-sign"></i></div><div class="stat-content"><h3>Доход</h3><p class="stat-value" id="sumEarned">0 ₽</p></div></div>
             </div>
 
+            <!-- Графики (данные из API) -->
             <div class="charts-grid">
                 <div class="chart-card">
-                    <h2>Динамика доходов</h2>
+                    <h2>Динамика по дням</h2>
+                    <div class="chart-container">
+                        <canvas id="analyticsByDayChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h2>Доход по дням</h2>
                     <div class="chart-container">
                         <canvas id="incomeChart"></canvas>
                     </div>
                 </div>
-                <div class="chart-card">
-                    <h2>Качество лидов</h2>
-                    <div class="chart-container">
-                        <canvas id="leadsChart"></canvas>
-                    </div>
-                </div>
             </div>
 
-            <!-- Таблица данных -->
+            <!-- Таблица по дням -->
             <div class="table-section">
-                <h2>Детализированные данные</h2>
+                <h2>Данные по дням</h2>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Дата</th>
-                                <th>Оффер</th>
+                                <th>Клики</th>
                                 <th>Лиды</th>
-                                <th>Конверсия</th>
-                                <th>Доход</th>
+                                <th>Продажи</th>
+                                <th>Доход (₽)</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>26.01.2026</td>
-                                <td>Стройматериалы оптом</td>
-                                <td>12</td>
-                                <td>4.2%</td>
-                                <td>6 000 ₽</td>
-                            </tr>
-                            <tr>
-                                <td>25.01.2026</td>
-                                <td>Продукты питания оптом</td>
-                                <td>8</td>
-                                <td>3.8%</td>
-                                <td>2 400 ₽</td>
-                            </tr>
-                            <tr>
-                                <td>24.01.2026</td>
-                                <td>Автозапчасти от AutoPartsRU</td>
-                                <td>15</td>
-                                <td>5.1%</td>
-                                <td>6 000 ₽</td>
-                            </tr>
-                            <tr>
-                                <td>23.01.2026</td>
-                                <td>Оборудование и техника</td>
-                                <td>3</td>
-                                <td>2.9%</td>
-                                <td>1 500 ₽</td>
-                            </tr>
+                        <tbody id="analyticsTableBody">
+                            <tr><td colspan="5" style="color:#64748b;">Выберите период и загрузка…</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -202,6 +160,80 @@
             var paymentsLabel = document.querySelector('.sidebar-payments-label span');
             if (paymentsLabel) paymentsLabel.textContent = 'Выплаты';
         }
+
+        var periodSelect = document.getElementById('analyticsPeriod');
+        var summaryEl = document.getElementById('analyticsSummary');
+        var tbody = document.getElementById('analyticsTableBody');
+
+        function getFromTo() {
+            var days = periodSelect ? parseInt(periodSelect.value, 10) || 30 : 30;
+            var to = new Date();
+            var from = new Date(to);
+            from.setDate(from.getDate() - days);
+            return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
+        }
+        function loadAnalytics() {
+            var r = getFromTo();
+            var api = role === 'supplier' ? window.RealCPA.supplier.analytics(r) : window.RealCPA.affiliate.analytics(r);
+            api.then(function(data) {
+                var s = data.summary || {};
+                var byDay = data.byDay || [];
+                var earnedKey = role === 'supplier' ? 'totalPayout' : 'earned';
+                if (summaryEl) summaryEl.style.display = '';
+                var fmt = function(n) { return Number(n).toLocaleString('ru-RU'); };
+                var el = document.getElementById('sumClicks'); if (el) el.textContent = fmt(s.clicks || 0);
+                el = document.getElementById('sumLeads'); if (el) el.textContent = fmt(s.leads || 0);
+                el = document.getElementById('sumSales'); if (el) el.textContent = fmt(s.sales || 0);
+                el = document.getElementById('sumEarned'); if (el) el.textContent = fmt(s[earnedKey] || 0) + ' ₽';
+
+                if (tbody) {
+                    if (!byDay.length) tbody.innerHTML = '<tr><td colspan="5" style="color:#64748b;">Нет данных за период</td></tr>';
+                    else tbody.innerHTML = byDay.map(function(row) {
+                        return '<tr><td>' + row.date + '</td><td>' + fmt(row.clicks || 0) + '</td><td>' + fmt(row.leads || 0) + '</td><td>' + fmt(row.sales || 0) + '</td><td>' + fmt(row[earnedKey] || 0) + '</td></tr>';
+                    }).join('');
+                }
+
+                if (typeof Chart === 'undefined') return;
+                var labels = byDay.map(function(d) { return d.date; });
+                var destroy = function(id) {
+                    var canvas = document.getElementById(id);
+                    if (!canvas) return;
+                    var inst = Chart.getChart(canvas);
+                    if (inst) inst.destroy();
+                };
+                destroy('analyticsByDayChart'); destroy('incomeChart');
+                var c1 = document.getElementById('analyticsByDayChart');
+                if (c1) {
+                    new Chart(c1.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Клики', data: byDay.map(function(d) { return d.clicks || 0; }), borderColor: '#2563eb', fill: false },
+                                { label: 'Лиды', data: byDay.map(function(d) { return d.leads || 0; }), borderColor: '#10b981', fill: false },
+                                { label: 'Продажи', data: byDay.map(function(d) { return d.sales || 0; }), borderColor: '#f59e0b', fill: false }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+                var c2 = document.getElementById('incomeChart');
+                if (c2) {
+                    new Chart(c2.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{ label: role === 'supplier' ? 'Расход (₽)' : 'Доход (₽)', data: byDay.map(function(d) { return d[earnedKey] || 0; }), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, tension: 0.4 }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+            }).catch(function() {
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="color:#991b1b;">Не удалось загрузить данные</td></tr>';
+            });
+        }
+        if (periodSelect) periodSelect.addEventListener('change', loadAnalytics);
+        loadAnalytics();
     })();
     </script>
 </body>

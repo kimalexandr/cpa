@@ -121,6 +121,8 @@
     patchMe: function (data) {
       return request('PATCH', '/api/me', data);
     },
+    getAffiliateProfile: function () { return request('GET', '/api/me/affiliate-profile'); },
+    patchAffiliateProfile: function (data) { return request('PATCH', '/api/me/affiliate-profile', data); },
 
     categories: function () {
       return request('GET', '/api/categories');
@@ -144,12 +146,27 @@
       setOfferStatus: function (id, status) { return request('PATCH', '/api/supplier/offers/' + id + '/status', { status: status }); },
       getAffiliates: function (offerId) { return request('GET', '/api/supplier/offers/' + offerId + '/affiliates'); },
       setParticipation: function (participationId, status) { return request('PATCH', '/api/supplier/affiliate-participation/' + participationId, { status: status }); },
-      stats: function () { return request('GET', '/api/supplier/stats'); }
+      stats: function () { return request('GET', '/api/supplier/stats'); },
+      analytics: function (params) {
+        var q = [];
+        if (params && params.from) q.push('from=' + encodeURIComponent(params.from));
+        if (params && params.to) q.push('to=' + encodeURIComponent(params.to));
+        return request('GET', '/api/supplier/analytics' + (q.length ? '?' + q.join('&') : ''));
+      }
     },
     affiliate: {
       joinOffer: function (offerId) { return request('POST', '/api/affiliate/offers/' + offerId + '/join'); },
       myOffers: function () { return request('GET', '/api/affiliate/my-offers'); },
-      stats: function () { return request('GET', '/api/affiliate/stats'); }
+      stats: function () { return request('GET', '/api/affiliate/stats'); },
+      balance: function () { return request('GET', '/api/affiliate/balance'); },
+      requestPayout: function (amount) { return request('POST', '/api/affiliate/payouts', { amount: amount }); },
+      getPayouts: function () { return request('GET', '/api/affiliate/payouts'); },
+      analytics: function (params) {
+        var q = [];
+        if (params && params.from) q.push('from=' + encodeURIComponent(params.from));
+        if (params && params.to) q.push('to=' + encodeURIComponent(params.to));
+        return request('GET', '/api/affiliate/analytics' + (q.length ? '?' + q.join('&') : ''));
+      }
     },
 
     page: function (slug) {
@@ -174,7 +191,15 @@
       setOfferStatus: function (offerId, status) {
         return request('PATCH', '/api/admin/offers/' + encodeURIComponent(offerId), { status: status });
       },
-      moderationParticipations: function () { return request('GET', '/api/admin/moderation/participations'); }
+      moderationParticipations: function () { return request('GET', '/api/admin/moderation/participations'); },
+      payouts: function (params) {
+        var q = [];
+        if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        return request('GET', '/api/admin/payouts' + (q.length ? '?' + q.join('&') : ''));
+      },
+      setPayoutStatus: function (payoutId, status) {
+        return request('PATCH', '/api/admin/payouts/' + encodeURIComponent(payoutId), { status: status });
+      }
     }
   };
 })();

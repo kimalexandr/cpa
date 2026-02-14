@@ -83,18 +83,37 @@
         window.RealCPA.affiliate.myOffers().then(function(list) {
             var approved = list.filter(function(p) { return p.status === 'approved' && p.trackingLink; });
             if (approved.length === 0) return;
+            var base = (typeof window.RealCPA.getBase === 'function' ? window.RealCPA.getBase() : '') || '';
+            var postbackUrl = base.replace(/\/?$/, '') + '/api/events';
             container.innerHTML = '<div class="dashboard-block"><h2>Подключённые офферы</h2><ul class="connections-list">' +
                 approved.map(function(p) {
                     var name = p.offer ? p.offer.title : p.offerId;
                     var link = p.trackingLink || '—';
+                    var token = (link !== '—' && link.indexOf('/t/') !== -1) ? link.split('/t/')[1].split('?')[0] : '';
                     return '<li class="connection-item"><strong>' + escapeHtml(name) + '</strong><br><span class="connection-status">Одобрено</span>' +
-                        (link !== '—' ? '<br><small>Трекинг: <a href="' + escapeHtml(link) + '" target="_blank">' + escapeHtml(link) + '</a></small>' +
-                        '<button type="button" class="btn btn-sm btn-secondary copy-link" data-url="' + escapeHtml(link) + '">Копировать</button>' : '') + '</li>';
-                }).join('') + '</ul></div>';
+                        (link !== '—' ? '<br><small>Трекинг: <a href="' + escapeHtml(link) + '" target="_blank">' + escapeHtml(link) + '</a></small> ' +
+                        '<button type="button" class="btn btn-sm btn-secondary copy-link" data-url="' + escapeHtml(link) + '">Копировать</button>' : '') +
+                        (token ? '<br><small class="postback-token">Token для постбека: <code>' + escapeHtml(token) + '</code> <button type="button" class="btn btn-sm btn-secondary copy-token" data-token="' + escapeHtml(token) + '">Копировать</button></small>' : '') + '</li>';
+                }).join('') + '</ul></div>' +
+                '<div class="dashboard-block postback-block"><h2>Постбек (уведомление о лиде/продаже)</h2>' +
+                '<p>Отправляйте POST-запрос на URL для учёта конверсий:</p>' +
+                '<p><code>' + escapeHtml(postbackUrl) + '</code> <button type="button" class="btn btn-sm btn-secondary" id="copyPostbackUrl" data-url="' + escapeHtml(postbackUrl) + '">Копировать URL</button></p>' +
+                '<p><strong>Тело запроса (JSON):</strong></p>' +
+                '<pre>{\n  "token": "ваш_token_из_карточки_оффера",\n  "event_type": "lead" или "sale",\n  "amount": 500,\n  "external_id": "id_заказа_в_вашей_системе"\n}</pre>' +
+                '<p><code>token</code> — из карточки оффера выше. <code>event_type</code>: <code>lead</code> или <code>sale</code>. <code>amount</code> (₽) и <code>external_id</code> — по желанию.</p></div>';
             container.querySelectorAll('.copy-link').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     navigator.clipboard.writeText(this.dataset.url).then(function() { alert('Ссылка скопирована'); });
                 });
+            });
+            container.querySelectorAll('.copy-token').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    navigator.clipboard.writeText(this.dataset.token).then(function() { alert('Токен скопирован'); });
+                });
+            });
+            var copyPostbackBtn = document.getElementById('copyPostbackUrl');
+            if (copyPostbackBtn) copyPostbackBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.dataset.url).then(function() { alert('URL скопирован'); });
             });
         }).catch(function() {});
         function escapeHtml(s) {

@@ -494,6 +494,19 @@
                 }
                 var submitBtn = document.getElementById('wizardSubmit');
                 if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Создание…'; }
+                var holdDaysEl = document.getElementById('offerHoldDays');
+                var budgetEl = document.getElementById('offerBudget');
+                var capMonthEl = document.getElementById('offerCapMonth');
+                var allowedEl = document.getElementById('offerAllowedSources');
+                var forbiddenEl = document.getElementById('offerForbiddenSources');
+                var creativeEl = document.getElementById('offerCreativeRules');
+                var leadCritEl = document.getElementById('offerLeadCriteria');
+                var rulesParts = [];
+                if (allowedEl && allowedEl.value.trim()) rulesParts.push('Разрешено: ' + allowedEl.value.trim());
+                if (forbiddenEl && forbiddenEl.value.trim()) rulesParts.push('Запрещено: ' + forbiddenEl.value.trim());
+                if (creativeEl && creativeEl.value.trim()) rulesParts.push('Креативы: ' + creativeEl.value.trim());
+                if (leadCritEl && leadCritEl.value.trim()) rulesParts.push('Критерии лида: ' + leadCritEl.value.trim());
+                var rulesStr = rulesParts.length ? rulesParts.join('\n') : undefined;
                 window.RealCPA.supplier.createOffer({
                     categoryId: categoryId,
                     title: title,
@@ -502,7 +515,11 @@
                     targetGeo: targetGeo || undefined,
                     payoutModel: 'CPA',
                     payoutAmount: payoutAmount,
-                    currency: 'RUB'
+                    currency: 'RUB',
+                    holdDays: holdDaysEl && holdDaysEl.value !== '' ? parseInt(holdDaysEl.value, 10) : undefined,
+                    rules: rulesStr,
+                    capAmount: budgetEl && budgetEl.value !== '' ? parseFloat(budgetEl.value) : undefined,
+                    capConversions: capMonthEl && capMonthEl.value !== '' ? parseInt(capMonthEl.value, 10) : undefined
                 }).then(function() {
                     alert('Оффер создан. Он сохранён как черновик — измените статус на «Активен» в разделе «Мои офферы».');
                     window.location.href = 'dashboard-supplier-offers.html';

@@ -96,6 +96,17 @@
                 </div>
             </section>
 
+            <!-- Реквизиты для выплат (только для партнёра) -->
+            <section class="profile-card" id="profilePayoutSection" style="display: none;">
+                <h2 class="profile-card-title">Реквизиты для выплат</h2>
+                <p class="auth-description">Укажите реквизиты, на которые нужно переводить деньги (карта, счёт, Яндекс.Кошелёк и т.д.). Они используются при обработке заявок на вывод.</p>
+                <div class="form-group">
+                    <label for="profilePayoutDetails">Реквизиты</label>
+                    <textarea id="profilePayoutDetails" rows="4" placeholder="Например: Сбербанк 1234 5678 9012 3456, Иван И."></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" id="profileSavePayout">Сохранить реквизиты</button>
+            </section>
+
             <!-- Уведомления -->
             <section class="profile-card">
                 <h2 class="profile-card-title">Уведомления</h2>
@@ -224,6 +235,28 @@
         if (notifySystem) {
             notifySystem.checked = localStorage.getItem('profile_notify_system') === '1';
             notifySystem.addEventListener('change', function() { localStorage.setItem('profile_notify_system', this.checked ? '1' : '0'); });
+        }
+
+        if (window.RealCPA.getRole() === 'affiliate') {
+            var payoutSection = document.getElementById('profilePayoutSection');
+            var payoutDetailsEl = document.getElementById('profilePayoutDetails');
+            var savePayoutBtn = document.getElementById('profileSavePayout');
+            if (payoutSection) payoutSection.style.display = 'block';
+            window.RealCPA.getAffiliateProfile().then(function(p) {
+                if (payoutDetailsEl && p && p.payoutDetails != null) payoutDetailsEl.value = p.payoutDetails;
+            }).catch(function() {});
+            if (savePayoutBtn && payoutDetailsEl) {
+                savePayoutBtn.addEventListener('click', function() {
+                    savePayoutBtn.disabled = true;
+                    window.RealCPA.patchAffiliateProfile({ payoutDetails: payoutDetailsEl.value.trim() || null }).then(function() {
+                        savePayoutBtn.disabled = false;
+                        alert('Реквизиты сохранены.');
+                    }).catch(function(err) {
+                        savePayoutBtn.disabled = false;
+                        alert(err.message || err.payload && err.payload.error || 'Ошибка сохранения');
+                    });
+                });
+            }
         }
 
         loadProfile();

@@ -97,7 +97,21 @@ docker-compose run --rm app npm run db:seed
 - **GET /api/affiliate/my-offers** — мои подключения и трекинг-ссылки
 - **GET /t/:token** — редирект по партнёрской ссылке (фиксация клика)
 - **POST /api/events** — вебхук лид/сейл (token или tracking_link_id, event_type, amount, external_id)
+- **GET /api/affiliate/balance** — баланс партнёра (earned, paidOut, availableBalance)
+- **POST /api/affiliate/payouts** — заявка на вывод (amount)
+- **GET /api/affiliate/payouts** — история выплат
+- **GET /api/affiliate/analytics?from=&to=** — аналитика по периодам (summary, byDay)
+- **GET /api/supplier/analytics?from=&to=** — аналитика поставщика
+- **GET /api/admin/payouts**, **PATCH /api/admin/payouts/:id** — заявки на выплаты (админ)
 - **GET /api/pages/:slug** — статические страницы (policy, terms, personal-data)
+
+## Email (опционально)
+
+Для отправки писем (приветствие, сброс пароля, одобрение заявки, выплата) задайте в `.env`:
+
+- `MAIL_HOST`, `MAIL_PORT` (например 587), `MAIL_USER`, `MAIL_PASS`, `MAIL_FROM`
+
+Если SMTP не настроен, письма не отправляются (в dev ссылка сброса пароля выводится в консоль и в ответе API).
 
 ## Структура
 
@@ -106,4 +120,7 @@ docker-compose run --rm app npm run db:seed
 - `prisma/seed.ts` — сид
 - `src/index.ts` — запуск HTTP-сервера
 - `src/app.ts` — Express, CORS, роуты
-- `src/routes/` — auth, me, categories, offers, supplier, affiliate, tracking, events, pages
+- `src/routes/` — auth, me, categories, offers, supplier, affiliate, tracking, events, pages, admin
+- `src/lib/email.ts` — отправка писем (nodemailer)
+
+После обновления схемы (новые поля в Offer: holdDays, rules, capAmount, capConversions): `npm run db:migrate:dev` или `npx prisma db push`.

@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
+import { sendPayoutPaid } from '../lib/email';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -160,6 +161,59 @@ router.get('/moderation/participations', async (_req: AuthRequest, res: Response
   } catch (e) {
     console.error('Admin moderation participations error:', e);
     res.status(500).json({ error: 'Ошибка загрузки заявок' });
+  }
+});
+
+/** Список заявок на выплаты */
+router.get('/payouts', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const where: Record<string, unknown> = {};
+    if (status && ['pending', 'processing', 'paid', 'canceled'].includes(status)) where.status = status;
+    const list = await prisma.payout.findMany({
+      where,
+      include: { affiliate: { select: { id: true, email: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    res.json(list);
+  } catch (e) {
+    console.error('Admin payouts list error:', e);
+    res.status(500).json({ error: 'Ошибка загрузки выплат' });
+  }
+});
+
+/** Смена статуса выплаты (paid → отправить email) */
+router.patch('/payouts/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id;
+    const status = req.body?.status as string | undefined;
+    if (!status || !['pending', 'processing', 'paid', 'canceled'].includes(status)) {
+      res.status(400).json({ error: 'Укажите status: pending, processing, paid или canceled' });
+      return;
+    }
+    const payout = await prisma.payout.findUnique({
+      where: { id },
+      include: { affiliate: { select: { email: true } } },
+    });
+    if (!payout) {
+      res.status(404).json({ error: 'Выплата не найдена' });
+      return;
+    }
+    const data: { status: string; paidAt?: Date } = { status };
+    if (status === 'paid') data.paidAt = new Date();
+    const updated = await prisma.payout.update({
+      where: { id },
+      data,
+      include: { affiliate: { select: { id: true, email: true, name: true } } },
+    });
+    if (status === 'paid' && payout.affiliate?.email) {
+      await sendPayoutPaid(payout.affiliate.email, Number(payout.amount), payout.currency);
+    }
+    res.json(updated);
+  } catch (e) {
+    console.error('Admin PATCH payout error:', e);
+    res.status(500).json({ error: 'Ошибка обновления выплаты' });
   }
 });
 

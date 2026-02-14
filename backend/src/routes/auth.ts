@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { signAccessToken, signRefreshToken, signPasswordResetToken, verifyPasswordResetToken, verifyToken } from '../middleware/auth';
+import { buildResetLink, sendResetPassword, sendWelcome } from '../lib/email';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -46,6 +47,7 @@ router.post('/register', async (req: Request, res: Response) => {
         },
       });
     }
+    sendWelcome(user.email, user.name || undefined).catch(() => {});
     const payload = { userId: user.id, email: user.email, role: user.role };
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
@@ -136,12 +138,9 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
       return;
     }
     const token = signPasswordResetToken(user.id);
-    const baseUrl = process.env.FRONTEND_URL || process.env.API_BASE_URL || 'http://localhost:3000';
-    const resetUrl = baseUrl.replace(/\/api\/?$/, '') + '/reset-password.html?token=' + encodeURIComponent(token);
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[forgot-password] Reset link for', user.email, ':', resetUrl);
-    }
-    // TODO: отправить письмо с resetUrl (nodemailer и т.д.). Пока всегда один и тот же ответ для безопасности.
+    const resetUrl = buildResetLink(token);
+    if (process.env.NODE_ENV !== 'production') console.log('[forgot-password] Reset link for', user.email, ':', resetUrl);
+    await sendResetPassword(user.email, resetUrl);
     res.json({
       message: 'Если аккаунт с таким email существует, на него отправлена ссылка для сброса пароля. Проверьте почту.',
       resetLink: process.env.NODE_ENV !== 'production' ? resetUrl : undefined,
