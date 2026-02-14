@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "offers" ADD COLUMN IF NOT EXISTS "hold_days" INTEGER;
+ALTER TABLE "offers" ADD COLUMN IF NOT EXISTS "rules" TEXT;
+ALTER TABLE "offers" ADD COLUMN IF NOT EXISTS "cap_amount" DECIMAL(12,2);
+ALTER TABLE "offers" ADD COLUMN IF NOT EXISTS "cap_conversions" INTEGER;
