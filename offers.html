@@ -247,8 +247,10 @@
             }
             if (!offers.length) {
                 listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов.</p><p>Здесь отображаются все активные офферы. Они появятся после публикации поставщиками и подтверждения в админ-панели (Админка → Офферы → кнопка «Подтвердить» у черновиков).</p>';
+                window.__lastOffersList = [];
                 return;
             }
+            window.__lastOffersList = offers;
             listEl.innerHTML = offers.map(function(o, i) {
                 var cat = o.category ? o.category.name : '—';
                 var slug = o.category ? o.category.slug : '';
@@ -267,7 +269,7 @@
                     '</div>' +
                     '<div class="offer-actions">' +
                     '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-primary">Подключиться</a>' +
-                    '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-secondary">Детали</a>' +
+                    '<button type="button" class="btn btn-secondary" data-open-offer-details data-offer-id="' + escapeHtml(o.id) + '">Детали</button>' +
                     '</div></div></div>';
             }).join('');
         }

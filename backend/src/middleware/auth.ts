@@ -21,6 +21,30 @@ export function signRefreshToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): stri
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }
 
+export interface PasswordResetPayload {
+  userId: string;
+  purpose: 'password_reset';
+  iat?: number;
+  exp?: number;
+}
+
+export function signPasswordResetToken(userId: string): string {
+  return jwt.sign(
+    { userId, purpose: 'password_reset' } as PasswordResetPayload,
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+}
+
+export function verifyPasswordResetToken(token: string): PasswordResetPayload | null {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as PasswordResetPayload;
+    return payload.purpose === 'password_reset' && payload.userId ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
 export function verifyToken(token: string): JwtPayload | null {
   try {
     return jwt.verify(token, JWT_SECRET) as JwtPayload;

@@ -395,46 +395,52 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Подробные описания офферов для модалки «Детали»
-var offerDetails = {
-    1: {
-        title: 'Оффер: Стройматериалы оптом',
-        content: '<p><strong>Кратко:</strong> Оплата 500 ₽ за подтверждённый оптовый заказ строительных материалов по всей РФ.</p>' +
-            '<p><strong>Полное описание:</strong> Работаем с оптовыми поставками цемента, сухих смесей, пиломатериалов, кровли, отделочных материалов. Целевая аудитория — строительные компании, бригады, магазины стройматериалов. Минимальный заказ от 30 000 ₽, средний чек 80 000–150 000 ₽. Доставка по РФ, возможен самовывоз со складов в Москве и регионах.</p>' +
-            '<p><strong>Условия:</strong></p><ul><li>CPA: 500 ₽ за заказ</li><li>Гео: Вся РФ</li><li>Холдинг: 14 дней</li><li>Разрешены: контекст, SEO, тематические площадки, Telegram B2B</li><li>Запрещены: брендовый контекст, incent</li></ul>' +
-            '<p>Трекинг-ссылка и постбек выдаются после одобрения заявки на подключение.</p>'
-    },
-    2: {
-        title: 'Оффер: Продукты питания оптом',
-        content: '<p><strong>Кратко:</strong> 300 ₽ за заказ. Оптовые поставки продуктов питания для HoReCa и розницы.</p>' +
-            '<p><strong>Полное описание:</strong> Поставки мяса, птицы, овощей, молочной продукции, бакалеи для ресторанов, кафе, магазинов и складов. Работаем по Москве, СПб и области. Минимальный заказ от 15 000 ₽, средний чек 40 000–70 000 ₽. Возможна регулярная доставка по графику.</p>' +
-            '<p><strong>Условия:</strong></p><ul><li>CPA: 300 ₽ за заказ</li><li>Гео: Москва, Санкт-Петербург и области</li><li>Холдинг: 7 дней</li><li>Разрешены: контекст, соцсети, холодные звонки с переходом по ссылке</li></ul>' +
-            '<p>Трекинг-ссылка будет доступна после подключения к офферу.</p>'
-    },
-    3: {
-        title: 'Оффер: Автозапчасти от AutoPartsRU',
-        content: '<p><strong>Кратко:</strong> 400 ₽ за заказ. Широкий ассортимент автозапчастей для всех марок, поставки для СТО и дилеров.</p>' +
-            '<p><strong>Полное описание:</strong> Оригинальные и аналоговые запчасти, масла, расходники. Целевая аудитория — автосервисы, магазины автозапчастей, частные мастера. Работаем по всей РФ. Минимальный заказ от 5 000 ₽, средний чек 25 000–50 000 ₽. Быстрая отгрузка со складов в нескольких регионах.</p>' +
-            '<p><strong>Условия:</strong></p><ul><li>CPA: 400 ₽ за заказ</li><li>Гео: Вся РФ</li><li>Холдинг: 14 дней</li><li>Разрешены: SEO, контекст, нишевые форумы, Telegram-каналы про авто</li><li>Запрещены: брендовый контекст, накрутка</li></ul>' +
-            '<p><strong>Правила:</strong> Оплата только за подтверждённые заказы. Минимальная сумма вывода 1000 ₽. Выплаты еженедельно.</p>'
-    }
-};
+// Модалка «Детали оффера» — контент строится из объекта оффера (API), без хардкода
+function buildOfferDetailsContent(offer) {
+    if (!offer) return '';
+    var cat = (offer.category && offer.category.name) ? offer.category.name : '—';
+    var geo = offer.targetGeo || '—';
+    var rate = offer.payoutAmount != null ? offer.payoutAmount + ' ' + (offer.currency || 'RUB') : '—';
+    var model = (offer.payoutModel || 'CPA').toString();
+    var desc = (offer.description || '').trim();
+    var parts = [];
+    if (desc) parts.push('<p><strong>Описание:</strong></p><p>' + escapeHtmlForModal(desc) + '</p>');
+    parts.push('<p><strong>Условия:</strong></p><ul>' +
+        '<li>Модель: ' + escapeHtmlForModal(model) + '</li>' +
+        '<li>Ставка: ' + escapeHtmlForModal(String(rate)) + '</li>' +
+        '<li>Гео: ' + escapeHtmlForModal(geo) + '</li>' +
+        '<li>Категория: ' + escapeHtmlForModal(cat) + '</li></ul>');
+    if (offer.landingUrl) parts.push('<p><strong>Лендинг:</strong> <a href="' + escapeHtmlForModal(offer.landingUrl) + '" target="_blank" rel="noopener">' + escapeHtmlForModal(offer.landingUrl) + '</a></p>');
+    parts.push('<p>Трекинг-ссылка выдаётся после одобрения заявки на подключение.</p>');
+    return parts.join('');
+}
+function escapeHtmlForModal(s) {
+    if (s == null) return '';
+    var div = document.createElement('div');
+    div.textContent = String(s);
+    return div.innerHTML;
+}
 
-function openOfferDetails(offerId) {
+function openOfferDetails(offer) {
     var modal = document.getElementById('offerModal');
     var titleEl = document.getElementById('modalOfferTitle');
     var contentEl = document.getElementById('modalOfferContent');
     if (!modal) return;
-    var details = offerDetails[offerId];
-    if (details && titleEl && contentEl) {
-        titleEl.textContent = details.title;
-        contentEl.innerHTML = details.content;
-    } else if (titleEl && contentEl) {
-        titleEl.textContent = 'Детали оффера';
-        contentEl.innerHTML = '<p>Трекинг-ссылка будет доступна после подключения к офферу.</p><p><strong>Правила:</strong></p><ul><li>Оплата за подтверждённые заказы</li><li>Минимальная сумма вывода: 1000 ₽</li><li>Выплаты еженедельно</li></ul>';
-    }
+    window.__currentOfferForModal = offer || null;
+    if (titleEl) titleEl.textContent = (offer && offer.title) ? offer.title : 'Детали оффера';
+    if (contentEl) contentEl.innerHTML = (offer && offer.id) ? buildOfferDetailsContent(offer) : '<p>Трекинг-ссылка будет доступна после подключения к офферу.</p><p><strong>Правила:</strong></p><ul><li>Оплата за подтверждённые заказы</li><li>Минимальная сумма вывода: 1000 ₽</li><li>Выплаты еженедельно</li></ul>';
     modal.classList.add('active');
 }
+
+// Клик по кнопке «Детали» в карточке оффера: ищем оффер в списке с API и открываем модалку
+document.addEventListener('click', function(e) {
+    var btn = e.target && e.target.closest && e.target.closest('[data-open-offer-details]');
+    if (!btn || !window.__lastOffersList) return;
+    var id = btn.getAttribute('data-offer-id');
+    if (!id) return;
+    var offer = window.__lastOffersList.find(function(o) { return o.id === id; });
+    if (offer) openOfferDetails(offer);
+});
 
 function closeOfferDetails() {
     const modal = document.getElementById('offerModal');
@@ -457,10 +463,32 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Подключение к офферу
+// Подключение к офферу (из модалки, используем оффер из openOfferDetails)
 function connectToOffer() {
-    alert('Подключение к офферу будет реализовано на бэкенде');
-    closeOfferDetails();
+    var offer = window.__currentOfferForModal;
+    if (!offer || !offer.id) {
+        alert('Сначала выберите оффер и откройте детали.');
+        return;
+    }
+    if (typeof window.RealCPA === 'undefined' || !window.RealCPA.affiliate || !window.RealCPA.affiliate.joinOffer) {
+        alert('Подключите api.js и войдите как партнёр.');
+        closeOfferDetails();
+        return;
+    }
+    if (!window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'affiliate') {
+        alert('Войдите в кабинет партнёра, чтобы подключиться к офферу.');
+        closeOfferDetails();
+        return;
+    }
+    window.RealCPA.affiliate.joinOffer(offer.id)
+        .then(function() {
+            closeOfferDetails();
+            alert('Заявка на подключение отправлена. После одобрения поставщиком трекинг-ссылка появится в разделе «Мои подключения».');
+            if (window.location.pathname.indexOf('offers.html') !== -1) window.location.reload();
+        })
+        .catch(function(err) {
+            alert(err.message || err.payload?.error || 'Ошибка при отправке заявки');
+        });
 }
 
 // Вывод средств

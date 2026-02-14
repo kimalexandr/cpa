@@ -933,6 +933,37 @@ body.role-admin #navAdminLink { display: block !important; }
     border-color: var(--primary-color);
 }
 
+.auth-forgot-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--primary-color, #2563eb);
+    text-decoration: none;
+}
+.auth-forgot-link:hover {
+    text-decoration: underline;
+}
+
+.auth-description {
+    color: var(--text-muted, #64748b);
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+}
+
+.auth-message {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+}
+.auth-message.success {
+    background: #ecfdf5;
+    color: #065f46;
+}
+.auth-message.error {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
 .auth-divider {
     text-align: center;
     margin: 1.5rem 0;

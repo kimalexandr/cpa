@@ -106,6 +106,12 @@
           setTokens(r.accessToken, null);
           return r.accessToken;
         });
+      },
+      forgotPassword: function (email) {
+        return request('POST', '/api/auth/forgot-password', { email: email });
+      },
+      resetPassword: function (token, newPassword) {
+        return request('POST', '/api/auth/reset-password', { token: token, newPassword: newPassword });
       }
     },
 

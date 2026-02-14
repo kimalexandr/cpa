@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { signAccessToken, signRefreshToken, verifyToken } from '../middleware/auth';
+import { signAccessToken, signRefreshToken, signPasswordResetToken, verifyPasswordResetToken, verifyToken } from '../middleware/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -117,6 +117,77 @@ router.post('/refresh', (req: Request, res: Response) => {
     role: payload.role,
   });
   res.json({ accessToken, expiresIn: 3600 });
+});
+
+// Запрос на восстановление пароля: отправка ссылки на email (в проде — письмо, в dev — можно вернуть ссылку)
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const email = (req.body.email && String(req.body.email).trim().toLowerCase()) || '';
+    if (!email) {
+      res.status(400).json({ error: 'Укажите email' });
+      return;
+    }
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true },
+    });
+    if (!user) {
+      res.json({ message: 'Если аккаунт с таким email существует, на него отправлена ссылка для сброса пароля.' });
+      return;
+    }
+    const token = signPasswordResetToken(user.id);
+    const baseUrl = process.env.FRONTEND_URL || process.env.API_BASE_URL || 'http://localhost:3000';
+    const resetUrl = baseUrl.replace(/\/api\/?$/, '') + '/reset-password.html?token=' + encodeURIComponent(token);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[forgot-password] Reset link for', user.email, ':', resetUrl);
+    }
+    // TODO: отправить письмо с resetUrl (nodemailer и т.д.). Пока всегда один и тот же ответ для безопасности.
+    res.json({
+      message: 'Если аккаунт с таким email существует, на него отправлена ссылка для сброса пароля. Проверьте почту.',
+      resetLink: process.env.NODE_ENV !== 'production' ? resetUrl : undefined,
+    });
+  } catch (e) {
+    console.error('Forgot password error:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Установка нового пароля по токену из ссылки
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const token = req.body.token && String(req.body.token).trim();
+    const newPassword = req.body.newPassword || req.body.password;
+    if (!token) {
+      res.status(400).json({ error: 'Не указан токен сброса. Перейдите по ссылке из письма.' });
+      return;
+    }
+    if (!newPassword || String(newPassword).length < 6) {
+      res.status(400).json({ error: 'Пароль должен быть не короче 6 символов' });
+      return;
+    }
+    const payload = verifyPasswordResetToken(token);
+    if (!payload) {
+      res.status(400).json({ error: 'Ссылка недействительна или истекла. Запросите сброс пароля снова.' });
+      return;
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true },
+    });
+    if (!user) {
+      res.status(400).json({ error: 'Пользователь не найден.' });
+      return;
+    }
+    const passwordHash = await bcrypt.hash(String(newPassword), 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+    res.json({ message: 'Пароль успешно изменён. Войдите с новым паролем.' });
+  } catch (e) {
+    console.error('Reset password error:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
 });
 
 export default router;
