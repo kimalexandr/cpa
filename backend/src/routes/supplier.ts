@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
 import { sendParticipationApproved, sendParticipationRejected } from '../lib/email';
+import { createNotification } from '../lib/notifications';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -136,7 +137,7 @@ router.patch('/affiliate-participation/:id', async (req: AuthRequest, res: Respo
   }
   const p = await prisma.affiliateOfferParticipation.findUnique({
     where: { id: req.params.id },
-    include: { offer: true, affiliate: { select: { email: true } } },
+    include: { offer: true, affiliate: { select: { email: true, affiliateProfile: { select: { notifyParticipation: true } } } } },
   });
   if (!p || p.offer.supplierId !== req.user!.userId) {
     res.status(404).json({ error: 'Заявка не найдена' });
@@ -153,12 +154,25 @@ router.patch('/affiliate-participation/:id', async (req: AuthRequest, res: Respo
       update: {},
       create: { offerId: p.offerId, affiliateId: p.affiliateId, token },
     });
-    const baseApi = process.env.API_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
-    const trackingUrl = baseApi.replace(/\/api\/?$/, '') + '/t/' + token;
-    if (p.affiliate?.email) await sendParticipationApproved(p.affiliate.email, p.offer.title, trackingUrl);
-  } else if (p.affiliate?.email) {
-    await sendParticipationRejected(p.affiliate.email, p.offer.title);
   }
+  const sendParticipationEmail = (p.affiliate as { affiliateProfile?: { notifyParticipation: boolean | null } } | null)?.affiliateProfile?.notifyParticipation !== false;
+  if (p.affiliate?.email && sendParticipationEmail) {
+    if (status === 'approved') {
+      const baseApi = process.env.API_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+      const token = 'tk-' + p.affiliateId.slice(0, 8) + '-' + p.offerId.slice(0, 8);
+      const trackingUrl = baseApi.replace(/\/api\/?$/, '') + '/t/' + token;
+      await sendParticipationApproved(p.affiliate.email, p.offer.title, trackingUrl);
+    } else {
+      await sendParticipationRejected(p.affiliate.email, p.offer.title);
+    }
+  }
+  await createNotification(prisma, {
+    userId: p.affiliateId,
+    type: status === 'approved' ? 'participation_approved' : 'participation_rejected',
+    title: status === 'approved' ? 'Заявка на оффер одобрена' : 'Заявка на оффер отклонена',
+    body: 'Оффер: ' + p.offer.title,
+    link: status === 'approved' ? '/dashboard-affiliate-connections.html' : undefined,
+  });
   res.json(updated);
 });
 

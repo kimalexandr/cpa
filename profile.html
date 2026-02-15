@@ -110,18 +110,33 @@
             <!-- Уведомления -->
             <section class="profile-card">
                 <h2 class="profile-card-title">Уведомления</h2>
+                <p class="auth-description" style="margin-bottom: 1rem;">Выберите, какие письма и уведомления получать на email.</p>
                 <div class="profile-notifications">
                     <div class="profile-notify-row">
-                        <span class="profile-notify-label">Присылать новости</span>
+                        <span class="profile-notify-label">Присылать новости и акции</span>
                         <label class="profile-toggle">
                             <input type="checkbox" id="notifyNews" class="profile-toggle-input">
                             <span class="profile-toggle-slider"></span>
                         </label>
                     </div>
                     <div class="profile-notify-row">
-                        <span class="profile-notify-label">Присылать уведомления системы</span>
+                        <span class="profile-notify-label">Уведомления системы (обновления, важные сообщения)</span>
                         <label class="profile-toggle">
                             <input type="checkbox" id="notifySystem" class="profile-toggle-input">
+                            <span class="profile-toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="profile-notify-row">
+                        <span class="profile-notify-label">Письма об одобрении или отклонении заявок на офферы</span>
+                        <label class="profile-toggle">
+                            <input type="checkbox" id="notifyParticipation" class="profile-toggle-input">
+                            <span class="profile-toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="profile-notify-row">
+                        <span class="profile-notify-label">Письма о выплатах (заявка выполнена)</span>
+                        <label class="profile-toggle">
+                            <input type="checkbox" id="notifyPayouts" class="profile-toggle-input">
                             <span class="profile-toggle-slider"></span>
                         </label>
                     </div>
@@ -148,6 +163,30 @@
                     </div>
                     <button type="submit" class="btn btn-primary">Сохранить</button>
                     <button type="button" class="btn btn-secondary profile-modal-cancel">Отмена</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Модалка смены пароля -->
+        <div class="modal profile-modal" id="profilePasswordModal">
+            <div class="modal-content profile-modal-content">
+                <h3>Изменить пароль</h3>
+                <form id="profilePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Текущий пароль</label>
+                        <input type="password" id="currentPassword" class="form-control" required autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">Новый пароль</label>
+                        <input type="password" id="newPassword" class="form-control" required minlength="6" autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPasswordConfirm">Повторите новый пароль</label>
+                        <input type="password" id="newPasswordConfirm" class="form-control" required minlength="6" autocomplete="new-password">
+                    </div>
+                    <p id="passwordFormError" class="auth-message error" style="display:none;"></p>
+                    <button type="submit" class="btn btn-primary">Изменить пароль</button>
+                    <button type="button" class="btn btn-secondary profile-modal-cancel" data-close="profilePasswordModal">Отмена</button>
                 </form>
             </div>
         </div>
@@ -211,10 +250,44 @@
             });
         }
 
+        var passwordModal = document.getElementById('profilePasswordModal');
+        var passwordForm = document.getElementById('profilePasswordForm');
         document.getElementById('profilePasswordLink').addEventListener('click', function(e) {
             e.preventDefault();
-            alert('Смена пароля будет доступна в следующей версии.');
+            if (passwordModal) {
+                passwordModal.classList.add('active');
+                document.getElementById('passwordFormError').style.display = 'none';
+                if (passwordForm) passwordForm.reset();
+            }
         });
+        document.querySelectorAll('[data-close="profilePasswordModal"]').forEach(function(btn) {
+            btn.addEventListener('click', function() { if (passwordModal) passwordModal.classList.remove('active'); });
+        });
+        if (passwordModal) passwordModal.addEventListener('click', function(e) { if (e.target === passwordModal) passwordModal.classList.remove('active'); });
+        if (passwordForm) {
+            passwordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var newPwd = document.getElementById('newPassword').value;
+                var confirmPwd = document.getElementById('newPasswordConfirm').value;
+                var errEl = document.getElementById('passwordFormError');
+                if (newPwd !== confirmPwd) {
+                    errEl.textContent = 'Новый пароль и повтор не совпадают.';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                errEl.style.display = 'none';
+                window.RealCPA.changePassword(document.getElementById('currentPassword').value, newPwd)
+                    .then(function() {
+                        if (passwordModal) passwordModal.classList.remove('active');
+                        passwordForm.reset();
+                        alert('Пароль успешно изменён.');
+                    })
+                    .catch(function(err) {
+                        errEl.textContent = err.message || (err.payload && err.payload.error) || 'Ошибка смены пароля';
+                        errEl.style.display = 'block';
+                    });
+            });
+        }
         document.getElementById('profilePhoneLink').addEventListener('click', function(e) {
             e.preventDefault();
             alert('Указание телефона будет доступно в следующей версии.');
@@ -226,25 +299,35 @@
             }
         });
 
-        var notifyNews = document.getElementById('notifyNews');
-        var notifySystem = document.getElementById('notifySystem');
-        if (notifyNews) {
-            notifyNews.checked = localStorage.getItem('profile_notify_news') === '1';
-            notifyNews.addEventListener('change', function() { localStorage.setItem('profile_notify_news', this.checked ? '1' : '0'); });
+        function setNotifyFromProfile(profile) {
+            var ids = ['notifyNews', 'notifySystem', 'notifyParticipation', 'notifyPayouts'];
+            var keys = ['notifyNews', 'notifySystem', 'notifyParticipation', 'notifyPayouts'];
+            keys.forEach(function(key, i) {
+                var el = document.getElementById(ids[i]);
+                if (!el) return;
+                el.checked = profile && profile[key] !== false;
+            });
         }
-        if (notifySystem) {
-            notifySystem.checked = localStorage.getItem('profile_notify_system') === '1';
-            notifySystem.addEventListener('change', function() { localStorage.setItem('profile_notify_system', this.checked ? '1' : '0'); });
+        function saveNotifyToProfile() {
+            if (window.RealCPA.getRole() !== 'affiliate') return;
+            window.RealCPA.patchAffiliateProfile({
+                notifyNews: document.getElementById('notifyNews').checked,
+                notifySystem: document.getElementById('notifySystem').checked,
+                notifyParticipation: document.getElementById('notifyParticipation').checked,
+                notifyPayouts: document.getElementById('notifyPayouts').checked
+            }).catch(function() {});
         }
-
         if (window.RealCPA.getRole() === 'affiliate') {
             var payoutSection = document.getElementById('profilePayoutSection');
             var payoutDetailsEl = document.getElementById('profilePayoutDetails');
             var savePayoutBtn = document.getElementById('profileSavePayout');
             if (payoutSection) payoutSection.style.display = 'block';
             window.RealCPA.getAffiliateProfile().then(function(p) {
+                setNotifyFromProfile(p);
                 if (payoutDetailsEl && p && p.payoutDetails != null) payoutDetailsEl.value = p.payoutDetails;
-            }).catch(function() {});
+            }).catch(function() {
+                setNotifyFromProfile(null);
+            });
             if (savePayoutBtn && payoutDetailsEl) {
                 savePayoutBtn.addEventListener('click', function() {
                     savePayoutBtn.disabled = true;
@@ -257,7 +340,13 @@
                     });
                 });
             }
+        } else {
+            setNotifyFromProfile(null);
         }
+        ['notifyNews', 'notifySystem', 'notifyParticipation', 'notifyPayouts'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('change', saveNotifyToProfile);
+        });
 
         loadProfile();
     })();

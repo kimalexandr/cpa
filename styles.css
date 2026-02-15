@@ -260,6 +260,110 @@ body {
 #navAdminLink { display: none !important; }
 body.role-admin #navAdminLink { display: block !important; }
 
+/* Колокольчик уведомлений в шапке */
+.notifications-bell-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-right: 0.5rem;
+}
+.notifications-bell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--white);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.notifications-bell:hover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.04);
+    color: var(--primary-color);
+}
+.notifications-bell .fa-bell { font-size: 1rem; }
+.notifications-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.1rem;
+    text-align: center;
+    color: var(--white);
+    background: #dc2626;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+.notifications-badge.empty { display: none; }
+.notifications-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.25rem;
+    width: 320px;
+    max-height: 360px;
+    overflow: hidden;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+    z-index: 1000;
+    flex-direction: column;
+}
+.notifications-dropdown.is-open { display: flex; }
+.notifications-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.notifications-dropdown-body {
+    overflow-y: auto;
+    max-height: 280px;
+}
+.notifications-dropdown-footer {
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+.notifications-dropdown-footer .btn-link {
+    font-size: 0.875rem;
+    color: var(--primary-color);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0;
+}
+.notifications-dropdown-footer .btn-link:hover { text-decoration: underline; }
+.notification-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: background 0.15s;
+}
+.notification-item:hover { background: var(--background-color); }
+.notification-item:last-child { border-bottom: none; }
+.notification-item.unread { background: rgba(37, 99, 235, 0.04); }
+.notification-item .notification-title { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.2rem; }
+.notification-item .notification-body { font-size: 0.8rem; color: var(--text-light); }
+.notification-item .notification-time { font-size: 0.75rem; color: var(--text-light); margin-top: 0.25rem; }
+.notifications-empty { padding: 1.5rem 1rem; text-align: center; color: var(--text-light); font-size: 0.9rem; }
+
 /* Заглушки для гостей: каталог и оффер недоступны */
 .offers-guest-stub,
 .offer-guest-stub {

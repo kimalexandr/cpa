@@ -86,15 +86,44 @@ model User {
   participations     AffiliateOfferParticipation[]
   trackingLinks      TrackingLink[]
   payouts            Payout[]
+  notifications      Notification[]
 
   @@index([email])
 }
 
+enum NotificationType {
+  participation_approved
+  participation_rejected
+  payout_paid
+  system
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  title     String
+  body      String?          @db.Text
+  link      String?          @db.Text
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
 model AffiliateProfile {
-  userId        String   @id @map("user_id")
-  payoutDetails String?  @map("payout_details") @db.Text
-  trafficSources String? @map("traffic_sources") @db.Text
-  notes         String?  @db.Text
+  userId              String   @id @map("user_id")
+  payoutDetails       String?  @map("payout_details") @db.Text
+  trafficSources      String?  @map("traffic_sources") @db.Text
+  notes               String?  @db.Text
+  notifyNews          Boolean? @map("notify_news")
+  notifySystem        Boolean? @map("notify_system")
+  notifyParticipation Boolean? @map("notify_participation")
+  notifyPayouts       Boolean? @map("notify_payouts")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

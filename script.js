@@ -82,6 +82,86 @@ document.addEventListener('DOMContentLoaded', function() {
         var settingsItem = dropdown.querySelector('.user-dropdown-settings');
         if (settingsItem && settingsItem.tagName === 'A') settingsItem.addEventListener('click', function() { closeDropdown(); });
     }
+
+    // Колокольчик уведомлений (только для авторизованных)
+    if (isLoggedIn && typeof window.RealCPA !== 'undefined' && window.RealCPA.getNotifications) {
+        var navUser = document.querySelector('.nav-auth-user');
+        if (navUser && !navUser.querySelector('.notifications-bell-wrap')) {
+            var bellWrap = document.createElement('div');
+            bellWrap.className = 'notifications-bell-wrap';
+            bellWrap.innerHTML = '<button type="button" class="notifications-bell" id="notificationsBellBtn" aria-label="Уведомления" aria-haspopup="true"><i class="fas fa-bell"></i><span class="notifications-badge empty" id="notificationsBadge">0</span></button><div class="notifications-dropdown" id="notificationsDropdown" aria-hidden="true"><div class="notifications-dropdown-header">Уведомления</div><div class="notifications-dropdown-body" id="notificationsDropdownBody"></div><div class="notifications-dropdown-footer"><button type="button" class="btn-link" id="notificationsMarkAllRead">Отметить все прочитанными</button></div></div>';
+            navUser.insertBefore(bellWrap, navUser.firstChild);
+
+            var bellBtn = document.getElementById('notificationsBellBtn');
+            var notifDropdown = document.getElementById('notificationsDropdown');
+            var notifBody = document.getElementById('notificationsDropdownBody');
+            var notifBadge = document.getElementById('notificationsBadge');
+            var markAllReadBtn = document.getElementById('notificationsMarkAllRead');
+
+            function formatNotificationTime(dateStr) {
+                var d = new Date(dateStr);
+                var now = new Date();
+                var diff = (now - d) / 60000;
+                if (diff < 1) return 'только что';
+                if (diff < 60) return Math.floor(diff) + ' мин назад';
+                if (diff < 1440) return Math.floor(diff / 60) + ' ч назад';
+                if (diff < 43200) return Math.floor(diff / 1440) + ' дн назад';
+                return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+            }
+
+            function renderNotifications(items) {
+                if (!notifBody) return;
+                if (!items || items.length === 0) {
+                    notifBody.innerHTML = '<div class="notifications-empty">Нет уведомлений</div>';
+                    return;
+                }
+                notifBody.innerHTML = items.map(function(n) {
+                    var cls = n.readAt ? '' : ' unread';
+                    var href = n.link ? ('href="' + n.link + '"') : '';
+                    var tag = n.link ? 'a' : 'div';
+                    return '<' + tag + ' class="notification-item' + cls + '" data-id="' + n.id + '" ' + href + '><div class="notification-title">' + (n.title || '') + '</div>' + (n.body ? '<div class="notification-body">' + n.body + '</div>' : '') + '<div class="notification-time">' + formatNotificationTime(n.createdAt) + '</div></' + tag + '>';
+                }).join('');
+                notifBody.querySelectorAll('.notification-item').forEach(function(el) {
+                    el.addEventListener('click', function(e) {
+                        var id = el.getAttribute('data-id');
+                        if (id && window.RealCPA.markNotificationRead) window.RealCPA.markNotificationRead(id).catch(function() {});
+                    });
+                });
+            }
+
+            function loadNotificationsAndBadge() {
+                window.RealCPA.getNotifications({ limit: 15 }).then(function(r) {
+                    if (notifBadge) {
+                        var c = r.unreadCount || 0;
+                        notifBadge.textContent = c > 99 ? '99+' : c;
+                        notifBadge.classList.toggle('empty', c === 0);
+                    }
+                    renderNotifications(r.items || []);
+                }).catch(function() {
+                    if (notifBadge) { notifBadge.classList.add('empty'); }
+                    renderNotifications([]);
+                });
+            }
+
+            loadNotificationsAndBadge();
+            if (bellBtn && notifDropdown) {
+                bellBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    notifDropdown.classList.toggle('is-open');
+                    bellBtn.setAttribute('aria-expanded', notifDropdown.classList.contains('is-open'));
+                    if (notifDropdown.classList.contains('is-open')) loadNotificationsAndBadge();
+                });
+                document.addEventListener('click', function(e) {
+                    if (!bellWrap.contains(e.target)) notifDropdown.classList.remove('is-open');
+                });
+            }
+            if (markAllReadBtn && notifDropdown) {
+                markAllReadBtn.addEventListener('click', function() {
+                    window.RealCPA.markAllNotificationsRead().then(function() { loadNotificationsAndBadge(); }).catch(function() {});
+                });
+            }
+        }
+    }
 });
 
 // Мобильное меню и языки

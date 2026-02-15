@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
 import { sendPayoutPaid } from '../lib/email';
+import { createNotification } from '../lib/notifications';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -194,7 +195,7 @@ router.patch('/payouts/:id', async (req: AuthRequest, res: Response) => {
     }
     const payout = await prisma.payout.findUnique({
       where: { id },
-      include: { affiliate: { select: { email: true } } },
+      include: { affiliate: { select: { email: true, affiliateProfile: { select: { notifyPayouts: true } } } } },
     });
     if (!payout) {
       res.status(404).json({ error: 'Выплата не найдена' });
@@ -207,8 +208,18 @@ router.patch('/payouts/:id', async (req: AuthRequest, res: Response) => {
       data,
       include: { affiliate: { select: { id: true, email: true, name: true } } },
     });
-    if (status === 'paid' && payout.affiliate?.email) {
-      await sendPayoutPaid(payout.affiliate.email, Number(payout.amount), payout.currency);
+    const sendPayoutEmail = (payout.affiliate as { affiliateProfile?: { notifyPayouts: boolean | null } } | null)?.affiliateProfile?.notifyPayouts !== false;
+    if (status === 'paid') {
+      if (payout.affiliate?.email && sendPayoutEmail) {
+        await sendPayoutPaid(payout.affiliate.email, Number(payout.amount), payout.currency);
+      }
+      await createNotification(prisma, {
+        userId: payout.affiliateId,
+        type: 'payout_paid',
+        title: 'Выплата выполнена',
+        body: `Сумма ${Number(payout.amount)} ${payout.currency} переведена.`,
+        link: '/payments.html',
+      });
     }
     res.json(updated);
   } catch (e) {

@@ -121,8 +121,21 @@
     patchMe: function (data) {
       return request('PATCH', '/api/me', data);
     },
+    changePassword: function (currentPassword, newPassword) {
+      return request('PATCH', '/api/me/password', { currentPassword: currentPassword, newPassword: newPassword });
+    },
     getAffiliateProfile: function () { return request('GET', '/api/me/affiliate-profile'); },
     patchAffiliateProfile: function (data) { return request('PATCH', '/api/me/affiliate-profile', data); },
+
+    getNotifications: function (params) {
+      var q = [];
+      if (params && params.limit != null) q.push('limit=' + encodeURIComponent(params.limit));
+      if (params && params.offset != null) q.push('offset=' + encodeURIComponent(params.offset));
+      if (params && params.unreadOnly) q.push('unreadOnly=true');
+      return request('GET', '/api/me/notifications' + (q.length ? '?' + q.join('&') : ''));
+    },
+    markNotificationRead: function (id) { return request('PATCH', '/api/me/notifications/' + encodeURIComponent(id), {}); },
+    markAllNotificationsRead: function () { return request('PATCH', '/api/me/notifications/read-all', {}); },
 
     categories: function () {
       return request('GET', '/api/categories');
