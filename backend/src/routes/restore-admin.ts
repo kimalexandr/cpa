@@ -116,12 +116,13 @@ router.post('/', async (_req: Request, res: Response) => {
           status: OfferStatus.active,
         },
       });
-      await prisma.offerCategory.upsert({
-        where: { offerId_categoryId: { offerId: o.id, categoryId: o.catId } },
-        create: { offerId: o.id, categoryId: o.catId },
-        update: {},
-      });
     }
+    // Делегат offerCategory есть в сгенерированном клиенте после prisma generate
+    const offerCategory = (prisma as unknown as { offerCategory: { createMany: (args: { data: { offerId: string; categoryId: string }[]; skipDuplicates?: boolean }) => Promise<unknown> } }).offerCategory;
+    await offerCategory.createMany({
+      data: seedOffers.map((o) => ({ offerId: o.id, categoryId: o.catId })),
+      skipDuplicates: true,
+    });
 
     res.json({ ok: true, email: adminUser.email, offers: seedOffers.length });
   } catch (e) {

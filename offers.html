@@ -281,50 +281,99 @@
                     '</div></div></div>';
             }).join('');
         }
+        function getApiBase() {
+            if (typeof window.RealCPA !== 'undefined' && window.RealCPA.getBase) return window.RealCPA.getBase();
+            if (window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') return '';
+            return 'http://localhost:3000';
+        }
+        function fetchOffersFromApi(params) {
+            var base = getApiBase();
+            var q = ['status=' + encodeURIComponent(params.status || 'active')];
+            if (params.category) q.push('category=' + encodeURIComponent(params.category));
+            if (params.search) q.push('search=' + encodeURIComponent(params.search));
+            var url = base + '/api/offers?' + q.join('&');
+            return fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } }).then(function(r) {
+                if (!r.ok) throw new Error(r.status === 500 && r.headers.get('Content-Type') && r.headers.get('Content-Type').indexOf('json') !== -1 ? 'Ошибка сервера' : 'Ошибка ' + r.status);
+                return r.json();
+            });
+        }
+        function fetchCategoriesFromApi() {
+            var base = getApiBase();
+            return fetch(base + '/api/categories', { method: 'GET', headers: { 'Content-Type': 'application/json' } }).then(function(r) {
+                if (!r.ok) throw new Error('Ошибка ' + r.status);
+                return r.json();
+            });
+        }
         function loadOffers() {
             var params = { status: 'active' };
             var catFilter = document.getElementById('categoryFilter');
             var searchInput = document.getElementById('offerSearch');
-            if (catFilter && catFilter.value) params.category = catFilter.value;
+            if (catFilter && catFilter.value && catFilter.value !== 'loading') params.category = catFilter.value;
             if (searchInput && searchInput.value.trim()) params.search = searchInput.value.trim();
             if (!listEl) return;
             listEl.innerHTML = '<p class="loading-offers">Загрузка офферов...</p>';
             var loadTimeout = setTimeout(function() {
                 if (listEl && listEl.textContent.indexOf('Загрузка') !== -1) {
-                    listEl.innerHTML = '<p>Загрузка занимает больше времени, чем обычно. <button type="button" class="btn btn-secondary" id="offersRetryBtn">Повторить</button></p>';
+                    listEl.innerHTML = '<p>Загрузка занимает больше времени. <button type="button" class="btn btn-secondary" id="offersRetryBtn">Повторить</button></p>';
                     var retryBtn = document.getElementById('offersRetryBtn');
                     if (retryBtn) retryBtn.addEventListener('click', loadOffers);
                 }
             }, 12000);
-            window.RealCPA.offers(params)
-                .then(function(data) {
-                    clearTimeout(loadTimeout);
-                    var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : [];
-                    renderOffers(list);
-                })
-                .catch(function(err) {
-                    clearTimeout(loadTimeout);
-                    var url = (typeof window.RealCPA !== 'undefined' && window.RealCPA.getBase) ? window.RealCPA.getBase() + '/api/offers?status=active' : '/api/offers?status=active';
-                    listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(err.message || 'ошибка сети') + '.</p><p><button type="button" class="btn btn-primary" id="offersRetryBtn">Повторить запрос</button></p>';
-                    var retryBtn = document.getElementById('offersRetryBtn');
-                    if (retryBtn) retryBtn.addEventListener('click', loadOffers);
+            function onData(data) {
+                clearTimeout(loadTimeout);
+                var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : [];
+                renderOffers(list);
+            }
+            function showOffersError(msg) {
+                clearTimeout(loadTimeout);
+                listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(msg) + '.</p><p><button type="button" class="btn btn-primary" id="offersRetryBtn">Повторить запрос</button></p>';
+                var retryBtn = document.getElementById('offersRetryBtn');
+                if (retryBtn) retryBtn.addEventListener('click', loadOffers);
+            }
+            if (typeof window.RealCPA !== 'undefined' && window.RealCPA.offers) {
+                window.RealCPA.offers(params).then(onData).catch(function() {
+                    fetchOffersFromApi(params).then(onData).catch(function(fallbackErr) {
+                        showOffersError(fallbackErr.message || 'ошибка сети');
+                    });
                 });
+            } else {
+                fetchOffersFromApi(params).then(onData).catch(function(err) {
+                    showOffersError(err.message || 'ошибка сети');
+                });
+            }
         }
-        window.RealCPA.categories().then(function(cats) {
+        function loadCategories() {
             var sel = document.getElementById('categoryFilter');
             if (!sel) return;
-            var list = Array.isArray(cats) ? cats : [];
-            sel.innerHTML = '<option value="">Все категории</option>' +
-                list.filter(function(c) { return c.slug && c.name; }).map(function(c) {
-                    return '<option value="' + escapeHtml(c.slug) + '">' + escapeHtml(c.name) + '</option>';
-                }).join('');
-        }).catch(function() {});
+            sel.innerHTML = '<option value="loading">Загрузка категорий...</option>';
+            function onCats(cats) {
+                var list = Array.isArray(cats) ? cats : [];
+                sel.innerHTML = '<option value="">Все категории</option>' +
+                    list.filter(function(c) { return c.slug && c.name; }).map(function(c) {
+                        return '<option value="' + escapeHtml(c.slug) + '">' + escapeHtml(c.name) + '</option>';
+                    }).join('');
+            }
+            function onCatsErr() {
+                sel.innerHTML = '<option value="">Все категории</option><option value="">— Не удалось загрузить —</option>';
+            }
+            if (typeof window.RealCPA !== 'undefined' && window.RealCPA.categories) {
+                window.RealCPA.categories().then(onCats).catch(function() {
+                    fetchCategoriesFromApi().then(onCats).catch(onCatsErr);
+                });
+            } else {
+                fetchCategoriesFromApi().then(onCats).catch(onCatsErr);
+            }
+        }
+        loadCategories();
         var searchBtn = document.getElementById('offerSearchBtn');
         var searchInput = document.getElementById('offerSearch');
         if (searchBtn) searchBtn.addEventListener('click', loadOffers);
         if (searchInput) searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') loadOffers(); });
         var categoryFilter = document.getElementById('categoryFilter');
-        if (categoryFilter) categoryFilter.addEventListener('change', loadOffers);
+        if (categoryFilter) categoryFilter.addEventListener('change', function() {
+            if (categoryFilter.value === 'loading') return;
+            loadOffers();
+        });
         loadOffers();
     });
     </script>
