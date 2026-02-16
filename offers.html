@@ -135,19 +135,13 @@
             <div class="filters-section">
                 <div class="search-box-inline">
                     <input type="text" class="search-input" placeholder="Например: продукты питания оптом" id="offerSearch">
-                    <button class="search-btn">
+                    <button type="button" class="search-btn" id="offerSearchBtn">
                         <i class="fas fa-search"></i>
                     </button>
                 </div>
                 <div class="filters-grid">
                     <select class="filter-select" id="categoryFilter">
                         <option value="">Все категории</option>
-                        <option value="products">Продукты питания</option>
-                        <option value="construction">Стройматериалы</option>
-                        <option value="auto">Автозапчасти</option>
-                        <option value="electronics">Электроника и техника</option>
-                        <option value="clothing">Одежда и обувь</option>
-                        <option value="other">Другое</option>
                     </select>
                     <select class="filter-select" id="regionFilter">
                         <option value="">Все регионы</option>
@@ -242,6 +236,16 @@
             if (slug === 'products') return 'fa-shopping-basket';
             return 'fa-briefcase';
         }
+        function escapeHtml(s) {
+            var div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+        function getOfferCategory(o) {
+            if (o.category && o.category.name) return o.category;
+            if (o.categories && o.categories.length) return o.categories[0];
+            return null;
+        }
         function renderOffers(offers) {
             if (!listEl) return;
             if (!Array.isArray(offers)) {
@@ -249,17 +253,18 @@
                 return;
             }
             if (!offers.length) {
-                listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов.</p><p>Здесь отображаются все активные офферы. Они появятся после публикации поставщиками и подтверждения в админ-панели (Админка → Офферы → кнопка «Подтвердить» у черновиков).</p>';
+                listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов.</p><p>Здесь отображаются офферы поставщиков со статусом «Активен» или «Приостановлен». Поставщики включают их в разделе «Мои офферы» (кнопка «В активные»).</p>';
                 window.__lastOffersList = [];
                 return;
             }
             window.__lastOffersList = offers;
             listEl.innerHTML = offers.map(function(o, i) {
-                var cat = o.category ? o.category.name : '—';
-                var slug = o.category ? o.category.slug : '';
+                var catObj = getOfferCategory(o);
+                var cat = catObj ? catObj.name : '—';
+                var slug = catObj ? catObj.slug : '';
                 var icon = iconForSlug(slug);
                 var geo = o.targetGeo || '—';
-                var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || '₽') : '—';
+                var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
                 return '<div class="offer-card animate-on-scroll" style="--i:' + i + '">' +
                     '<div class="offer-image"><i class="fas ' + icon + '"></i></div>' +
                     '<div class="offer-content">' +
@@ -276,29 +281,51 @@
                     '</div></div></div>';
             }).join('');
         }
-        function escapeHtml(s) {
-            var div = document.createElement('div');
-            div.textContent = s;
-            return div.innerHTML;
-        }
-        var loadTimeout = setTimeout(function() {
-            if (listEl && listEl.textContent.indexOf('Загрузка') !== -1) {
-                listEl.innerHTML = '<p>Загрузка занимает больше времени, чем обычно. Проверьте подключение к интернету и что бэкенд запущен, затем <a href="offers.html">обновите страницу</a>.</p>';
-            }
-        }, 12000);
-        window.RealCPA.offers({ status: 'active' })
-            .then(function(data) {
-                clearTimeout(loadTimeout);
-                var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : [];
-                renderOffers(list);
-            })
-            .catch(function(err) {
-                clearTimeout(loadTimeout);
-                if (listEl) {
-                    var url = (typeof window.RealCPA !== 'undefined' && window.RealCPA.getBase) ? window.RealCPA.getBase() + '/api/offers?status=active' : '/api/offers?status=active';
-                    listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(err.message || 'ошибка сети') + '.</p><p>Запрошенный URL: <code>' + escapeHtml(url) + '</code></p><p>Проверьте, что бэкенд запущен и доступен по этому адресу, затем обновите страницу.</p>';
+        function loadOffers() {
+            var params = { status: 'active' };
+            var catFilter = document.getElementById('categoryFilter');
+            var searchInput = document.getElementById('offerSearch');
+            if (catFilter && catFilter.value) params.category = catFilter.value;
+            if (searchInput && searchInput.value.trim()) params.search = searchInput.value.trim();
+            if (!listEl) return;
+            listEl.innerHTML = '<p class="loading-offers">Загрузка офферов...</p>';
+            var loadTimeout = setTimeout(function() {
+                if (listEl && listEl.textContent.indexOf('Загрузка') !== -1) {
+                    listEl.innerHTML = '<p>Загрузка занимает больше времени, чем обычно. <button type="button" class="btn btn-secondary" id="offersRetryBtn">Повторить</button></p>';
+                    var retryBtn = document.getElementById('offersRetryBtn');
+                    if (retryBtn) retryBtn.addEventListener('click', loadOffers);
                 }
-            });
+            }, 12000);
+            window.RealCPA.offers(params)
+                .then(function(data) {
+                    clearTimeout(loadTimeout);
+                    var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : [];
+                    renderOffers(list);
+                })
+                .catch(function(err) {
+                    clearTimeout(loadTimeout);
+                    var url = (typeof window.RealCPA !== 'undefined' && window.RealCPA.getBase) ? window.RealCPA.getBase() + '/api/offers?status=active' : '/api/offers?status=active';
+                    listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(err.message || 'ошибка сети') + '.</p><p><button type="button" class="btn btn-primary" id="offersRetryBtn">Повторить запрос</button></p>';
+                    var retryBtn = document.getElementById('offersRetryBtn');
+                    if (retryBtn) retryBtn.addEventListener('click', loadOffers);
+                });
+        }
+        window.RealCPA.categories().then(function(cats) {
+            var sel = document.getElementById('categoryFilter');
+            if (!sel) return;
+            var list = Array.isArray(cats) ? cats : [];
+            sel.innerHTML = '<option value="">Все категории</option>' +
+                list.filter(function(c) { return c.slug && c.name; }).map(function(c) {
+                    return '<option value="' + escapeHtml(c.slug) + '">' + escapeHtml(c.name) + '</option>';
+                }).join('');
+        }).catch(function() {});
+        var searchBtn = document.getElementById('offerSearchBtn');
+        var searchInput = document.getElementById('offerSearch');
+        if (searchBtn) searchBtn.addEventListener('click', loadOffers);
+        if (searchInput) searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') loadOffers(); });
+        var categoryFilter = document.getElementById('categoryFilter');
+        if (categoryFilter) categoryFilter.addEventListener('change', loadOffers);
+        loadOffers();
     });
     </script>
     <script>

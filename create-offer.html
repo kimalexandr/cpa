@@ -398,13 +398,14 @@
     <script src="js/region-picker-modal.js"></script>
     <script>
     (function() {
-        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'supplier') {
-            window.location.href = 'login.html?redirect=' + encodeURIComponent('create-offer.html');
-            return;
-        }
         var urlParams = new URLSearchParams(window.location.search);
         var editOfferId = urlParams.get('id') || null;
         window.__offerIdForEdit = editOfferId || undefined;
+        var redirectUrl = 'create-offer.html' + (window.location.search || '');
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'supplier') {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent(redirectUrl);
+            return;
+        }
 
         window.RealCPA.categories().then(function(cats) {
             var sel = document.getElementById('offerCategory');
@@ -416,8 +417,11 @@
                 }).join('');
             if (editOfferId) {
                 window.RealCPA.supplier.getOffers().then(function(offers) {
-                    var o = offers && offers.find(function(x) { return x.id === editOfferId; });
-                    if (!o) { alert('Оффер не найден или нет доступа.'); return; }
+                    var o = offers && offers.find(function(x) { return String(x.id) === String(editOfferId); });
+                    if (!o) { alert('Оффер не найден или нет доступа.'); return null; }
+                    return o;
+                }).then(function(o) {
+                    if (!o) return;
                     var nameEl = document.getElementById('offerName');
                     if (nameEl) nameEl.value = o.title || '';
                     var landingEl = document.getElementById('offerLandingUrl');
@@ -539,7 +543,8 @@
                 e.preventDefault();
                 if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'supplier') {
                     alert('Войдите как поставщик.');
-                    window.location.href = 'login.html?redirect=' + encodeURIComponent('create-offer.html');
+                    var redir = 'create-offer.html' + (window.location.search || '');
+                    window.location.href = 'login.html?redirect=' + encodeURIComponent(redir);
                     return;
                 }
                 var categoryId = document.getElementById('offerCategory') && document.getElementById('offerCategory').value;
