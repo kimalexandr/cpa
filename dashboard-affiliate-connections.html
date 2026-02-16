@@ -101,12 +101,22 @@
             var approved = list.filter(function(p) { return p.status === 'approved' && p.trackingLink; });
             if (approved.length === 0) return;
             var base = (typeof window.RealCPA.getBase === 'function' ? window.RealCPA.getBase() : '') || '';
-            var postbackUrl = base.replace(/\/?$/, '') + '/api/events';
+            var origin = typeof window !== 'undefined' && window.location && window.location.origin ? window.location.origin : '';
+            var postbackUrl = (base || origin).replace(/\/?$/, '') + '/api/events';
             var postbackExample = '{\n  "token": "ваш_token_из_карточки_оффера",\n  "event_type": "lead",\n  "amount": 500,\n  "external_id": "id_заказа_в_вашей_системе"\n}';
+            function toRealTrackingUrl(url) {
+                if (!url || typeof url !== 'string') return url;
+                var path = (url.indexOf('/t/') !== -1) ? '/t/' + url.split('/t/')[1] : '';
+                if (!path) return url;
+                if (url.indexOf('http://localhost:3000') === 0 || url.indexOf('http://127.0.0.1:3000') === 0) {
+                    return origin ? (origin.replace(/\/$/, '') + path) : url;
+                }
+                return url;
+            }
             var cardsHtml = approved.map(function(p) {
                 var name = p.offer ? p.offer.title : p.offerId;
-                var link = p.trackingLink || '';
-                var token = (link && link.indexOf('/t/') !== -1) ? link.split('/t/')[1].split('?')[0] : '';
+                var link = toRealTrackingUrl(p.trackingLink || '');
+                var token = (link && link.indexOf('/t/') !== -1) ? link.split('/t/')[1].split('?')[0] : (p.trackingLink && p.trackingLink.indexOf('/t/') !== -1 ? p.trackingLink.split('/t/')[1].split('?')[0] : '');
                 var payout = p.offer && p.offer.payoutAmount != null ? p.offer.payoutAmount + ' ' + (p.offer.currency || '₽') : '';
                 var rows = [];
                 if (link) {

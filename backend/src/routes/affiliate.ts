@@ -100,7 +100,9 @@ router.get('/my-offers', async (req: AuthRequest, res: Response) => {
     trackingLinks.forEach((t: { offerId: string; token: string }) => {
       tokenByOfferId[t.offerId] = t.token;
     });
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+    const baseUrl =
+      process.env.API_BASE_URL ||
+      (req.protocol && req.get('host') ? `${req.protocol}://${req.get('host')}` : 'http://localhost:3000');
     const list = participations.map((p: { offerId: string; [k: string]: unknown }) => ({
       ...p,
       trackingLink: tokenByOfferId[p.offerId] ? baseUrl + '/t/' + tokenByOfferId[p.offerId] : null,
