@@ -160,7 +160,7 @@
                 </div>
             </div>
 
-            <div class="offers-list offers-grid" id="offersList" aria-live="polite" aria-busy="false"></div>
+            <div class="offers-grid" id="offersList" aria-live="polite" aria-busy="false"></div>
             </div>
         </main>
     </div>
@@ -225,11 +225,6 @@
             }).catch(function() {});
         }
 
-        function iconForSlug(slug) {
-            if (slug === 'construction') return 'fa-box-open';
-            if (slug === 'products') return 'fa-shopping-basket';
-            return 'fa-briefcase';
-        }
         function escapeHtml(s) {
             var div = document.createElement('div');
             div.textContent = s;
@@ -249,34 +244,21 @@
                 return;
             }
             if (!offers.length) {
-                listEl.innerHTML = '<p class="offers-empty-msg">В каталоге пока нет офферов.</p><p class="offers-empty-hint">Офферы появятся после публикации поставщиками (статус «Активен» или «Приостановлен») или после выполнения <code>npx prisma db seed</code> в папке backend.</p>';
+                listEl.innerHTML = '<p class="offers-empty-msg">В каталоге пока нет офферов. Офферы появятся после публикации поставщиками.</p>';
                 window.__lastOffersList = [];
                 return;
             }
             window.__lastOffersList = offers;
-            listEl.innerHTML = offers.map(function(o, i) {
+            listEl.innerHTML = offers.map(function(o) {
                 var catObj = getOfferCategory(o);
                 var cat = catObj ? catObj.name : '—';
-                var slug = catObj ? catObj.slug : '';
-                var icon = iconForSlug(slug);
-                var geo = o.targetGeo || '—';
-                var rateStr = o.payoutAmount != null ? (o.payoutAmount + ' Р') : '—';
-                var ratingStr = (o.rating != null && o.reviewsCount != null) ? (o.rating + ' (' + o.reviewsCount + ' отзывов)') : '—';
-                return '<div class="offer-card animate-on-scroll" style="--i:' + i + '">' +
-                    '<div class="offer-card__icon"><i class="fas ' + icon + '"></i></div>' +
-                    '<div class="offer-card__body">' +
-                    '<span class="offer-card__category">' + escapeHtml(cat) + '</span>' +
-                    '<h3 class="offer-card__title">' + escapeHtml(o.title) + '</h3>' +
-                    '<p class="offer-card__desc">' + escapeHtml((o.description || '').slice(0, 180)) + (o.description && o.description.length > 180 ? '…' : '') + '</p>' +
-                    '<div class="offer-card__meta">' +
-                    '<span class="offer-card__cpa"><i class="fas fa-ruble-sign"></i> CPA: ' + escapeHtml(String(rateStr)) + '</span>' +
-                    '<span class="offer-card__geo"><i class="fas fa-map-marker-alt"></i> ' + escapeHtml(geo) + '</span>' +
-                    '<span class="offer-card__rating"><i class="fas fa-star"></i> ' + escapeHtml(ratingStr) + '</span>' +
-                    '</div>' +
-                    '<div class="offer-card__actions">' +
-                    '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-primary">Подключиться</a>' +
-                    '<button type="button" class="btn btn-outline" data-open-offer-details data-offer-id="' + escapeHtml(o.id) + '">Детали</button>' +
-                    '</div></div></div>';
+                var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
+                return '<div class="offer-card-mini">' +
+                    '<div class="offer-category">' + escapeHtml(cat) + '</div>' +
+                    '<h3>' + escapeHtml(o.title) + '</h3>' +
+                    '<p class="offer-cpa">CPA: ' + escapeHtml(String(rate)) + '</p>' +
+                    '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-primary">Подключиться</a>' +
+                    '</div>';
             }).join('');
         }
         function getApiBase() {
