@@ -198,7 +198,9 @@
 
     function renderTree() {
       if (!tree || !tree.length) {
-        treeEl.innerHTML = '<p class="region-picker-empty">Загрузка дерева...</p>';
+        treeEl.innerHTML = tree === null
+          ? '<p class="region-picker-empty">Загрузка дерева...</p>'
+          : '<p class="region-picker-empty">Справочник регионов пуст. Загрузите данные в админке (раздел «География») или выполните на сервере: <code>npm run db:seed-locations</code></p>';
         return;
       }
       var html = '';
@@ -290,10 +292,14 @@
       });
     }
 
-    (typeof window.RealCPA !== 'undefined' && window.RealCPA.getLocationsTree
+    var treePromise = typeof window.RealCPA !== 'undefined' && window.RealCPA.getLocationsTree
       ? window.RealCPA.getLocationsTree()
-      : fetch((window.RealCPA && window.RealCPA.getBase ? window.RealCPA.getBase() : '') + '/api/locations/tree', { credentials: 'include' }).then(function (r) { return r.json(); })
-    ).then(function (data) {
+      : fetch((window.RealCPA && window.RealCPA.getBase ? window.RealCPA.getBase() : '') + '/api/locations/tree', { credentials: 'include' })
+          .then(function (r) {
+            if (!r.ok) throw new Error(r.status === 500 ? 'Сервер вернул ошибку. Проверьте, что миграции БД применены (npm run db:migrate в backend).' : 'Ошибка ' + r.status);
+            return r.json();
+          });
+    treePromise.then(function (data) {
       tree = Array.isArray(data) ? data : [];
       loadInitialAndShow();
     }).catch(function (err) {

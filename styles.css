@@ -3190,3 +3190,13 @@ body.role-admin #navAdminLink { display: block !important; }
     text-align: center;
     margin: 0;
 }
+.region-picker-empty code {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--background-color);
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+    color: var(--text-color);
+    word-break: break-all;
+}

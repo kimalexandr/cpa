@@ -19,38 +19,39 @@ function serializeOffer(offer: Record<string, unknown>): Record<string, unknown>
 }
 
 router.get('/', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const categorySlug = req.query.category as string | undefined;
-    const status = (req.query.status as string) || 'active';
-    const search = (req.query.search as string) || '';
-    const where: Record<string, unknown> = {};
-    if (status === 'active') {
-      where.status = { in: ['active', 'paused'] };
-    } else if (status) {
-      where.status = status;
-    }
+  const categorySlug = req.query.category as string | undefined;
+  const status = (req.query.status as string) || 'active';
+  const search = (req.query.search as string) || '';
+  const where: Record<string, unknown> = {};
+  if (status === 'active') {
+    where.status = { in: ['active', 'paused'] };
+  } else if (status) {
+    where.status = status;
+  }
+  if (categorySlug) {
+    (where as Record<string, unknown>).OR = [
+      { category: { slug: categorySlug } },
+      { offerCategories: { some: { category: { slug: categorySlug } } } },
+    ];
+  }
+  if (search.trim()) {
+    const searchCond = [
+      { title: { contains: search.trim(), mode: 'insensitive' as const } },
+      { description: { contains: search.trim(), mode: 'insensitive' as const } },
+    ];
     if (categorySlug) {
-      (where as Record<string, unknown>).OR = [
-        { category: { slug: categorySlug } },
-        { offerCategories: { some: { category: { slug: categorySlug } } } },
+      (where as Record<string, unknown>).AND = [
+        { OR: (where as Record<string, unknown>).OR },
+        { OR: searchCond },
       ];
+      delete (where as Record<string, unknown>).OR;
+    } else {
+      (where as Record<string, unknown>).OR = searchCond;
     }
-    if (search.trim()) {
-      const searchCond = [
-        { title: { contains: search.trim(), mode: 'insensitive' as const } },
-        { description: { contains: search.trim(), mode: 'insensitive' as const } },
-      ];
-      if (categorySlug) {
-        (where as Record<string, unknown>).AND = [
-          { OR: (where as Record<string, unknown>).OR },
-          { OR: searchCond },
-        ];
-        delete (where as Record<string, unknown>).OR;
-      } else {
-        (where as Record<string, unknown>).OR = searchCond;
-      }
-    }
-    const offers = await prisma.offer.findMany({
+  }
+
+  async function fetchFull() {
+    return prisma.offer.findMany({
       where,
       include: {
         category: { select: { id: true, name: true, slug: true, level: true } },
@@ -59,10 +60,41 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async function fetchFallback() {
+    const whereSimple: Record<string, unknown> = { ...where };
+    if (categorySlug) {
+      delete (whereSimple as Record<string, unknown>).OR;
+      (whereSimple as Record<string, unknown>).category = { slug: categorySlug };
+    }
+    return prisma.offer.findMany({
+      where: whereSimple,
+      include: {
+        category: { select: { id: true, name: true, slug: true, level: true } },
+        supplier: { select: { id: true, companyName: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  try {
+    let offers: Awaited<ReturnType<typeof fetchFull>>;
+    try {
+      offers = await fetchFull();
+    } catch (dbErr) {
+      const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+      if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('offer_categories') || msg.includes('offer_locations')) {
+        offers = await fetchFallback() as typeof offers;
+      } else {
+        throw dbErr;
+      }
+    }
     res.json(offers.map((o) => {
       const out = serializeOffer(o as Record<string, unknown>) as Record<string, unknown>;
-      const cats = (o.offerCategories || []).map((oc: { category: unknown }) => oc.category);
-      out.categories = Array.isArray(cats) && cats.length > 0 ? cats : (o.category ? [o.category] : []);
+      const oAny = o as { offerCategories?: { category: unknown }[]; category?: unknown };
+      const cats = (oAny.offerCategories || []).map((oc: { category: unknown }) => oc.category);
+      out.categories = Array.isArray(cats) && cats.length > 0 ? cats : (oAny.category ? [oAny.category] : []);
       return out;
     }));
   } catch (e) {
@@ -99,23 +131,49 @@ router.get('/:id/locations', async (req: Request, res: Response): Promise<void> 
 });
 
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const offer = await prisma.offer.findUnique({
-      where: { id: req.params.id },
-      include: {
-        category: { select: { id: true, name: true, slug: true, level: true } },
-        offerCategories: { select: { category: { select: { id: true, name: true, slug: true, level: true } } } },
-        offerLocations: { select: { location: true } },
-        supplier: {
-          select: {
-            id: true,
-            companyName: true,
-            name: true,
-            supplierProfile: { select: { legalEntity: true, inn: true } },
-          },
-        },
+  const id = req.params.id;
+  const fullInclude = {
+    category: { select: { id: true, name: true, slug: true, level: true } },
+    offerCategories: { select: { category: { select: { id: true, name: true, slug: true, level: true } } } },
+    offerLocations: { select: { location: true } },
+    supplier: {
+      select: {
+        id: true,
+        companyName: true,
+        name: true,
+        supplierProfile: { select: { legalEntity: true, inn: true } },
       },
-    });
+    },
+  };
+  const fallbackInclude = {
+    category: { select: { id: true, name: true, slug: true, level: true } },
+    supplier: {
+      select: {
+        id: true,
+        companyName: true,
+        name: true,
+        supplierProfile: { select: { legalEntity: true, inn: true } },
+      },
+    },
+  };
+  try {
+    let offer: Awaited<ReturnType<typeof prisma.offer.findUnique>>;
+    try {
+      offer = await prisma.offer.findUnique({
+        where: { id },
+        include: fullInclude,
+      });
+    } catch (dbErr) {
+      const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+      if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('offer_categories') || msg.includes('offer_locations')) {
+        offer = await prisma.offer.findUnique({
+          where: { id },
+          include: fallbackInclude,
+        }) as typeof offer;
+      } else {
+        throw dbErr;
+      }
+    }
     if (!offer) {
       res.status(404).json({ error: 'Оффер не найден' });
       return;
@@ -125,9 +183,10 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
       return;
     }
     const out = serializeOffer(offer as Record<string, unknown>) as Record<string, unknown>;
-    out.categories = (offer.offerCategories || []).map((oc: { category: unknown }) => oc.category);
-    if (!(out.categories as unknown[]).length && offer.category) out.categories = [offer.category];
-    out.locations = (offer.offerLocations || []).map((ol: { location: unknown }) => ol.location);
+    const oAny = offer as { offerCategories?: { category: unknown }[]; category?: unknown; offerLocations?: { location: unknown }[] };
+    out.categories = (oAny.offerCategories || []).map((oc: { category: unknown }) => oc.category);
+    if (!(out.categories as unknown[]).length && oAny.category) out.categories = [oAny.category];
+    out.locations = (oAny.offerLocations || []).map((ol: { location: unknown }) => ol.location);
     res.json(out);
   } catch (e) {
     console.error('GET /api/offers/:id:', e);

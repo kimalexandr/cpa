@@ -22,10 +22,21 @@ router.get('/tree', async (req: Request, res: Response) => {
     const activeOnly = req.query.active !== 'false';
     const where = activeOnly ? { isActive: true } : {};
 
-    const all = await prisma.location.findMany({
-      where,
-      orderBy: [{ level: 'asc' }, { name: 'asc' }],
-    });
+    let all: Awaited<ReturnType<typeof prisma.location.findMany>>;
+    try {
+      all = await prisma.location.findMany({
+        where,
+        orderBy: [{ level: 'asc' }, { name: 'asc' }],
+      });
+    } catch (dbErr) {
+      const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+      if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('locations')) {
+        console.warn('GET /api/locations/tree: locations table missing or not migrated, returning empty tree');
+        return res.json([]);
+      }
+      throw dbErr;
+    }
+
     const byId = new Map<string, LocationTreeNode>();
     for (const loc of all) {
       byId.set(loc.id, {
