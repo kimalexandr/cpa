@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "offers" ADD COLUMN IF NOT EXISTS "rating" DECIMAL(3,2);
+ALTER TABLE "offers" ADD COLUMN IF NOT EXISTS "reviews_count" INTEGER;

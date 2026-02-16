@@ -51,6 +51,8 @@ router.post('/offers', async (req: AuthRequest, res: Response) => {
         rules: b.rules != null ? String(b.rules) : null,
         capAmount: b.capAmount != null ? Number(b.capAmount) : null,
         capConversions: b.capConversions != null ? Number(b.capConversions) : null,
+        rating: b.rating != null ? Number(b.rating) : null,
+        reviewsCount: b.reviewsCount != null ? Number(b.reviewsCount) : null,
         offerCategories: {
           create: [...new Set(categoryIds)].map((categoryId) => ({ categoryId })),
         },
@@ -98,6 +100,8 @@ router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
   if (b.rules !== undefined) data.rules = b.rules == null ? null : String(b.rules);
   if (b.capAmount !== undefined) data.capAmount = b.capAmount == null ? null : Number(b.capAmount);
   if (b.capConversions !== undefined) data.capConversions = b.capConversions == null ? null : Number(b.capConversions);
+  if (b.rating !== undefined) data.rating = b.rating == null ? null : Number(b.rating);
+  if (b.reviewsCount !== undefined) data.reviewsCount = b.reviewsCount == null ? null : Number(b.reviewsCount);
   const updated = await prisma.offer.update({
     where: { id: req.params.id },
     data,

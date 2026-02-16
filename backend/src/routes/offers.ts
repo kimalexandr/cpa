@@ -15,6 +15,7 @@ function serializeOffer(offer: Record<string, unknown>): Record<string, unknown>
   const out = { ...offer };
   if ('payoutAmount' in out) out.payoutAmount = toNumber(out.payoutAmount);
   if ('capAmount' in out) out.capAmount = toNumber(out.capAmount);
+  if ('rating' in out) out.rating = toNumber(out.rating);
   return out;
 }
 

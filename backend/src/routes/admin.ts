@@ -308,23 +308,30 @@ router.get('/offers', async (req: AuthRequest, res: Response) => {
   }
 });
 
-/** Смена статуса оффера (админ): подтверждение черновика и др. */
+/** Обновление оффера (админ): статус, рейтинг, число отзывов */
 router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id;
-    const status = req.body?.status as string | undefined;
-    if (!status || !['draft', 'active', 'paused', 'closed'].includes(status)) {
-      res.status(400).json({ error: 'Укажите статус: active, paused или closed' });
-      return;
-    }
+    const body = req.body || {};
     const offer = await prisma.offer.findUnique({ where: { id } });
     if (!offer) {
       res.status(404).json({ error: 'Оффер не найден' });
       return;
     }
+    const data: Record<string, unknown> = {};
+    const status = body.status as string | undefined;
+    if (status && ['draft', 'active', 'paused', 'closed'].includes(status)) {
+      data.status = status;
+    }
+    if (body.rating !== undefined) data.rating = body.rating == null ? null : Number(body.rating);
+    if (body.reviewsCount !== undefined) data.reviewsCount = body.reviewsCount == null ? null : Number(body.reviewsCount);
+    if (Object.keys(data).length === 0) {
+      res.status(400).json({ error: 'Укажите status, rating или reviewsCount' });
+      return;
+    }
     const updated = await prisma.offer.update({
       where: { id },
-      data: { status: status as 'draft' | 'active' | 'paused' | 'closed' },
+      data,
       include: {
         category: { select: { id: true, name: true, slug: true } },
         supplier: { select: { id: true, email: true, name: true } },
@@ -332,8 +339,8 @@ router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
     });
     res.json(updated);
   } catch (e) {
-    console.error('Admin PATCH offer status error:', e);
-    res.status(500).json({ error: 'Ошибка обновления статуса' });
+    console.error('Admin PATCH offer error:', e);
+    res.status(500).json({ error: 'Ошибка обновления оффера' });
   }
 });
 

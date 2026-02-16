@@ -60,12 +60,14 @@
                             <th>Категория</th>
                             <th>Статус</th>
                             <th>Ставка</th>
+                            <th>Рейтинг</th>
+                            <th>Отзывов</th>
                             <th>Обновлён</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody id="offersTableBody">
-                        <tr><td colspan="8">Загрузка...</td></tr>
+                        <tr><td colspan="10">Загрузка...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -92,21 +94,22 @@
             window.RealCPA.admin.offers(params)
                 .then(function(list) {
                     var tbody = document.getElementById('offersTableBody');
-                    if (!list.length) { tbody.innerHTML = '<tr><td colspan="8">Нет офферов</td></tr>'; return; }
+                    if (!list.length) { tbody.innerHTML = '<tr><td colspan="10">Нет офферов</td></tr>'; return; }
                     var statusLabels = { draft: 'Черновик', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
                     tbody.innerHTML = list.map(function(o) {
                         var cat = o.category ? o.category.name : '—';
                         var sup = o.supplier ? (o.supplier.name || o.supplier.email) : '—';
                         var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || '₽') : '—';
+                        var rating = o.rating != null ? o.rating : '—';
+                        var reviews = o.reviewsCount != null ? o.reviewsCount : '—';
                         var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleDateString('ru') : '—';
                         var statusCl = o.status === 'active' ? 'admin-badge-active' : (o.status === 'draft' ? 'admin-badge-pending' : 'admin-badge-blocked');
                         var actions = '';
                         if (o.status === 'draft') {
-                            actions = '<button type="button" class="btn btn-primary btn-sm admin-offer-confirm" data-offer-id="' + (o.id || '') + '" title="Активировать оффер">Подтвердить</button>';
-                        } else {
-                            actions = '—';
+                            actions = '<button type="button" class="btn btn-primary btn-sm admin-offer-confirm" data-offer-id="' + (o.id || '') + '" title="Активировать оффер">Подтвердить</button> ';
                         }
-                        return '<tr><td>' + (o.id || '').slice(0, 8) + '…</td><td><a href="../offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—').slice(0, 40) + '</a></td><td>' + sup + '</td><td>' + cat + '</td><td><span class="admin-badge ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + updated + '</td><td>' + actions + '</td></tr>';
+                        actions += '<button type="button" class="btn btn-secondary btn-sm admin-offer-rating" data-offer-id="' + (o.id || '') + '" data-rating="' + (o.rating != null ? o.rating : '') + '" data-reviews="' + (o.reviewsCount != null ? o.reviewsCount : '') + '" title="Изм. рейтинг и отзывы">Рейтинг</button>';
+                        return '<tr><td>' + (o.id || '').slice(0, 8) + '…</td><td><a href="../offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—').slice(0, 40) + '</a></td><td>' + sup + '</td><td>' + cat + '</td><td><span class="admin-badge ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + rating + '</td><td>' + reviews + '</td><td>' + updated + '</td><td>' + actions + '</td></tr>';
                     }).join('');
                     tbody.querySelectorAll('.admin-offer-confirm').forEach(function(btn) {
                         btn.addEventListener('click', function() {
@@ -122,9 +125,35 @@
                             });
                         });
                     });
+                    tbody.querySelectorAll('.admin-offer-rating').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var id = this.getAttribute('data-offer-id');
+                            var curRating = this.getAttribute('data-rating') || '';
+                            var curReviews = this.getAttribute('data-reviews') || '';
+                            var r = prompt('Рейтинг (1–5, например 4.8):', curRating);
+                            if (r === null) return;
+                            var rev = prompt('Количество отзывов:', curReviews);
+                            if (rev === null) return;
+                            var ratingNum = r.trim() === '' ? null : parseFloat(r.replace(',', '.'));
+                            var reviewsNum = rev.trim() === '' ? null : parseInt(rev, 10);
+                            if (ratingNum !== null && (ratingNum < 0 || ratingNum > 5 || isNaN(ratingNum))) { alert('Рейтинг от 0 до 5'); return; }
+                            if (reviewsNum !== null && (reviewsNum < 0 || isNaN(reviewsNum))) { alert('Число отзывов — целое неотрицательное'); return; }
+                            var payload = {};
+                            if (ratingNum !== null || r.trim() === '') payload.rating = ratingNum;
+                            if (reviewsNum !== null || rev.trim() === '') payload.reviewsCount = reviewsNum;
+                            if (Object.keys(payload).length === 0) return;
+                            btn.disabled = true;
+                            window.RealCPA.admin.updateOffer(id, payload).then(function() {
+                                loadOffers();
+                            }).catch(function(err) {
+                                alert((err && err.message) || 'Ошибка сохранения');
+                                loadOffers();
+                            }).finally(function() { btn.disabled = false; });
+                        });
+                    });
                 })
                 .catch(function(err) {
-                    document.getElementById('offersTableBody').innerHTML = '<tr><td colspan="8">Ошибка: ' + (err.message || 'загрузка') + '</td></tr>';
+                    document.getElementById('offersTableBody').innerHTML = '<tr><td colspan="10">Ошибка: ' + (err.message || 'загрузка') + '</td></tr>';
                 });
         }
         document.getElementById('offerApplyFilters').addEventListener('click', loadOffers);

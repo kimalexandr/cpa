@@ -157,7 +157,7 @@ async function main() {
   // --- Офферы (от поставщика) ---
   const offer1 = await prisma.offer.upsert({
     where: { id: 'seed-offer-1' },
-    update: {},
+    update: { rating: 4.8, reviewsCount: 32 },
     create: {
       id: 'seed-offer-1',
       supplierId: supplier.id,
@@ -170,12 +170,14 @@ async function main() {
       currency: 'RUB',
       landingUrl: 'https://example.com/construction',
       status: OfferStatus.active,
+      rating: 4.8,
+      reviewsCount: 32,
     },
   });
 
   const offer2 = await prisma.offer.upsert({
     where: { id: 'seed-offer-2' },
-    update: {},
+    update: { rating: 4.9, reviewsCount: 128 },
     create: {
       id: 'seed-offer-2',
       supplierId: supplier.id,
@@ -188,12 +190,14 @@ async function main() {
       currency: 'RUB',
       landingUrl: 'https://example.com/food',
       status: OfferStatus.active,
+      rating: 4.9,
+      reviewsCount: 128,
     },
   });
 
   const offer3 = await prisma.offer.upsert({
     where: { id: 'seed-offer-3' },
-    update: { status: OfferStatus.active },
+    update: { status: OfferStatus.active, rating: 4.7, reviewsCount: 18 },
     create: {
       id: 'seed-offer-3',
       supplierId: supplier.id,
@@ -206,12 +210,14 @@ async function main() {
       currency: 'RUB',
       landingUrl: 'https://example.com/materials',
       status: OfferStatus.active,
+      rating: 4.7,
+      reviewsCount: 18,
     },
   });
 
   const offer4 = await prisma.offer.upsert({
     where: { id: 'seed-offer-4' },
-    update: {},
+    update: { rating: 4.6, reviewsCount: 45 },
     create: {
       id: 'seed-offer-4',
       supplierId: supplier.id,
@@ -224,12 +230,14 @@ async function main() {
       currency: 'RUB',
       landingUrl: 'https://example.com/auto',
       status: OfferStatus.active,
+      rating: 4.6,
+      reviewsCount: 45,
     },
   });
 
   const offer5 = await prisma.offer.upsert({
     where: { id: 'seed-offer-5' },
-    update: {},
+    update: { rating: 4.85, reviewsCount: 67 },
     create: {
       id: 'seed-offer-5',
       supplierId: supplier.id,
@@ -242,12 +250,14 @@ async function main() {
       currency: 'RUB',
       landingUrl: 'https://example.com/electronics',
       status: OfferStatus.active,
+      rating: 4.85,
+      reviewsCount: 67,
     },
   });
 
   const offer6 = await prisma.offer.upsert({
     where: { id: 'seed-offer-6' },
-    update: {},
+    update: { rating: 4.5, reviewsCount: 22 },
     create: {
       id: 'seed-offer-6',
       supplierId: supplier.id,
@@ -260,6 +270,8 @@ async function main() {
       currency: 'RUB',
       landingUrl: 'https://example.com/clothing',
       status: OfferStatus.active,
+      rating: 4.5,
+      reviewsCount: 22,
     },
   });
 

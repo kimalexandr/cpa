@@ -200,6 +200,8 @@ model Offer {
   rules           String?     @db.Text
   capAmount       Decimal?    @map("cap_amount") @db.Decimal(12, 2)
   capConversions  Int?        @map("cap_conversions")
+  rating          Decimal?   @map("rating") @db.Decimal(3, 2)
+  reviewsCount    Int?       @map("reviews_count")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 

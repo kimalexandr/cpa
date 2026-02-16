@@ -229,6 +229,9 @@
       setOfferStatus: function (offerId, status) {
         return request('PATCH', '/api/admin/offers/' + encodeURIComponent(offerId), { status: status });
       },
+      updateOffer: function (offerId, data) {
+        return request('PATCH', '/api/admin/offers/' + encodeURIComponent(offerId), data);
+      },
       moderationParticipations: function () { return request('GET', '/api/admin/moderation/participations'); },
       setParticipationStatus: function (participationId, status) {
         return request('PATCH', '/api/admin/moderation/participations/' + encodeURIComponent(participationId), { status: status });
