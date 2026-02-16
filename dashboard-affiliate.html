@@ -169,33 +169,47 @@
         }).catch(function() {});
 
         var listEl = document.getElementById('affiliateDashboardOffersList');
-        if (listEl && typeof window.RealCPA !== 'undefined' && window.RealCPA.offers) {
+        if (listEl) {
             function escapeHtml(s) {
                 if (s == null) return '';
                 var div = document.createElement('div');
                 div.textContent = s;
                 return div.innerHTML;
             }
-            window.RealCPA.offers({ status: 'active' })
-                .then(function(offers) {
-                    if (!Array.isArray(offers) || !offers.length) {
-                        listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов. Офферы появятся после публикации поставщиками.</p>';
-                        return;
-                    }
-                    listEl.innerHTML = offers.map(function(o) {
-                        var cat = o.category ? o.category.name : '—';
-                        var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || '₽') : '—';
-                        return '<div class="offer-card-mini">' +
-                            '<div class="offer-category">' + escapeHtml(cat) + '</div>' +
-                            '<h3>' + escapeHtml(o.title) + '</h3>' +
-                            '<p class="offer-cpa">CPA: ' + escapeHtml(String(rate)) + '</p>' +
-                            '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-primary">Подключиться</a>' +
-                            '</div>';
-                    }).join('');
-                })
-                .catch(function(err) {
-                    listEl.innerHTML = '<p class="offers-empty-msg">Не удалось загрузить офферы. <a href="offers.html">Открыть каталог</a></p>';
-                });
+            function getCat(o) {
+                if (o.category && o.category.name) return o.category.name;
+                if (o.categories && o.categories.length) return o.categories[0].name;
+                return '—';
+            }
+            function render(offers) {
+                if (!Array.isArray(offers) || !offers.length) {
+                    listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов. Офферы появятся после публикации поставщиками.</p>';
+                    return;
+                }
+                listEl.innerHTML = offers.map(function(o) {
+                    var cat = getCat(o);
+                    var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
+                    return '<div class="offer-card-mini">' +
+                        '<div class="offer-category">' + escapeHtml(cat) + '</div>' +
+                        '<h3>' + escapeHtml(o.title) + '</h3>' +
+                        '<p class="offer-cpa">CPA: ' + escapeHtml(String(rate)) + '</p>' +
+                        '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-primary">Подключиться</a>' +
+                        '</div>';
+                }).join('');
+            }
+            function load() {
+                var base = (typeof window.RealCPA !== 'undefined' && window.RealCPA.getBase) ? window.RealCPA.getBase() : (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? '' : 'http://localhost:3000');
+                var fallback = fetch(base + '/api/offers?status=active', { method: 'GET', headers: { 'Content-Type': 'application/json' } }).then(function(r) { if (!r.ok) throw new Error('Ошибка ' + r.status); return r.json(); });
+                if (typeof window.RealCPA !== 'undefined' && window.RealCPA.offers) {
+                    window.RealCPA.offers({ status: 'active' }).then(function(data) {
+                        var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : [];
+                        render(list);
+                    }).catch(function() { fallback.then(function(data) { var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : []; render(list); }).catch(function() { listEl.innerHTML = '<p class="offers-empty-msg">Не удалось загрузить офферы. <a href="offers.html">Открыть каталог</a></p>'; }); });
+                } else {
+                    fallback.then(function(data) { var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : []; render(list); }).catch(function() { listEl.innerHTML = '<p class="offers-empty-msg">Не удалось загрузить офферы. <a href="offers.html">Открыть каталог</a></p>'; });
+                }
+            }
+            load();
         }
     })();
     </script>
