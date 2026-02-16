@@ -142,8 +142,27 @@
                         var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
                         var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleDateString('ru') : '—';
                         var statusCl = o.status === 'active' ? 'status-active' : (o.status === 'draft' ? 'status-draft' : '');
-                        return '<tr><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—') + '</a></td><td>' + cat + '</td><td><span class="offer-status ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + updated + '</td><td><button type="button" class="btn btn-sm btn-secondary btn-offer-geo" data-id="' + encodeURIComponent(o.id) + '" title="Выбор региона">Гео</button></td><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
+                        var statusBtn = '';
+                        if (o.status === 'active') {
+                            statusBtn = '<button type="button" class="btn btn-sm btn-outline-warning btn-offer-status" data-id="' + encodeURIComponent(o.id) + '" data-status="paused" title="Снять с публикации">Снять с публикации</button>';
+                        } else if (o.status === 'paused' || o.status === 'draft') {
+                            statusBtn = '<button type="button" class="btn btn-sm btn-outline-success btn-offer-status" data-id="' + encodeURIComponent(o.id) + '" data-status="active" title="Сделать активным">В активные</button>';
+                        }
+                        return '<tr><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—') + '</a></td><td>' + cat + '</td><td><span class="offer-status ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span>' + (statusBtn ? ' ' + statusBtn : '') + '</td><td>' + rate + '</td><td>' + updated + '</td><td><button type="button" class="btn btn-sm btn-secondary btn-offer-geo" data-id="' + encodeURIComponent(o.id) + '" title="Выбор региона">Гео</button></td><td><a href="create-offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Редактировать</a> <a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
                     }).join('');
+                    tbody.querySelectorAll('.btn-offer-status').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var id = this.getAttribute('data-id');
+                            var status = this.getAttribute('data-status');
+                            if (!id || !status || !window.RealCPA.supplier.setOfferStatus) return;
+                            var btnEl = this;
+                            btnEl.disabled = true;
+                            window.RealCPA.supplier.setOfferStatus(id, status).then(loadMyOffers).catch(function(err) {
+                                btnEl.disabled = false;
+                                alert('Ошибка: ' + (err.message || 'не удалось изменить статус'));
+                            });
+                        });
+                    });
                     tbody.querySelectorAll('.btn-offer-geo').forEach(function(btn) {
                         btn.addEventListener('click', function() {
                             var id = this.getAttribute('data-id');

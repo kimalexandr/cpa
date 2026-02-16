@@ -402,6 +402,10 @@
             window.location.href = 'login.html?redirect=' + encodeURIComponent('create-offer.html');
             return;
         }
+        var urlParams = new URLSearchParams(window.location.search);
+        var editOfferId = urlParams.get('id') || null;
+        window.__offerIdForEdit = editOfferId || undefined;
+
         window.RealCPA.categories().then(function(cats) {
             var sel = document.getElementById('offerCategory');
             if (!sel) return;
@@ -410,6 +414,55 @@
                 list.map(function(c) {
                     return '<option value="' + c.id + '">' + (c.name || c.slug) + '</option>';
                 }).join('');
+            if (editOfferId) {
+                window.RealCPA.supplier.getOffers().then(function(offers) {
+                    var o = offers && offers.find(function(x) { return x.id === editOfferId; });
+                    if (!o) { alert('Оффер не найден или нет доступа.'); return; }
+                    var nameEl = document.getElementById('offerName');
+                    if (nameEl) nameEl.value = o.title || '';
+                    var landingEl = document.getElementById('offerLandingUrl');
+                    if (landingEl) landingEl.value = o.landingUrl || '';
+                    var catSel = document.getElementById('offerCategory');
+                    if (catSel) catSel.value = o.categoryId || (o.category && o.category.id) || '';
+                    var shortEl = document.getElementById('offerShortDesc');
+                    if (shortEl) shortEl.value = (o.description || '').slice(0, 500);
+                    var fullEl = document.getElementById('offerFullDesc');
+                    if (fullEl) fullEl.value = o.description || '';
+                    var geoSel = document.getElementById('offerGeo');
+                    if (geoSel && o.targetGeo) {
+                        var opt = [].find.call(geoSel.options, function(opt) { return opt.text === o.targetGeo; });
+                        if (opt) geoSel.value = opt.value;
+                    }
+                    var cpaEl = document.getElementById('offerCpa');
+                    if (cpaEl && o.payoutAmount != null) cpaEl.value = o.payoutAmount;
+                    var rateVal = document.querySelector('.offer-rate-value');
+                    if (rateVal && o.payoutAmount != null) rateVal.value = o.payoutAmount + ' ' + (o.currency || 'RUB');
+                    var holdEl = document.getElementById('offerHoldDays');
+                    if (holdEl && o.holdDays != null) holdEl.value = o.holdDays;
+                    var budgetEl = document.getElementById('offerBudget');
+                    if (budgetEl && o.capAmount != null) budgetEl.value = o.capAmount;
+                    var capMonthEl = document.getElementById('offerCapMonth');
+                    if (capMonthEl && o.capConversions != null) capMonthEl.value = o.capConversions;
+                    if (o.rules && typeof o.rules === 'string') {
+                        var allowedEl = document.getElementById('offerAllowedSources');
+                        var forbiddenEl = document.getElementById('offerForbiddenSources');
+                        var creativeEl = document.getElementById('offerCreativeRules');
+                        var leadCritEl = document.getElementById('offerLeadCriteria');
+                        if (allowedEl) allowedEl.value = (o.rules.match(/Разрешено:\s*(.+?)(?=\n|$)/) || [])[1] || '';
+                        if (forbiddenEl) forbiddenEl.value = (o.rules.match(/Запрещено:\s*(.+?)(?=\n|$)/) || [])[1] || '';
+                        if (creativeEl) creativeEl.value = (o.rules.match(/Креативы:\s*([\s\S]+?)(?=\nКритерии|$)/) || [])[1] || '';
+                        if (leadCritEl) leadCritEl.value = (o.rules.match(/Критерии лида:\s*([\s\S]+)/) || [])[1] || '';
+                    }
+                    var h1 = document.querySelector('.create-offer-header h1');
+                    if (h1) h1.textContent = 'Редактировать оффер';
+                    var submitBtn = document.getElementById('wizardSubmit');
+                    if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-check"></i> Сохранить изменения';
+                    window.RealCPA.getOfferLocations(editOfferId).then(function(locations) {
+                        window.__offerSelectedLocationIds = (locations || []).map(function(l) { return l.id; });
+                        if (typeof updateGeoSummary === 'function') updateGeoSummary();
+                    }).catch(function() {});
+                }).catch(function() { alert('Не удалось загрузить данные оффера.'); });
+            }
         }).catch(function() {
             var sel = document.getElementById('offerCategory');
             if (sel) sel.innerHTML = '<option value="">Не удалось загрузить категории</option>';
@@ -536,7 +589,7 @@
                 if (creativeEl && creativeEl.value.trim()) rulesParts.push('Креативы: ' + creativeEl.value.trim());
                 if (leadCritEl && leadCritEl.value.trim()) rulesParts.push('Критерии лида: ' + leadCritEl.value.trim());
                 var rulesStr = rulesParts.length ? rulesParts.join('\n') : undefined;
-                window.RealCPA.supplier.createOffer({
+                var payload = {
                     categoryId: categoryId,
                     title: title,
                     description: description,
@@ -549,7 +602,26 @@
                     rules: rulesStr,
                     capAmount: budgetEl && budgetEl.value !== '' ? parseFloat(budgetEl.value) : undefined,
                     capConversions: capMonthEl && capMonthEl.value !== '' ? parseInt(capMonthEl.value, 10) : undefined
-                }).then(function(res) {
+                };
+                var editId = window.__offerIdForEdit;
+                if (editId) {
+                    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Сохранение…'; }
+                    window.RealCPA.supplier.updateOffer(editId, payload).then(function() {
+                        if (selectedLocationIds && selectedLocationIds.length > 0 && window.RealCPA.supplier.setOfferLocations) {
+                            return window.RealCPA.supplier.setOfferLocations(editId, selectedLocationIds);
+                        }
+                    }).then(function() {
+                        alert('Изменения сохранены.');
+                        window.location.href = 'dashboard-supplier-offers.html';
+                    }).catch(function(err) {
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-check"></i> Сохранить изменения'; }
+                        var msg = (err && err.message) || (err && err.payload && err.payload.error) || 'Ошибка сохранения';
+                        if (err && err.status) msg += ' (код ' + err.status + ')';
+                        alert(msg);
+                    });
+                    return;
+                }
+                window.RealCPA.supplier.createOffer(payload).then(function(res) {
                     var offerId = res && res.id;
                     if (offerId && selectedLocationIds && selectedLocationIds.length > 0 && window.RealCPA.supplier.setOfferLocations) {
                         return window.RealCPA.supplier.setOfferLocations(offerId, selectedLocationIds).then(function() {
