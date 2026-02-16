@@ -137,8 +137,14 @@
     markNotificationRead: function (id) { return request('PATCH', '/api/me/notifications/' + encodeURIComponent(id), {}); },
     markAllNotificationsRead: function () { return request('PATCH', '/api/me/notifications/read-all', {}); },
 
-    categories: function () {
-      return request('GET', '/api/categories');
+    categories: function (params) {
+      var q = [];
+      if (params && params.level != null) q.push('level=' + encodeURIComponent(params.level));
+      if (params && params.active === false) q.push('active=false');
+      return request('GET', '/api/categories' + (q.length ? '?' + q.join('&') : ''));
+    },
+    categoriesTree: function () {
+      return request('GET', '/api/categories/tree');
     },
     offers: function (params) {
       var q = [];
@@ -151,6 +157,12 @@
     offer: function (id) {
       return request('GET', '/api/offers/' + encodeURIComponent(id));
     },
+    getLocationsTree: function () {
+      return request('GET', '/api/locations/tree');
+    },
+    getOfferLocations: function (offerId) {
+      return request('GET', '/api/offers/' + encodeURIComponent(offerId) + '/locations');
+    },
 
     supplier: {
       getOffers: function () { return request('GET', '/api/supplier/offers'); },
@@ -158,6 +170,9 @@
       updateOffer: function (id, data) { return request('PATCH', '/api/supplier/offers/' + id, data); },
       setOfferStatus: function (id, status) { return request('PATCH', '/api/supplier/offers/' + id + '/status', { status: status }); },
       getAffiliates: function (offerId) { return request('GET', '/api/supplier/offers/' + offerId + '/affiliates'); },
+      setOfferLocations: function (offerId, locationIds) {
+        return request('POST', '/api/supplier/offers/' + encodeURIComponent(offerId) + '/locations', { locationIds: locationIds || [] });
+      },
       setParticipation: function (participationId, status) { return request('PATCH', '/api/supplier/affiliate-participation/' + participationId, { status: status }); },
       getEvents: function (params) {
         var q = [];
@@ -239,13 +254,46 @@
       categories: function (params) {
         var q = [];
         if (params && params.activeOnly) q.push('activeOnly=true');
+        if (params && params.level != null) q.push('level=' + encodeURIComponent(params.level));
+        if (params && params.search) q.push('search=' + encodeURIComponent(params.search));
         return request('GET', '/api/admin/categories' + (q.length ? '?' + q.join('&') : ''));
+      },
+      categoriesTree: function () {
+        return request('GET', '/api/admin/categories/tree');
+      },
+      categoriesExport: function () {
+        return request('GET', '/api/admin/categories/export', null, { headers: {} }).then(function (r) { return r; });
+      },
+      categoriesImport: function (data) {
+        return request('POST', '/api/admin/categories/import', Array.isArray(data) ? data : { items: data });
       },
       createCategory: function (data) {
         return request('POST', '/api/admin/categories', data);
       },
       updateCategory: function (id, data) {
         return request('PATCH', '/api/admin/categories/' + encodeURIComponent(id), data);
+      },
+      locations: function (params) {
+        var q = [];
+        if (params && params.level != null) q.push('level=' + encodeURIComponent(params.level));
+        if (params && params.type) q.push('type=' + encodeURIComponent(params.type));
+        if (params && params.search) q.push('search=' + encodeURIComponent(params.search));
+        return request('GET', '/api/admin/locations' + (q.length ? '?' + q.join('&') : ''));
+      },
+      locationsTree: function () {
+        return request('GET', '/api/admin/locations/tree');
+      },
+      createLocation: function (data) {
+        return request('POST', '/api/admin/locations', data);
+      },
+      updateLocation: function (id, data) {
+        return request('PATCH', '/api/admin/locations/' + encodeURIComponent(id), data);
+      },
+      locationsImport: function (data) {
+        return request('POST', '/api/admin/locations/import', Array.isArray(data) ? data : { items: data });
+      },
+      setOfferLocations: function (offerId, locationIds) {
+        return request('POST', '/api/admin/offers/' + encodeURIComponent(offerId) + '/locations', { locationIds: locationIds || [] });
       }
     }
   };

@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, EventType, EventStatus } from '@prisma/client';
 import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
 import { sendParticipationApproved, sendParticipationRejected } from '../lib/email';
 import { createNotification } from '../lib/notifications';
@@ -22,21 +22,23 @@ router.get('/offers', async (req: AuthRequest, res: Response) => {
 router.post('/offers', async (req: AuthRequest, res: Response) => {
   try {
     const b = req.body;
-    if (!b.categoryId || !b.title || !b.landingUrl) {
-      res.status(400).json({ error: 'Укажите категорию, название и ссылку на лендинг' });
+    const categoryIds: string[] = Array.isArray(b.categoryIds) ? b.categoryIds.map((id: unknown) => String(id)) : b.categoryId != null ? [String(b.categoryId)] : [];
+    if (!categoryIds.length || !b.title || !b.landingUrl) {
+      res.status(400).json({ error: 'Укажите хотя бы одну категорию, название и ссылку на лендинг' });
       return;
     }
-    const categoryExists = await prisma.category.findUnique({
-      where: { id: String(b.categoryId), isActive: true },
+    const categories = await prisma.category.findMany({
+      where: { id: { in: categoryIds }, isActive: true },
     });
-    if (!categoryExists) {
-      res.status(400).json({ error: 'Выбранная категория не найдена. Обновите страницу и выберите категорию снова.' });
+    if (categories.length === 0) {
+      res.status(400).json({ error: 'Выбранные категории не найдены. Обновите страницу и выберите категорию снова.' });
       return;
     }
+    const primaryId = categoryIds[0];
     const offer = await prisma.offer.create({
       data: {
         supplierId: req.user!.userId,
-        categoryId: String(b.categoryId),
+        categoryId: primaryId,
         title: String(b.title),
         description: String(b.description || ''),
         targetGeo: b.targetGeo ? String(b.targetGeo) : null,
@@ -49,8 +51,14 @@ router.post('/offers', async (req: AuthRequest, res: Response) => {
         rules: b.rules != null ? String(b.rules) : null,
         capAmount: b.capAmount != null ? Number(b.capAmount) : null,
         capConversions: b.capConversions != null ? Number(b.capConversions) : null,
+        offerCategories: {
+          create: [...new Set(categoryIds)].map((categoryId) => ({ categoryId })),
+        },
       },
-      include: { category: { select: { id: true, name: true, slug: true } } },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        offerCategories: { select: { category: { select: { id: true, name: true, slug: true } } } },
+      },
     });
     res.status(201).json(offer);
   } catch (e) {
@@ -71,6 +79,14 @@ router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
   const b = req.body;
   const data: Record<string, unknown> = {};
   if (b.categoryId != null) data.categoryId = b.categoryId;
+    if (Array.isArray(b.categoryIds) && b.categoryIds.length > 0) {
+      const ids = [...new Set((b.categoryIds as unknown[]).map((id: unknown) => String(id)))] as string[];
+      data.categoryId = ids[0];
+      await prisma.offerCategory.deleteMany({ where: { offerId: req.params.id } });
+      await prisma.offerCategory.createMany({
+        data: ids.map((categoryId) => ({ offerId: req.params.id, categoryId })),
+      });
+    }
   if (b.title != null) data.title = b.title;
   if (b.description != null) data.description = b.description;
   if (b.targetGeo != null) data.targetGeo = b.targetGeo;
@@ -109,6 +125,39 @@ router.patch('/offers/:id/status', async (req: AuthRequest, res: Response) => {
     include: { category: { select: { id: true, name: true, slug: true } } },
   });
   res.json(updated);
+});
+
+/** Сохранить выбранные локации оффера (только свой оффер) */
+router.post('/offers/:id/locations', async (req: AuthRequest, res: Response) => {
+  try {
+    const offer = await prisma.offer.findFirst({
+      where: { id: req.params.id, supplierId: req.user!.userId },
+    });
+    if (!offer) {
+      res.status(404).json({ error: 'Оффер не найден' });
+      return;
+    }
+    const locationIds = Array.isArray(req.body.locationIds) ? req.body.locationIds.map((id: unknown) => String(id)) : [];
+    const valid = await prisma.location.findMany({
+      where: { id: { in: locationIds }, isActive: true },
+      select: { id: true },
+    });
+    const ids = valid.map((l) => l.id);
+    await prisma.offerLocation.deleteMany({ where: { offerId: req.params.id } });
+    if (ids.length > 0) {
+      await prisma.offerLocation.createMany({
+        data: ids.map((locationId) => ({ offerId: req.params.id, locationId })),
+      });
+    }
+    const rows = await prisma.offerLocation.findMany({
+      where: { offerId: req.params.id },
+      include: { location: true },
+    });
+    res.json(rows.map((r) => r.location));
+  } catch (e) {
+    console.error('POST /api/supplier/offers/:id/locations:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
 });
 
 router.get('/offers/:id/affiliates', async (req: AuthRequest, res: Response) => {
@@ -277,11 +326,14 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
       select: { id: true, offerId: true, token: true, affiliateId: true },
     });
     const linkIds = links.map((l: { id: string }) => l.id);
-    const where: { trackingLinkId: { in: string[] }; status?: string } = { trackingLinkId: { in: linkIds } };
-    if (status && ['pending', 'approved', 'rejected'].includes(status)) where.status = status as 'pending' | 'approved' | 'rejected';
+    const where: { trackingLinkId: { in: string[] }; eventType: { in: EventType[] }; status?: EventStatus } = {
+      trackingLinkId: { in: linkIds },
+      eventType: { in: [EventType.lead, EventType.sale] },
+    };
+    if (status === 'pending' || status === 'approved' || status === 'rejected') where.status = status as EventStatus;
 
     const events = await prisma.event.findMany({
-      where: { ...where, eventType: { in: ['lead', 'sale'] } },
+      where,
       include: {
         trackingLink: {
           select: {
@@ -294,19 +346,22 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
       orderBy: { createdAt: 'desc' },
       take: 200,
     });
-    res.json(events.map((e) => ({
-      id: e.id,
-      eventType: e.eventType,
-      amount: e.amount != null ? Number(e.amount) : null,
-      status: e.status,
-      externalId: e.externalId,
-      createdAt: e.createdAt,
-      offerId: e.trackingLink.offer.id,
-      offerTitle: e.trackingLink.offer.title,
-      payoutAmount: e.trackingLink.offer.payoutAmount != null ? Number(e.trackingLink.offer.payoutAmount) : null,
-      token: e.trackingLink.token,
-      affiliate: e.trackingLink.affiliate,
-    })));
+    res.json(events.map((e) => {
+      const link = e.trackingLink;
+      return {
+        id: e.id,
+        eventType: e.eventType,
+        amount: e.amount != null ? Number(e.amount) : null,
+        status: e.status,
+        externalId: e.externalId,
+        createdAt: e.createdAt,
+        offerId: link.offer.id,
+        offerTitle: link.offer.title,
+        payoutAmount: link.offer.payoutAmount != null ? Number(link.offer.payoutAmount) : null,
+        token: link.token,
+        affiliate: link.affiliate,
+      };
+    }));
   } catch (e) {
     console.error('GET /api/supplier/events:', e);
     res.status(500).json({ error: 'Ошибка сервера' });

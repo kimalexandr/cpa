@@ -97,6 +97,7 @@
                             <th>Статус</th>
                             <th>Ставка</th>
                             <th>Обновлён</th>
+                            <th>Гео</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -108,6 +109,7 @@
     <div id="footer-placeholder"></div>
     <script src="footer-include.js"></script>
     <script src="api.js"></script>
+    <script src="js/region-picker-modal.js"></script>
     <script>
     (function() {
         if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
@@ -140,8 +142,26 @@
                         var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
                         var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleDateString('ru') : '—';
                         var statusCl = o.status === 'active' ? 'status-active' : (o.status === 'draft' ? 'status-draft' : '');
-                        return '<tr><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—') + '</a></td><td>' + cat + '</td><td><span class="offer-status ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + updated + '</td><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
+                        return '<tr><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—') + '</a></td><td>' + cat + '</td><td><span class="offer-status ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + updated + '</td><td><button type="button" class="btn btn-sm btn-secondary btn-offer-geo" data-id="' + encodeURIComponent(o.id) + '" title="Выбор региона">Гео</button></td><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
                     }).join('');
+                    tbody.querySelectorAll('.btn-offer-geo').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var id = this.getAttribute('data-id');
+                            if (window.RealCPA && window.RealCPA.openRegionPicker) {
+                                window.RealCPA.openRegionPicker({
+                                    offerId: id,
+                                    initialLocationIds: [],
+                                    onConfirm: function(ids) {
+                                        if (window.RealCPA.supplier && window.RealCPA.supplier.setOfferLocations) {
+                                            window.RealCPA.supplier.setOfferLocations(id, ids).then(loadMyOffers).catch(function(err) {
+                                                alert('Ошибка сохранения географии: ' + (err.message || 'попробуйте снова'));
+                                            });
+                                        } else loadMyOffers();
+                                    }
+                                });
+                            }
+                        });
+                    });
                 })
                 .catch(function(err) {
                     emptyEl.style.display = 'block';

@@ -26,6 +26,7 @@
                 <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Пользователи</a>
                 <a href="offers.html" class="admin-nav-link"><i class="fas fa-briefcase"></i> Офферы</a>
                 <a href="categories.html" class="admin-nav-link active"><i class="fas fa-folder"></i> Категории</a>
+                <a href="geography.html" class="admin-nav-link"><i class="fas fa-globe"></i> География</a>
                 <a href="moderation.html" class="admin-nav-link"><i class="fas fa-clipboard-check"></i> Модерация</a>
                 <a href="finance.html" class="admin-nav-link"><i class="fas fa-wallet"></i> Финансы</a>
                 <a href="settings.html" class="admin-nav-link"><i class="fas fa-cog"></i> Настройки</a>
@@ -39,13 +40,26 @@
                     <i class="fas fa-plus"></i> Добавить категорию
                 </button>
             </div>
-            <p class="admin-card-label" style="margin-bottom:1rem">Категории используются при создании офферов и в фильтрах каталога. Неактивные категории не показываются поставщикам при создании оффера.</p>
+            <p class="admin-card-label" style="margin-bottom:1rem">Дерево категорий в формате Supl.biz. Уровень 1 — группы, уровень 2+ — подкатегории. Поиск, фильтр по уровню, экспорт/импорт JSON.</p>
+            <div class="admin-filters" style="margin-bottom:1rem">
+                <input type="text" id="categorySearch" placeholder="Поиск по названию">
+                <select id="categoryLevelFilter">
+                    <option value="">Все уровни</option>
+                    <option value="1">Уровень 1</option>
+                    <option value="2">Уровень 2</option>
+                </select>
+                <button type="button" class="btn btn-primary" id="btnApplyFilters">Применить</button>
+                <button type="button" class="btn btn-secondary" id="btnExportCategories">Экспорт JSON</button>
+                <label class="btn btn-secondary" style="margin-bottom:0"><input type="file" id="importFile" accept=".json" style="display:none"> Импорт JSON</label>
+            </div>
             <div class="admin-table-wrap">
                 <table class="admin-table">
                     <thead>
                         <tr>
+                            <th>Ур.</th>
                             <th>Название</th>
                             <th>Slug</th>
+                            <th>Родитель</th>
                             <th>Описание</th>
                             <th>Офферов</th>
                             <th>Статус</th>
@@ -53,7 +67,7 @@
                         </tr>
                     </thead>
                     <tbody id="categoriesTableBody">
-                        <tr><td colspan="6">Загрузка...</td></tr>
+                        <tr><td colspan="8">Загрузка...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -75,11 +89,25 @@
                     <input type="text" id="categorySlug" class="form-control" required placeholder="products (латиница, дефис)">
                 </div>
                 <div class="form-group">
+                    <label for="categoryParent">Родительская категория</label>
+                    <select id="categoryParent" class="form-control">
+                        <option value="">— верхний уровень</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="categoryLevel">Уровень (1 = верхний)</label>
+                    <input type="number" id="categoryLevel" class="form-control" min="1" value="1">
+                </div>
+                <div class="form-group">
                     <label for="categoryDescription">Описание</label>
                     <textarea id="categoryDescription" class="form-control" rows="2" placeholder="Краткое описание категории"></textarea>
                 </div>
                 <div class="form-group">
-                    <label><input type="checkbox" id="categoryIsActive" checked> Активна (доступна при создании оффера)</label>
+                    <label for="categoryExternalRef">External ref (Supl.biz id)</label>
+                    <input type="text" id="categoryExternalRef" class="form-control" placeholder="Опционально">
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="categoryIsActive" checked> Активна</label>
                 </div>
                 <button type="submit" class="btn btn-primary">Сохранить</button>
                 <button type="button" class="btn btn-secondary" id="categoryFormCancel">Отмена</button>
@@ -104,21 +132,29 @@
         var categoriesList = [];
 
         function loadCategories() {
-            window.RealCPA.admin.categories()
+            var params = {};
+            var searchEl = document.getElementById('categorySearch');
+            var levelEl = document.getElementById('categoryLevelFilter');
+            if (searchEl && searchEl.value.trim()) params.search = searchEl.value.trim();
+            if (levelEl && levelEl.value) params.level = levelEl.value;
+            window.RealCPA.admin.categories(params)
                 .then(function(list) {
                     categoriesList = list;
                     var tbody = document.getElementById('categoriesTableBody');
                     if (!list.length) {
-                        tbody.innerHTML = '<tr><td colspan="6">Нет категорий. Добавьте первую.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="8">Нет категорий. Добавьте первую или загрузите сид Supl.biz (npm run db:seed-supl).</td></tr>';
                         return;
                     }
                     tbody.innerHTML = list.map(function(c) {
                         var status = c.isActive ? '<span class="admin-badge-active">Активна</span>' : '<span class="admin-badge-blocked">Неактивна</span>';
-                        var desc = (c.description || '').slice(0, 60);
-                        if ((c.description || '').length > 60) desc += '…';
+                        var desc = (c.description || '').slice(0, 50);
+                        if ((c.description || '').length > 50) desc += '…';
+                        var parentName = (c.parent && c.parent.name) ? escapeHtml(c.parent.name) : '—';
                         return '<tr data-id="' + c.id + '">' +
+                            '<td>' + (c.level != null ? c.level : '—') + '</td>' +
                             '<td>' + escapeHtml(c.name) + '</td>' +
                             '<td><code>' + escapeHtml(c.slug) + '</code></td>' +
+                            '<td>' + parentName + '</td>' +
                             '<td>' + escapeHtml(desc) + '</td>' +
                             '<td>' + (c.offersCount != null ? c.offersCount : '—') + '</td>' +
                             '<td>' + status + '</td>' +
@@ -129,7 +165,7 @@
                     });
                 })
                 .catch(function(err) {
-                    document.getElementById('categoriesTableBody').innerHTML = '<tr><td colspan="6">Ошибка: ' + escapeHtml(err.message || 'загрузка') + '</td></tr>';
+                    document.getElementById('categoriesTableBody').innerHTML = '<tr><td colspan="8">Ошибка: ' + escapeHtml(err.message || 'загрузка') + '</td></tr>';
                 });
         }
         function escapeHtml(s) {
@@ -138,12 +174,25 @@
             div.textContent = s;
             return div.innerHTML;
         }
+        function fillParentSelect(exceptId) {
+            var sel = document.getElementById('categoryParent');
+            if (!sel) return;
+            var opts = '<option value="">— верхний уровень</option>';
+            categoriesList.filter(function(x) { return x.id !== exceptId && (x.level === 1 || x.parentId); }).forEach(function(x) {
+                opts += '<option value="' + x.id + '">' + escapeHtml(x.name) + ' (ур.' + (x.level || 1) + ')</option>';
+            });
+            sel.innerHTML = opts;
+        }
         function openAdd() {
             document.getElementById('categoryId').value = '';
             document.getElementById('categoryName').value = '';
             document.getElementById('categorySlug').value = '';
+            document.getElementById('categoryParent').value = '';
+            document.getElementById('categoryLevel').value = '1';
             document.getElementById('categoryDescription').value = '';
+            document.getElementById('categoryExternalRef').value = '';
             document.getElementById('categoryIsActive').checked = true;
+            fillParentSelect();
             titleEl.textContent = 'Добавить категорию';
             modal.style.display = 'flex';
         }
@@ -153,8 +202,12 @@
             document.getElementById('categoryId').value = c.id;
             document.getElementById('categoryName').value = c.name;
             document.getElementById('categorySlug').value = c.slug;
+            document.getElementById('categoryParent').value = c.parentId || '';
+            document.getElementById('categoryLevel').value = c.level != null ? c.level : 1;
             document.getElementById('categoryDescription').value = c.description || '';
+            document.getElementById('categoryExternalRef').value = c.externalRef || '';
             document.getElementById('categoryIsActive').checked = c.isActive !== false;
+            fillParentSelect(c.id);
             titleEl.textContent = 'Изменить категорию';
             modal.style.display = 'flex';
         }
@@ -170,17 +223,50 @@
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             var id = document.getElementById('categoryId').value;
+            var slugVal = document.getElementById('categorySlug').value.trim().toLowerCase().replace(/\s+/g, '-');
             var data = {
                 name: document.getElementById('categoryName').value.trim(),
-                slug: document.getElementById('categorySlug').value.trim().toLowerCase().replace(/\s+/g, '-'),
+                slug: slugVal,
+                parentId: document.getElementById('categoryParent').value || null,
+                level: parseInt(document.getElementById('categoryLevel').value, 10) || 1,
                 description: document.getElementById('categoryDescription').value.trim() || null,
+                externalRef: document.getElementById('categoryExternalRef').value.trim() || null,
                 isActive: document.getElementById('categoryIsActive').checked
             };
-            if (!data.name || !data.slug) { alert('Укажите название и slug'); return; }
+            if (!data.name || !slugVal) { alert('Укажите название и slug'); return; }
             var promise = id ? window.RealCPA.admin.updateCategory(id, data) : window.RealCPA.admin.createCategory(data);
             promise
                 .then(function() { closeModal(); loadCategories(); })
                 .catch(function(err) { alert('Ошибка: ' + (err.message || 'сохранение')); });
+        });
+
+        document.getElementById('btnApplyFilters').addEventListener('click', loadCategories);
+        document.getElementById('btnExportCategories').addEventListener('click', function() {
+            window.RealCPA.admin.categories().then(function(list) {
+                var blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'categories.json';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }).catch(function(err) { alert('Ошибка экспорта: ' + (err.message || '')); });
+        });
+        document.getElementById('importFile').addEventListener('change', function() {
+            var f = this.files[0];
+            if (!f) return;
+            var r = new FileReader();
+            r.onload = function() {
+                try {
+                    var data = JSON.parse(r.result);
+                    var items = Array.isArray(data) ? data : (data.items || []);
+                    window.RealCPA.admin.categoriesImport(items).then(function(res) {
+                        alert('Импортировано: ' + (res.imported || 0));
+                        loadCategories();
+                    }).catch(function(err) { alert('Ошибка импорта: ' + (err.message || '')); });
+                } catch (e) { alert('Неверный JSON'); }
+            };
+            r.readAsText(f);
+            this.value = '';
         });
 
         loadCategories();

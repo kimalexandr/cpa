@@ -64,6 +64,13 @@ enum PayoutStatus {
   canceled
 }
 
+enum LocationType {
+  country
+  federal_district
+  region
+  city
+}
+
 // --- Models ---
 
 model User {
@@ -145,21 +152,42 @@ model SupplierProfile {
 }
 
 model Category {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
+  parentId    String?   @map("parent_id")
   name        String
-  slug        String   @unique
-  description String?  @db.Text
-  isActive    Boolean  @default(true) @map("is_active")
+  slug        String    @unique
+  description String?   @db.Text
+  level       Int       @default(1)
+  isActive    Boolean   @default(true) @map("is_active")
+  externalRef String?   @map("external_ref")
 
-  offers Offer[]
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryHierarchy")
+  offerCategories OfferCategory[]
+  offersAsPrimary Offer[] @relation("OfferPrimaryCategory")
 
+  @@index([parentId])
+  @@index([level])
+  @@index([isActive])
   @@map("categories")
+}
+
+model OfferCategory {
+  offerId    String @map("offer_id")
+  categoryId String @map("category_id")
+
+  offer    Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, categoryId])
+  @@index([categoryId])
+  @@map("offer_categories")
 }
 
 model Offer {
   id              String      @id @default(uuid())
   supplierId      String      @map("supplier_id")
-  categoryId      String      @map("category_id")
+  categoryId      String?     @map("category_id")
   title           String
   description     String      @db.Text
   targetGeo       String?     @map("target_geo") @db.Text
@@ -175,10 +203,12 @@ model Offer {
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
-  supplier       User     @relation("OfferSupplier", fields: [supplierId], references: [id], onDelete: Restrict)
-  category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  participations AffiliateOfferParticipation[]
-  trackingLinks  TrackingLink[]
+  supplier         User     @relation("OfferSupplier", fields: [supplierId], references: [id], onDelete: Restrict)
+  category         Category? @relation("OfferPrimaryCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  offerCategories  OfferCategory[]
+  offerLocations   OfferLocation[]
+  participations   AffiliateOfferParticipation[]
+  trackingLinks    TrackingLink[]
 
   @@index([categoryId])
   @@index([status])
@@ -266,4 +296,37 @@ model StaticPage {
 
   @@unique([slug, language])
   @@map("static_pages")
+}
+
+model Location {
+  id        String       @id @default(uuid())
+  parentId  String?      @map("parent_id")
+  name      String
+  type      LocationType
+  fullName  String?      @map("full_name")
+  level     Int          @default(1)
+  isActive  Boolean      @default(true) @map("is_active")
+  code      String?
+
+  parent   Location?   @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children Location[]  @relation("LocationHierarchy")
+  offerLocations OfferLocation[]
+
+  @@index([parentId])
+  @@index([type])
+  @@index([level])
+  @@index([isActive])
+  @@map("locations")
+}
+
+model OfferLocation {
+  offerId    String @map("offer_id")
+  locationId String @map("location_id")
+
+  offer    Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, locationId])
+  @@index([locationId])
+  @@map("offer_locations")
 }

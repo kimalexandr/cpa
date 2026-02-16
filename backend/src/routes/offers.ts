@@ -30,23 +30,41 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       where.status = status;
     }
     if (categorySlug) {
-      where.category = { slug: categorySlug };
+      (where as Record<string, unknown>).OR = [
+        { category: { slug: categorySlug } },
+        { offerCategories: { some: { category: { slug: categorySlug } } } },
+      ];
     }
     if (search.trim()) {
-      where.OR = [
-        { title: { contains: search.trim(), mode: 'insensitive' } },
-        { description: { contains: search.trim(), mode: 'insensitive' } },
+      const searchCond = [
+        { title: { contains: search.trim(), mode: 'insensitive' as const } },
+        { description: { contains: search.trim(), mode: 'insensitive' as const } },
       ];
+      if (categorySlug) {
+        (where as Record<string, unknown>).AND = [
+          { OR: (where as Record<string, unknown>).OR },
+          { OR: searchCond },
+        ];
+        delete (where as Record<string, unknown>).OR;
+      } else {
+        (where as Record<string, unknown>).OR = searchCond;
+      }
     }
     const offers = await prisma.offer.findMany({
       where,
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        category: { select: { id: true, name: true, slug: true, level: true } },
+        offerCategories: { select: { category: { select: { id: true, name: true, slug: true, level: true } } } },
         supplier: { select: { id: true, companyName: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
-    res.json(offers.map((o) => serializeOffer(o as Record<string, unknown>)));
+    res.json(offers.map((o) => {
+      const out = serializeOffer(o as Record<string, unknown>) as Record<string, unknown>;
+      const cats = (o.offerCategories || []).map((oc: { category: unknown }) => oc.category);
+      out.categories = Array.isArray(cats) && cats.length > 0 ? cats : (o.category ? [o.category] : []);
+      return out;
+    }));
   } catch (e) {
     console.error('GET /api/offers:', e);
     const msg = e instanceof Error ? e.message : '';
@@ -58,12 +76,36 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+/** Список выбранных локаций оффера (для модалки и отображения) */
+router.get('/:id/locations', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const offer = await prisma.offer.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, status: true },
+    });
+    if (!offer) {
+      res.status(404).json({ error: 'Оффер не найден' });
+      return;
+    }
+    const rows = await prisma.offerLocation.findMany({
+      where: { offerId: req.params.id },
+      include: { location: true },
+    });
+    res.json(rows.map((r) => r.location));
+  } catch (e) {
+    console.error('GET /api/offers/:id/locations:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const offer = await prisma.offer.findUnique({
       where: { id: req.params.id },
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        category: { select: { id: true, name: true, slug: true, level: true } },
+        offerCategories: { select: { category: { select: { id: true, name: true, slug: true, level: true } } } },
+        offerLocations: { select: { location: true } },
         supplier: {
           select: {
             id: true,
@@ -82,7 +124,11 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
       res.status(404).json({ error: 'Оффер не найден или не опубликован' });
       return;
     }
-    res.json(serializeOffer(offer as Record<string, unknown>));
+    const out = serializeOffer(offer as Record<string, unknown>) as Record<string, unknown>;
+    out.categories = (offer.offerCategories || []).map((oc: { category: unknown }) => oc.category);
+    if (!(out.categories as unknown[]).length && offer.category) out.categories = [offer.category];
+    out.locations = (offer.offerLocations || []).map((ol: { location: unknown }) => ol.location);
+    res.json(out);
   } catch (e) {
     console.error('GET /api/offers/:id:', e);
     const msg = e instanceof Error ? e.message : '';

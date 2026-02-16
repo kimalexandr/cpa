@@ -165,14 +165,20 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="offerGeo">География <span class="required-mark">*</span></label>
-                            <select id="offerGeo" required>
-                                <option value="">Выберите регион</option>
-                                <option value="russia">Вся РФ</option>
-                                <option value="moscow">Москва и МО</option>
-                                <option value="spb">Санкт-Петербург и ЛО</option>
-                                <option value="central">ЦФО</option>
-                                <option value="other">Другие регионы</option>
-                            </select>
+                            <div class="form-group-inline">
+                                <select id="offerGeo">
+                                    <option value="">Выберите регион</option>
+                                    <option value="russia">Вся РФ</option>
+                                    <option value="moscow">Москва и МО</option>
+                                    <option value="spb">Санкт-Петербург и ЛО</option>
+                                    <option value="central">ЦФО</option>
+                                    <option value="other">Другие регионы</option>
+                                </select>
+                                <button type="button" class="btn btn-secondary" id="btnOpenRegionPicker" style="margin-left:0.5rem">
+                                    <i class="fas fa-globe"></i> Выбор региона
+                                </button>
+                            </div>
+                            <p class="form-hint" id="offerGeoSummary">Выберите регионы и города в модальном окне или укажите общий регион выше.</p>
                         </div>
                         <div class="form-group">
                             <label for="offerVolumeUnit">Единица объёма сделки</label>
@@ -389,6 +395,7 @@
     <div id="footer-placeholder"></div>
     <script src="footer-include.js"></script>
     <script src="api.js"></script>
+    <script src="js/region-picker-modal.js"></script>
     <script>
     (function() {
         if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'supplier') {
@@ -407,6 +414,27 @@
             var sel = document.getElementById('offerCategory');
             if (sel) sel.innerHTML = '<option value="">Не удалось загрузить категории</option>';
         });
+        window.__offerSelectedLocationIds = window.__offerSelectedLocationIds || [];
+        var btnRegion = document.getElementById('btnOpenRegionPicker');
+        var geoSummary = document.getElementById('offerGeoSummary');
+        function updateGeoSummary() {
+            var ids = window.__offerSelectedLocationIds || [];
+            if (geoSummary) geoSummary.textContent = ids.length ? 'Выбрано регионов/городов: ' + ids.length + '.' : 'Выберите регионы и города в модальном окне или укажите общий регион выше.';
+        }
+        if (btnRegion) {
+            btnRegion.addEventListener('click', function() {
+                if (typeof window.RealCPA.openRegionPicker !== 'function') return;
+                window.RealCPA.openRegionPicker({
+                    offerId: null,
+                    initialLocationIds: window.__offerSelectedLocationIds || [],
+                    onConfirm: function(ids) {
+                        window.__offerSelectedLocationIds = ids || [];
+                        updateGeoSummary();
+                    }
+                });
+            });
+        }
+        updateGeoSummary();
     })();
     </script>
     <script src="script.js"></script>
@@ -481,8 +509,9 @@
                     return;
                 }
                 var geoVal = geoSelect ? geoSelect.value : '';
-                if (!geoVal) {
-                    alert('Выберите географию (шаг 2).');
+                var selectedLocationIds = window.__offerSelectedLocationIds || [];
+                if (!geoVal && (!selectedLocationIds || selectedLocationIds.length === 0)) {
+                    alert('Выберите географию (шаг 2): выберите регион в списке или нажмите «Выбор региона» и отметьте города/регионы.');
                     return;
                 }
                 var cpaEl = document.getElementById('offerCpa');
@@ -520,7 +549,14 @@
                     rules: rulesStr,
                     capAmount: budgetEl && budgetEl.value !== '' ? parseFloat(budgetEl.value) : undefined,
                     capConversions: capMonthEl && capMonthEl.value !== '' ? parseInt(capMonthEl.value, 10) : undefined
-                }).then(function() {
+                }).then(function(res) {
+                    var offerId = res && res.id;
+                    if (offerId && selectedLocationIds && selectedLocationIds.length > 0 && window.RealCPA.supplier.setOfferLocations) {
+                        return window.RealCPA.supplier.setOfferLocations(offerId, selectedLocationIds).then(function() {
+                            alert('Оффер создан. География сохранена. Статус — черновик; измените на «Активен» в разделе «Мои офферы».');
+                            window.location.href = 'dashboard-supplier-offers.html';
+                        });
+                    }
                     alert('Оффер создан. Он сохранён как черновик — измените статус на «Активен» в разделе «Мои офферы».');
                     window.location.href = 'dashboard-supplier-offers.html';
                 }).catch(function(err) {
