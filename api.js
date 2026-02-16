@@ -159,6 +159,16 @@
       setOfferStatus: function (id, status) { return request('PATCH', '/api/supplier/offers/' + id + '/status', { status: status }); },
       getAffiliates: function (offerId) { return request('GET', '/api/supplier/offers/' + offerId + '/affiliates'); },
       setParticipation: function (participationId, status) { return request('PATCH', '/api/supplier/affiliate-participation/' + participationId, { status: status }); },
+      getEvents: function (params) {
+        var q = [];
+        if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        return request('GET', '/api/supplier/events' + (q.length ? '?' + q.join('&') : ''));
+      },
+      setEventStatus: function (eventId, status, amount) {
+        var body = { status: status };
+        if (amount != null) body.amount = amount;
+        return request('PATCH', '/api/supplier/events/' + encodeURIComponent(eventId), body);
+      },
       stats: function () { return request('GET', '/api/supplier/stats'); },
       analytics: function (params) {
         var q = [];
@@ -205,6 +215,19 @@
         return request('PATCH', '/api/admin/offers/' + encodeURIComponent(offerId), { status: status });
       },
       moderationParticipations: function () { return request('GET', '/api/admin/moderation/participations'); },
+      setParticipationStatus: function (participationId, status) {
+        return request('PATCH', '/api/admin/moderation/participations/' + encodeURIComponent(participationId), { status: status });
+      },
+      getEvents: function (params) {
+        var q = [];
+        if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        return request('GET', '/api/admin/events' + (q.length ? '?' + q.join('&') : ''));
+      },
+      setEventStatus: function (eventId, status, amount) {
+        var body = { status: status };
+        if (amount != null) body.amount = amount;
+        return request('PATCH', '/api/admin/events/' + encodeURIComponent(eventId), body);
+      },
       payouts: function (params) {
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
@@ -212,6 +235,17 @@
       },
       setPayoutStatus: function (payoutId, status) {
         return request('PATCH', '/api/admin/payouts/' + encodeURIComponent(payoutId), { status: status });
+      },
+      categories: function (params) {
+        var q = [];
+        if (params && params.activeOnly) q.push('activeOnly=true');
+        return request('GET', '/api/admin/categories' + (q.length ? '?' + q.join('&') : ''));
+      },
+      createCategory: function (data) {
+        return request('POST', '/api/admin/categories', data);
+      },
+      updateCategory: function (id, data) {
+        return request('PATCH', '/api/admin/categories/' + encodeURIComponent(id), data);
       }
     }
   };

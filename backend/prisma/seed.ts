@@ -187,7 +187,7 @@ async function main() {
 
   const offer3 = await prisma.offer.upsert({
     where: { id: 'seed-offer-3' },
-    update: {},
+    update: { status: OfferStatus.active },
     create: {
       id: 'seed-offer-3',
       supplierId: supplier.id,
@@ -199,11 +199,65 @@ async function main() {
       payoutAmount: 400,
       currency: 'RUB',
       landingUrl: 'https://example.com/materials',
-      status: OfferStatus.draft,
+      status: OfferStatus.active,
     },
   });
 
-  console.log('Offers:', offer1.id, offer2.id, offer3.id);
+  const offer4 = await prisma.offer.upsert({
+    where: { id: 'seed-offer-4' },
+    update: {},
+    create: {
+      id: 'seed-offer-4',
+      supplierId: supplier.id,
+      categoryId: catAuto.id,
+      title: 'Автозапчасти и шины — CPA 350 ₽',
+      description: 'Запчасти, шины, автохимия. Регионы: вся РФ.',
+      targetGeo: 'Вся РФ',
+      payoutModel: PayoutModel.CPA,
+      payoutAmount: 350,
+      currency: 'RUB',
+      landingUrl: 'https://example.com/auto',
+      status: OfferStatus.active,
+    },
+  });
+
+  const offer5 = await prisma.offer.upsert({
+    where: { id: 'seed-offer-5' },
+    update: {},
+    create: {
+      id: 'seed-offer-5',
+      supplierId: supplier.id,
+      categoryId: catElectronics.id,
+      title: 'Бытовая техника оптом — CPA 600 ₽',
+      description: 'Крупная и мелкая бытовая техника для розницы и HoReCa.',
+      targetGeo: 'Москва, МО, РФ',
+      payoutModel: PayoutModel.CPA,
+      payoutAmount: 600,
+      currency: 'RUB',
+      landingUrl: 'https://example.com/electronics',
+      status: OfferStatus.active,
+    },
+  });
+
+  const offer6 = await prisma.offer.upsert({
+    where: { id: 'seed-offer-6' },
+    update: {},
+    create: {
+      id: 'seed-offer-6',
+      supplierId: supplier.id,
+      categoryId: catClothing.id,
+      title: 'Одежда и обувь оптом — CPA 250 ₽',
+      description: 'Дропшиппинг и опт. Женская, мужская, детская одежда.',
+      targetGeo: 'Российская Федерация',
+      payoutModel: PayoutModel.CPA,
+      payoutAmount: 250,
+      currency: 'RUB',
+      landingUrl: 'https://example.com/clothing',
+      status: OfferStatus.active,
+    },
+  });
+
+  console.log('Offers:', offer1.id, offer2.id, offer3.id, offer4.id, offer5.id, offer6.id);
 
   // --- Заявка аффилиата на оффер и трекинг-ссылка (одобренная) ---
   const participation = await prisma.affiliateOfferParticipation.upsert({

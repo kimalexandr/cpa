@@ -5,6 +5,46 @@ import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
 const router = Router();
 const prisma = new PrismaClient();
 
+/** Заработано по одобренным лидам/продажам с учётом холда и модели оффера (CPL=lead, CPA/RevShare=sale) */
+async function getEarnedWithHold(linkIds: string[]): Promise<number> {
+  if (!linkIds.length) return 0;
+  const now = new Date();
+  const events = await prisma.event.findMany({
+    where: {
+      trackingLinkId: { in: linkIds },
+      eventType: { in: ['lead', 'sale'] },
+      status: 'approved',
+    },
+    select: { amount: true, eventType: true, createdAt: true, trackingLinkId: true },
+  });
+  const links = await prisma.trackingLink.findMany({
+    where: { id: { in: linkIds } },
+    select: { id: true, offerId: true },
+  });
+  const offers = await prisma.offer.findMany({
+    where: { id: { in: links.map((l) => l.offerId) } },
+    select: { id: true, holdDays: true, payoutModel: true },
+  });
+  const offerById: Record<string, { holdDays: number | null; payoutModel: string }> = {};
+  offers.forEach((o) => {
+    offerById[o.id] = { holdDays: o.holdDays != null ? Number(o.holdDays) : null, payoutModel: o.payoutModel };
+  });
+  const linkToOffer: Record<string, string> = {};
+  links.forEach((l) => { linkToOffer[l.id] = l.offerId; });
+  let sum = 0;
+  for (const e of events) {
+    const offer = offerById[linkToOffer[e.trackingLinkId]];
+    if (!offer) continue;
+    const holdDays = offer.holdDays ?? 0;
+    const holdUntil = new Date((e.createdAt as Date).getTime() + holdDays * 24 * 60 * 60 * 1000);
+    if (holdUntil > now) continue;
+    const countLead = offer.payoutModel === 'CPL' && e.eventType === 'lead';
+    const countSale = (offer.payoutModel === 'CPA' || offer.payoutModel === 'RevShare') && e.eventType === 'sale';
+    if (countLead || countSale) sum += Number(e.amount ?? 0);
+  }
+  return sum;
+}
+
 router.use(requireAuth);
 router.use(requireRole('affiliate'));
 
@@ -79,18 +119,15 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
       select: { id: true },
     });
     const linkIds = links.map((l: { id: string }) => l.id);
-    const [clicks, leads, sales, approvedSum, payoutsSum] = await Promise.all([
+    const [clicks, leads, sales, payoutsSum, earned] = await Promise.all([
       prisma.event.count({ where: { trackingLinkId: { in: linkIds }, eventType: 'click' } }),
       prisma.event.count({ where: { trackingLinkId: { in: linkIds }, eventType: 'lead' } }),
       prisma.event.count({ where: { trackingLinkId: { in: linkIds }, eventType: 'sale' } }),
-      prisma.event.aggregate({
-        where: { trackingLinkId: { in: linkIds }, eventType: 'sale', status: 'approved' },
-        _sum: { amount: true },
-      }),
       prisma.payout.aggregate({
         where: { affiliateId: req.user!.userId, status: 'paid' },
         _sum: { amount: true },
       }),
+      getEarnedWithHold(linkIds),
     ]);
     const connectedOffers = await prisma.affiliateOfferParticipation.count({
       where: { affiliateId: req.user!.userId, status: 'approved' },
@@ -99,7 +136,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
       clicks,
       leads,
       sales,
-      earned: Number(approvedSum._sum.amount || 0),
+      earned,
       paidOut: Number(payoutsSum._sum.amount || 0),
       connectedOffers,
     });
@@ -112,7 +149,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
 const MIN_PAYOUT = 1000;
 const CURRENCY = 'RUB';
 
-/** Баланс: заработано, выведено, доступно к выводу */
+/** Баланс: заработано (с холдом), выведено, доступно к выводу */
 router.get('/balance', async (req: AuthRequest, res: Response) => {
   try {
     const links = await prisma.trackingLink.findMany({
@@ -120,22 +157,18 @@ router.get('/balance', async (req: AuthRequest, res: Response) => {
       select: { id: true },
     });
     const linkIds = links.map((l: { id: string }) => l.id);
-    const [approvedSum, payoutsSum] = await Promise.all([
-      prisma.event.aggregate({
-        where: { trackingLinkId: { in: linkIds }, eventType: 'sale', status: 'approved' },
-        _sum: { amount: true },
-      }),
+    const [earned, payoutsSum, pendingSum] = await Promise.all([
+      getEarnedWithHold(linkIds),
       prisma.payout.aggregate({
         where: { affiliateId: req.user!.userId, status: 'paid' },
         _sum: { amount: true },
       }),
+      prisma.payout.aggregate({
+        where: { affiliateId: req.user!.userId, status: { in: ['pending', 'processing'] } },
+        _sum: { amount: true },
+      }),
     ]);
-    const earned = Number(approvedSum._sum.amount || 0);
     const paidOut = Number(payoutsSum._sum.amount || 0);
-    const pendingSum = await prisma.payout.aggregate({
-      where: { affiliateId: req.user!.userId, status: { in: ['pending', 'processing'] } },
-      _sum: { amount: true },
-    });
     const pendingAmount = Number(pendingSum._sum.amount || 0);
     const availableBalance = Math.max(0, earned - paidOut - pendingAmount);
     res.json({
@@ -165,11 +198,8 @@ router.post('/payouts', async (req: AuthRequest, res: Response) => {
       select: { id: true },
     });
     const linkIds = links.map((l: { id: string }) => l.id);
-    const [approvedSum, payoutsSum, pendingSum] = await Promise.all([
-      prisma.event.aggregate({
-        where: { trackingLinkId: { in: linkIds }, eventType: 'sale', status: 'approved' },
-        _sum: { amount: true },
-      }),
+    const [earned, payoutsSum, pendingSum] = await Promise.all([
+      getEarnedWithHold(linkIds),
       prisma.payout.aggregate({
         where: { affiliateId: req.user!.userId, status: 'paid' },
         _sum: { amount: true },
@@ -179,7 +209,6 @@ router.post('/payouts', async (req: AuthRequest, res: Response) => {
         _sum: { amount: true },
       }),
     ]);
-    const earned = Number(approvedSum._sum.amount || 0);
     const paidOut = Number(payoutsSum._sum.amount || 0);
     const pendingAmount = Number(pendingSum._sum.amount || 0);
     const availableBalance = Math.max(0, earned - paidOut - pendingAmount);
@@ -245,23 +274,36 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
         trackingLinkId: { in: linkIds },
         createdAt: { gte: fromDate, lte: toDate },
       },
-      select: { createdAt: true, eventType: true, amount: true, status: true },
+      select: { createdAt: true, eventType: true, amount: true, status: true, trackingLinkId: true },
     });
 
     const byDayMap: Record<string, { clicks: number; leads: number; sales: number; earned: number }> = {};
     let summary = { clicks: 0, leads: 0, sales: 0, earned: 0 };
+    const linksWithOffers = await prisma.trackingLink.findMany({
+      where: { id: { in: linkIds } },
+      select: { id: true, offerId: true },
+    });
+    const offersForAnalytics = await prisma.offer.findMany({
+      where: { id: { in: linksWithOffers.map((l) => l.offerId) } },
+      select: { id: true, payoutModel: true },
+    });
+    const offerModel: Record<string, string> = {};
+    offersForAnalytics.forEach((o) => { offerModel[o.id] = o.payoutModel; });
+    const linkToOffer: Record<string, string> = {};
+    linksWithOffers.forEach((l) => { linkToOffer[l.id] = l.offerId; });
+
     for (const e of events) {
       const d = (e.createdAt as Date).toISOString().slice(0, 10);
       if (!byDayMap[d]) byDayMap[d] = { clicks: 0, leads: 0, sales: 0, earned: 0 };
       if (e.eventType === 'click') { byDayMap[d].clicks++; summary.clicks++; }
       if (e.eventType === 'lead') { byDayMap[d].leads++; summary.leads++; }
-      if (e.eventType === 'sale') {
-        byDayMap[d].sales++;
-        summary.sales++;
-        if (e.status === 'approved' && e.amount != null) {
-          byDayMap[d].earned += Number(e.amount);
-          summary.earned += Number(e.amount);
-        }
+      if (e.eventType === 'sale') { byDayMap[d].sales++; summary.sales++; }
+      const model = offerModel[linkToOffer[e.trackingLinkId]];
+      const countEarned = e.status === 'approved' && e.amount != null &&
+        ((model === 'CPL' && e.eventType === 'lead') || ((model === 'CPA' || model === 'RevShare') && e.eventType === 'sale'));
+      if (countEarned) {
+        byDayMap[d].earned += Number(e.amount);
+        summary.earned += Number(e.amount);
       }
     }
     const byDay = Object.keys(byDayMap).sort().map((date) => ({ date, ...byDayMap[date] }));

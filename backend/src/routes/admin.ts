@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
-import { sendPayoutPaid } from '../lib/email';
+import { sendPayoutPaid, sendParticipationApproved, sendParticipationRejected } from '../lib/email';
 import { createNotification } from '../lib/notifications';
 
 const router = Router();
@@ -45,6 +45,100 @@ router.get('/dashboard', async (_req: AuthRequest, res: Response) => {
   } catch (e) {
     console.error('Admin dashboard error:', e);
     res.status(500).json({ error: 'Ошибка загрузки метрик' });
+  }
+});
+
+/** Список категорий (админ, все включая неактивные) */
+router.get('/categories', async (req: AuthRequest, res: Response) => {
+  try {
+    const activeOnly = req.query.activeOnly === 'true';
+    const where = activeOnly ? { isActive: true } : {};
+    const categories = await prisma.category.findMany({
+      where,
+      include: { _count: { select: { offers: true } } },
+      orderBy: { name: 'asc' },
+    });
+    res.json(categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      description: c.description,
+      isActive: c.isActive,
+      offersCount: c._count.offers,
+    })));
+  } catch (e) {
+    console.error('Admin categories list error:', e);
+    res.status(500).json({ error: 'Ошибка загрузки категорий' });
+  }
+});
+
+/** Создать категорию */
+router.post('/categories', async (req: AuthRequest, res: Response) => {
+  try {
+    const { name, slug, description, isActive } = req.body;
+    if (!name || !slug || typeof name !== 'string' || typeof slug !== 'string') {
+      res.status(400).json({ error: 'Укажите название и slug' });
+      return;
+    }
+    const slugNorm = slug.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
+    if (!slugNorm) {
+      res.status(400).json({ error: 'Slug должен содержать латинские буквы, цифры или дефис' });
+      return;
+    }
+    const existing = await prisma.category.findUnique({ where: { slug: slugNorm } });
+    if (existing) {
+      res.status(400).json({ error: 'Категория с таким slug уже есть' });
+      return;
+    }
+    const category = await prisma.category.create({
+      data: {
+        name: name.trim(),
+        slug: slugNorm,
+        description: description != null ? String(description).trim() || null : null,
+        isActive: isActive !== false,
+      },
+    });
+    res.status(201).json(category);
+  } catch (e) {
+    console.error('Admin create category error:', e);
+    res.status(500).json({ error: 'Ошибка создания категории' });
+  }
+});
+
+/** Обновить категорию */
+router.patch('/categories/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id;
+    const { name, slug, description, isActive } = req.body;
+    const category = await prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      res.status(404).json({ error: 'Категория не найдена' });
+      return;
+    }
+    const data: { name?: string; slug?: string; description?: string | null; isActive?: boolean } = {};
+    if (name !== undefined) data.name = String(name).trim();
+    if (slug !== undefined) {
+      const slugNorm = String(slug).trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
+      if (slugNorm) {
+        const existing = await prisma.category.findFirst({ where: { slug: slugNorm, id: { not: id } } });
+        if (existing) {
+          res.status(400).json({ error: 'Категория с таким slug уже есть' });
+          return;
+        }
+        data.slug = slugNorm;
+      }
+    }
+    if (description !== undefined) data.description = description === '' ? null : String(description).trim();
+    if (typeof isActive === 'boolean') data.isActive = isActive;
+
+    const updated = await prisma.category.update({
+      where: { id },
+      data,
+    });
+    res.json(updated);
+  } catch (e) {
+    console.error('Admin update category error:', e);
+    res.status(500).json({ error: 'Ошибка обновления категории' });
   }
 });
 
@@ -225,6 +319,130 @@ router.patch('/payouts/:id', async (req: AuthRequest, res: Response) => {
   } catch (e) {
     console.error('Admin PATCH payout error:', e);
     res.status(500).json({ error: 'Ошибка обновления выплаты' });
+  }
+});
+
+/** Список лидов/продаж (модерация) */
+router.get('/events', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = (req.query.status as string) || 'pending';
+    const where: { eventType?: { in: string[] }; status?: string } = { eventType: { in: ['lead', 'sale'] } };
+    if (status && ['pending', 'approved', 'rejected'].includes(status)) where.status = status as 'pending' | 'approved' | 'rejected';
+
+    const events = await prisma.event.findMany({
+      where,
+      include: {
+        trackingLink: {
+          select: {
+            token: true,
+            offer: { select: { id: true, title: true, payoutAmount: true }, include: { supplier: { select: { email: true, name: true } } } },
+            affiliate: { select: { id: true, email: true, name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    res.json(events.map((e) => ({
+      id: e.id,
+      eventType: e.eventType,
+      amount: e.amount != null ? Number(e.amount) : null,
+      status: e.status,
+      externalId: e.externalId,
+      createdAt: e.createdAt,
+      offerId: e.trackingLink.offer.id,
+      offerTitle: e.trackingLink.offer.title,
+      payoutAmount: e.trackingLink.offer.payoutAmount != null ? Number(e.trackingLink.offer.payoutAmount) : null,
+      token: e.trackingLink.token,
+      affiliate: e.trackingLink.affiliate,
+      supplier: e.trackingLink.offer.supplier,
+    })));
+  } catch (e) {
+    console.error('Admin GET events error:', e);
+    res.status(500).json({ error: 'Ошибка загрузки событий' });
+  }
+});
+
+/** Одобрить или отклонить лид/продажу (админ) */
+router.patch('/events/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id;
+    const status = req.body?.status;
+    if (!status || (status !== 'approved' && status !== 'rejected')) {
+      res.status(400).json({ error: 'Укажите status: approved или rejected' });
+      return;
+    }
+    const event = await prisma.event.findUnique({
+      where: { id },
+      include: { trackingLink: { include: { offer: true } } },
+    });
+    if (!event || (event.eventType !== 'lead' && event.eventType !== 'sale')) {
+      res.status(404).json({ error: 'Событие не найдено' });
+      return;
+    }
+    const updateData: { status: 'approved' | 'rejected'; amount?: number } = { status: status as 'approved' | 'rejected' };
+    if (status === 'approved') {
+      const newAmount = req.body.amount != null ? Number(req.body.amount) : (event.amount != null ? Number(event.amount) : Number(event.trackingLink.offer.payoutAmount));
+      updateData.amount = newAmount;
+    }
+    const updated = await prisma.event.update({
+      where: { id },
+      data: updateData,
+    });
+    res.json(updated);
+  } catch (e) {
+    console.error('Admin PATCH event error:', e);
+    res.status(500).json({ error: 'Ошибка обновления события' });
+  }
+});
+
+/** Одобрить/отклонить заявку аффилиата на оффер (админ) */
+router.patch('/moderation/participations/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id;
+    const status = req.body?.status;
+    if (!status || (status !== 'approved' && status !== 'rejected')) {
+      res.status(400).json({ error: 'Укажите status: approved или rejected' });
+      return;
+    }
+    const p = await prisma.affiliateOfferParticipation.findUnique({
+      where: { id },
+      include: { offer: true, affiliate: { select: { email: true, affiliateProfile: { select: { notifyParticipation: true } } } } },
+    });
+    if (!p) {
+      res.status(404).json({ error: 'Заявка не найдена' });
+      return;
+    }
+    const updated = await prisma.affiliateOfferParticipation.update({
+      where: { id },
+      data: { status },
+    });
+    if (status === 'approved') {
+      const token = 'tk-' + p.affiliateId.slice(0, 8) + '-' + p.offerId.slice(0, 8);
+      await prisma.trackingLink.upsert({
+        where: { token },
+        update: {},
+        create: { offerId: p.offerId, affiliateId: p.affiliateId, token },
+      });
+    }
+    const sendEmail = (p.affiliate as { affiliateProfile?: { notifyParticipation: boolean | null } } | null)?.affiliateProfile?.notifyParticipation !== false;
+    if (p.affiliate?.email && sendEmail) {
+      const baseApi = process.env.API_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+      const trackingUrl = baseApi.replace(/\/api\/?$/, '') + '/t/' + (status === 'approved' ? 'tk-' + p.affiliateId.slice(0, 8) + '-' + p.offerId.slice(0, 8) : '');
+      if (status === 'approved') await sendParticipationApproved(p.affiliate.email, p.offer.title, trackingUrl);
+      else await sendParticipationRejected(p.affiliate.email, p.offer.title);
+    }
+    await createNotification(prisma, {
+      userId: p.affiliateId,
+      type: status === 'approved' ? 'participation_approved' : 'participation_rejected',
+      title: status === 'approved' ? 'Заявка на оффер одобрена' : 'Заявка на оффер отклонена',
+      body: 'Оффер: ' + p.offer.title,
+      link: status === 'approved' ? '/dashboard-affiliate-connections.html' : undefined,
+    });
+    res.json(updated);
+  } catch (e) {
+    console.error('Admin PATCH participation error:', e);
+    res.status(500).json({ error: 'Ошибка обновления заявки' });
   }
 });
 

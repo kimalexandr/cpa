@@ -263,4 +263,100 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
   }
 });
 
+/** Список лидов/продаж по офферам поставщика (для модерации) */
+router.get('/events', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = (req.query.status as string) || 'pending';
+    const offers = await prisma.offer.findMany({
+      where: { supplierId: req.user!.userId },
+      select: { id: true },
+    });
+    const offerIds = offers.map((o: { id: string }) => o.id);
+    const links = await prisma.trackingLink.findMany({
+      where: { offerId: { in: offerIds } },
+      select: { id: true, offerId: true, token: true, affiliateId: true },
+    });
+    const linkIds = links.map((l: { id: string }) => l.id);
+    const where: { trackingLinkId: { in: string[] }; status?: string } = { trackingLinkId: { in: linkIds } };
+    if (status && ['pending', 'approved', 'rejected'].includes(status)) where.status = status as 'pending' | 'approved' | 'rejected';
+
+    const events = await prisma.event.findMany({
+      where: { ...where, eventType: { in: ['lead', 'sale'] } },
+      include: {
+        trackingLink: {
+          select: {
+            token: true,
+            offer: { select: { id: true, title: true, payoutAmount: true } },
+            affiliate: { select: { id: true, email: true, name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    res.json(events.map((e) => ({
+      id: e.id,
+      eventType: e.eventType,
+      amount: e.amount != null ? Number(e.amount) : null,
+      status: e.status,
+      externalId: e.externalId,
+      createdAt: e.createdAt,
+      offerId: e.trackingLink.offer.id,
+      offerTitle: e.trackingLink.offer.title,
+      payoutAmount: e.trackingLink.offer.payoutAmount != null ? Number(e.trackingLink.offer.payoutAmount) : null,
+      token: e.trackingLink.token,
+      affiliate: e.trackingLink.affiliate,
+    })));
+  } catch (e) {
+    console.error('GET /api/supplier/events:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+/** Одобрить или отклонить лид/продажу */
+router.patch('/events/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id;
+    const status = req.body?.status;
+    if (!status || (status !== 'approved' && status !== 'rejected')) {
+      res.status(400).json({ error: 'Укажите status: approved или rejected' });
+      return;
+    }
+    const event = await prisma.event.findUnique({
+      where: { id },
+      include: {
+        trackingLink: {
+          include: { offer: true, affiliate: { select: { id: true, email: true } } },
+        },
+      },
+    });
+    if (!event || event.trackingLink.offer.supplierId !== req.user!.userId) {
+      res.status(404).json({ error: 'Событие не найдено' });
+      return;
+    }
+    if (event.eventType !== 'lead' && event.eventType !== 'sale') {
+      res.status(400).json({ error: 'Можно модерировать только лиды и продажи' });
+      return;
+    }
+    const updateData: { status: 'approved' | 'rejected'; amount?: number } = { status: status as 'approved' | 'rejected' };
+    if (status === 'approved') {
+      const newAmount = req.body.amount != null ? Number(req.body.amount) : (event.amount != null ? Number(event.amount) : Number(event.trackingLink.offer.payoutAmount));
+      updateData.amount = newAmount;
+    }
+    const updated = await prisma.event.update({
+      where: { id },
+      data: updateData,
+      include: {
+        trackingLink: {
+          select: { token: true, offer: { select: { title: true } }, affiliate: { select: { email: true, name: true } } },
+        },
+      },
+    });
+    res.json(updated);
+  } catch (e) {
+    console.error('PATCH /api/supplier/events/:id:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 export default router;

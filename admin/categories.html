@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Категории — Админ — RealCPA Hub</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-page">
+    <header class="admin-header">
+        <div class="admin-header-inner">
+            <a href="../index.html" class="admin-logo"><i class="fas fa-link"></i> RealCPA Hub</a>
+            <span class="admin-title">Админ-панель</span>
+            <div class="admin-header-user">
+                <span class="admin-user-name" id="adminUserName"></span>
+                <a href="../index.html" class="admin-logout" id="adminLogout">Выход</a>
+            </div>
+        </div>
+    </header>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="index.html" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Главная</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Пользователи</a>
+                <a href="offers.html" class="admin-nav-link"><i class="fas fa-briefcase"></i> Офферы</a>
+                <a href="categories.html" class="admin-nav-link active"><i class="fas fa-folder"></i> Категории</a>
+                <a href="moderation.html" class="admin-nav-link"><i class="fas fa-clipboard-check"></i> Модерация</a>
+                <a href="finance.html" class="admin-nav-link"><i class="fas fa-wallet"></i> Финансы</a>
+                <a href="settings.html" class="admin-nav-link"><i class="fas fa-cog"></i> Настройки</a>
+                <a href="logs.html" class="admin-nav-link"><i class="fas fa-history"></i> Логи</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <div class="admin-toolbar">
+                <h1 class="admin-page-title">Категории офферов</h1>
+                <button type="button" class="btn btn-primary" id="btnAddCategory">
+                    <i class="fas fa-plus"></i> Добавить категорию
+                </button>
+            </div>
+            <p class="admin-card-label" style="margin-bottom:1rem">Категории используются при создании офферов и в фильтрах каталога. Неактивные категории не показываются поставщикам при создании оффера.</p>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Slug</th>
+                            <th>Описание</th>
+                            <th>Офферов</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoriesTableBody">
+                        <tr><td colspan="6">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="categoryModal" style="display:none">
+        <div class="modal-content" style="max-width:480px">
+            <span class="modal-close" id="categoryModalClose">&times;</span>
+            <h2 id="categoryModalTitle">Добавить категорию</h2>
+            <form id="categoryForm">
+                <input type="hidden" id="categoryId">
+                <div class="form-group">
+                    <label for="categoryName">Название *</label>
+                    <input type="text" id="categoryName" class="form-control" required placeholder="Например: Продукты питания">
+                </div>
+                <div class="form-group">
+                    <label for="categorySlug">Slug *</label>
+                    <input type="text" id="categorySlug" class="form-control" required placeholder="products (латиница, дефис)">
+                </div>
+                <div class="form-group">
+                    <label for="categoryDescription">Описание</label>
+                    <textarea id="categoryDescription" class="form-control" rows="2" placeholder="Краткое описание категории"></textarea>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="categoryIsActive" checked> Активна (доступна при создании оффера)</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <button type="button" class="btn btn-secondary" id="categoryFormCancel">Отмена</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../api.js"></script>
+    <script>
+    (function() {
+        if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'admin') {
+            window.location.href = '../login.html?redirect=' + encodeURIComponent('admin/categories.html');
+            return;
+        }
+        var user = window.RealCPA.getUser();
+        document.getElementById('adminUserName').textContent = (user && (user.name || user.email)) || 'Админ';
+        document.getElementById('adminLogout').addEventListener('click', function(e) { e.preventDefault(); window.RealCPA.clearAuth(); window.location.href = '../index.html'; });
+
+        var modal = document.getElementById('categoryModal');
+        var form = document.getElementById('categoryForm');
+        var titleEl = document.getElementById('categoryModalTitle');
+        var categoriesList = [];
+
+        function loadCategories() {
+            window.RealCPA.admin.categories()
+                .then(function(list) {
+                    categoriesList = list;
+                    var tbody = document.getElementById('categoriesTableBody');
+                    if (!list.length) {
+                        tbody.innerHTML = '<tr><td colspan="6">Нет категорий. Добавьте первую.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = list.map(function(c) {
+                        var status = c.isActive ? '<span class="admin-badge-active">Активна</span>' : '<span class="admin-badge-blocked">Неактивна</span>';
+                        var desc = (c.description || '').slice(0, 60);
+                        if ((c.description || '').length > 60) desc += '…';
+                        return '<tr data-id="' + c.id + '">' +
+                            '<td>' + escapeHtml(c.name) + '</td>' +
+                            '<td><code>' + escapeHtml(c.slug) + '</code></td>' +
+                            '<td>' + escapeHtml(desc) + '</td>' +
+                            '<td>' + (c.offersCount != null ? c.offersCount : '—') + '</td>' +
+                            '<td>' + status + '</td>' +
+                            '<td><button type="button" class="btn btn-sm btn-secondary btn-edit-category" data-id="' + c.id + '">Изменить</button></td></tr>';
+                    }).join('');
+                    tbody.querySelectorAll('.btn-edit-category').forEach(function(btn) {
+                        btn.addEventListener('click', function() { openEdit(this.getAttribute('data-id')); });
+                    });
+                })
+                .catch(function(err) {
+                    document.getElementById('categoriesTableBody').innerHTML = '<tr><td colspan="6">Ошибка: ' + escapeHtml(err.message || 'загрузка') + '</td></tr>';
+                });
+        }
+        function escapeHtml(s) {
+            if (s == null) return '';
+            var div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+        function openAdd() {
+            document.getElementById('categoryId').value = '';
+            document.getElementById('categoryName').value = '';
+            document.getElementById('categorySlug').value = '';
+            document.getElementById('categoryDescription').value = '';
+            document.getElementById('categoryIsActive').checked = true;
+            titleEl.textContent = 'Добавить категорию';
+            modal.style.display = 'flex';
+        }
+        function openEdit(id) {
+            var c = categoriesList.find(function(x) { return x.id === id; });
+            if (!c) return;
+            document.getElementById('categoryId').value = c.id;
+            document.getElementById('categoryName').value = c.name;
+            document.getElementById('categorySlug').value = c.slug;
+            document.getElementById('categoryDescription').value = c.description || '';
+            document.getElementById('categoryIsActive').checked = c.isActive !== false;
+            titleEl.textContent = 'Изменить категорию';
+            modal.style.display = 'flex';
+        }
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        document.getElementById('btnAddCategory').addEventListener('click', openAdd);
+        document.getElementById('categoryModalClose').addEventListener('click', closeModal);
+        document.getElementById('categoryFormCancel').addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var id = document.getElementById('categoryId').value;
+            var data = {
+                name: document.getElementById('categoryName').value.trim(),
+                slug: document.getElementById('categorySlug').value.trim().toLowerCase().replace(/\s+/g, '-'),
+                description: document.getElementById('categoryDescription').value.trim() || null,
+                isActive: document.getElementById('categoryIsActive').checked
+            };
+            if (!data.name || !data.slug) { alert('Укажите название и slug'); return; }
+            var promise = id ? window.RealCPA.admin.updateCategory(id, data) : window.RealCPA.admin.createCategory(data);
+            promise
+                .then(function() { closeModal(); loadCategories(); })
+                .catch(function(err) { alert('Ошибка: ' + (err.message || 'сохранение')); });
+        });
+
+        loadCategories();
+    })();
+    </script>
+</body>
+</html>

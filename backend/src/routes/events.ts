@@ -25,14 +25,21 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
     const eventType = event_type === 'lead' || event_type === 'sale' ? event_type : 'lead';
-    const amountNum = amount != null ? Number(amount) : null;
+    const offer = await prisma.offer.findUnique({
+      where: { id: link.offerId },
+      select: { payoutAmount: true, payoutModel: true, capAmount: true, capConversions: true },
+    });
+    let amountNum = amount != null ? Number(amount) : null;
+    if (amountNum == null && offer) {
+      amountNum = Number(offer.payoutAmount ?? 0);
+    }
 
     if (eventType === 'sale') {
-      const offer = await prisma.offer.findUnique({
-        where: { id: link.offerId },
-        select: { capAmount: true, capConversions: true },
-      });
-      if (offer && (offer.capAmount != null || offer.capConversions != null)) {
+      if (!offer) {
+        res.status(400).json({ error: 'Оффер не найден' });
+        return;
+      }
+      if (offer.capAmount != null || offer.capConversions != null) {
         const offerLinkIds = (await prisma.trackingLink.findMany({
           where: { offerId: link.offerId },
           select: { id: true },
@@ -70,7 +77,7 @@ router.post('/', async (req: Request, res: Response) => {
       data: {
         trackingLinkId: link.id,
         eventType,
-        amount: amountNum,
+        amount: amountNum ?? (offer ? Number(offer.payoutAmount) : 0),
         currency: 'RUB',
         status: 'pending',
         externalId: external_id || null,

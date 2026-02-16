@@ -726,13 +726,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (category) {
                 const cardCategory = card.querySelector('.offer-category').textContent.toLowerCase();
                 const categoryMap = {
-                    'food': 'продукты питания',
+                    'products': 'продукты питания',
                     'construction': 'стройматериалы',
-                    'auto': 'автозапчасти'
+                    'auto': 'автозапчасти',
+                    'electronics': 'электроника',
+                    'clothing': 'одежда',
+                    'other': 'другое'
                 };
-                if (!cardCategory.includes(categoryMap[category])) {
-                    show = false;
-                }
+                const match = categoryMap[category] && cardCategory.includes(categoryMap[category]);
+                if (!match) show = false;
             }
             
             if (show) {
