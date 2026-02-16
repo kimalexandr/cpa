@@ -249,7 +249,7 @@
                 return;
             }
             if (!offers.length) {
-                listEl.innerHTML = '';
+                listEl.innerHTML = '<p class="offers-empty-msg">В каталоге пока нет офферов.</p><p class="offers-empty-hint">Офферы появятся после публикации поставщиками (статус «Активен» или «Приостановлен») или после выполнения <code>npx prisma db seed</code> в папке backend.</p>';
                 window.__lastOffersList = [];
                 return;
             }
@@ -351,7 +351,7 @@
             if (searchInput && searchInput.value.trim()) params.search = searchInput.value.trim();
             if (!listEl) return;
             if (listEl.getAttribute) listEl.setAttribute('aria-busy', 'true');
-            listEl.innerHTML = '';
+            listEl.innerHTML = '<p class="loading-offers">Загрузка офферов…</p>';
             var loadTimeout = setTimeout(function() {
                 if (listEl && listEl.getAttribute('aria-busy') === 'true') {
                     listEl.setAttribute('aria-busy', 'false');
