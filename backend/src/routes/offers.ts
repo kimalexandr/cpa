@@ -62,6 +62,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     });
   }
 
+  /** Запрос без offerCategories (если таблица/колонки ещё не применены) */
   async function fetchFallback() {
     const whereSimple: Record<string, unknown> = { ...where };
     if (categorySlug) {
@@ -71,11 +72,44 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     return prisma.offer.findMany({
       where: whereSimple,
       include: {
-        category: { select: { id: true, name: true, slug: true, level: true } },
+        category: { select: { id: true, name: true, slug: true } },
         supplier: { select: { id: true, companyName: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /** Минимальный запрос: только Offer + category/supplier без level и без offerCategories */
+  async function fetchMinimal() {
+    const whereMin: Record<string, unknown> = {};
+    if (where.status) whereMin.status = where.status;
+    if (categorySlug) (whereMin as Record<string, unknown>).category = { slug: categorySlug };
+    if (search.trim()) {
+      (whereMin as Record<string, unknown>).OR = [
+        { title: { contains: search.trim(), mode: 'insensitive' as const } },
+        { description: { contains: search.trim(), mode: 'insensitive' as const } },
+      ];
+    }
+    return prisma.offer.findMany({
+      where: whereMin,
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        supplier: { select: { id: true, companyName: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  function isDbSchemaError(msg: string): boolean {
+    const s = msg.toLowerCase();
+    return (
+      s.includes('does not exist') ||
+      s.includes('relation') ||
+      s.includes('column') ||
+      s.includes('offer_categories') ||
+      s.includes('offer_locations') ||
+      s.includes('level')
+    );
   }
 
   try {
@@ -84,8 +118,17 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       offers = await fetchFull();
     } catch (dbErr) {
       const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
-      if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('offer_categories') || msg.includes('offer_locations')) {
-        offers = await fetchFallback() as typeof offers;
+      if (isDbSchemaError(msg)) {
+        try {
+          offers = (await fetchFallback()) as typeof offers;
+        } catch (fallbackErr) {
+          const msg2 = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+          if (isDbSchemaError(msg2)) {
+            offers = (await fetchMinimal()) as typeof offers;
+          } else {
+            throw fallbackErr;
+          }
+        }
       } else {
         throw dbErr;
       }
@@ -100,7 +143,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   } catch (e) {
     console.error('GET /api/offers:', e);
     const msg = e instanceof Error ? e.message : '';
-    if (msg.includes('column') && msg.includes('does not exist')) {
+    if (isDbSchemaError(msg)) {
       res.status(500).json({ error: 'Обновите БД: выполните npx prisma db push или npm run db:migrate в папке backend' });
       return;
     }
