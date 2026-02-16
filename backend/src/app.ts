@@ -11,6 +11,7 @@ import trackingRoutes from './routes/tracking';
 import eventsRoutes from './routes/events';
 import pagesRoutes from './routes/pages';
 import adminRoutes from './routes/admin';
+import restoreAdminRoutes from './routes/restore-admin';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -26,6 +27,7 @@ app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/pages', pagesRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/restore-admin', restoreAdminRoutes);
 app.use('/t', trackingRoutes);
 
 app.get('/health', (_req, res) => {

@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
     "db:studio": "prisma studio",
+    "restore-admin": "ts-node -P tsconfig.seed.json prisma/restore-admin.ts",
     "start": "node dist/index.js",
     "dev": "ts-node --compiler-options {\"module\":\"CommonJS\"} src/index.ts"
   },
