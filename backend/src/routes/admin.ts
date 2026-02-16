@@ -352,6 +352,10 @@ router.get('/moderation/participations', async (_req: AuthRequest, res: Response
     res.json(list);
   } catch (e) {
     console.error('Admin moderation participations error:', e);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('affiliate_offer_participations')) {
+      return res.json([]);
+    }
     res.status(500).json({ error: 'Ошибка загрузки заявок' });
   }
 });
@@ -459,6 +463,10 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
     }));
   } catch (e) {
     console.error('Admin GET events error:', e);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('events') || msg.includes('tracking_links')) {
+      return res.json([]);
+    }
     res.status(500).json({ error: 'Ошибка загрузки событий' });
   }
 });

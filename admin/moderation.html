@@ -93,10 +93,12 @@
                 .then(function() { window.location.reload(); })
                 .catch(function(err) { alert('Ошибка: ' + (err.message || 'не удалось')); });
         }
+        window.setParticipationStatus = setParticipationStatus;
 
         window.RealCPA.admin.moderationParticipations()
-            .then(function(list) {
+            .then(function(data) {
                 var tbody = document.getElementById('moderationTableBody');
+                var list = Array.isArray(data) ? data : (data && data.list) ? data.list : [];
                 if (!list.length) { tbody.innerHTML = '<tr><td colspan="5">Нет заявок на модерации</td></tr>'; return; }
                 tbody.innerHTML = list.map(function(p) {
                     var aff = p.affiliate ? (p.affiliate.name || p.affiliate.email) : '—';
@@ -107,12 +109,14 @@
                 }).join('');
             })
             .catch(function(err) {
-                document.getElementById('moderationTableBody').innerHTML = '<tr><td colspan="5">Ошибка: ' + (err.message || 'загрузка') + '</td></tr>';
+                var tbody = document.getElementById('moderationTableBody');
+                tbody.innerHTML = '<tr><td colspan="5">Нет заявок или ошибка сервера. <button type="button" class="btn btn-sm btn-secondary" onclick="window.location.reload()">Повторить</button></td></tr>';
             });
 
         window.RealCPA.admin.getEvents({ status: 'pending' })
-            .then(function(events) {
+            .then(function(data) {
                 var tbody = document.getElementById('eventsTableBody');
+                var events = Array.isArray(data) ? data : (data && data.events) ? data.events : [];
                 if (!events.length) { tbody.innerHTML = '<tr><td colspan="6">Нет лидов/продаж на модерации</td></tr>'; return; }
                 tbody.innerHTML = events.map(function(e) {
                     var type = e.eventType === 'sale' ? 'Продажа' : 'Лид';
@@ -135,7 +139,8 @@
                 });
             })
             .catch(function(err) {
-                document.getElementById('eventsTableBody').innerHTML = '<tr><td colspan="6">Ошибка: ' + (err.message || 'загрузка') + '</td></tr>';
+                var tbody = document.getElementById('eventsTableBody');
+                tbody.innerHTML = '<tr><td colspan="6">Нет данных или ошибка сервера. <button type="button" class="btn btn-sm btn-secondary" onclick="window.location.reload()">Повторить</button></td></tr>';
             });
     })();
     </script>

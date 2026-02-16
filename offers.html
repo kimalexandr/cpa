@@ -145,9 +145,6 @@
                     </select>
                     <select class="filter-select" id="regionFilter">
                         <option value="">Все регионы</option>
-                        <option value="moscow">Москва</option>
-                        <option value="spb">Санкт-Петербург</option>
-                        <option value="russia">Вся РФ</option>
                     </select>
                     <select class="filter-select" id="cpaFilter">
                         <option value="">CPA‑ставка</option>
@@ -304,6 +301,47 @@
                 return r.json();
             });
         }
+        function fetchLocationsTreeFromApi() {
+            var base = getApiBase();
+            return fetch(base + '/api/locations/tree', { method: 'GET', headers: { 'Content-Type': 'application/json' } }).then(function(r) {
+                if (!r.ok) throw new Error('Ошибка ' + r.status);
+                return r.json();
+            });
+        }
+        function flattenLocations(nodes, out) {
+            if (!nodes || !Array.isArray(nodes)) return;
+            for (var i = 0; i < nodes.length; i++) {
+                var n = nodes[i];
+                if (n && n.id && n.name) out.push({ id: n.id, name: n.name, type: n.type, level: n.level });
+                if (n.children && n.children.length) flattenLocations(n.children, out);
+            }
+        }
+        function loadRegions() {
+            var sel = document.getElementById('regionFilter');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Все регионы</option>';
+            function onTree(tree) {
+                var flat = [];
+                flattenLocations(tree, flat);
+                var regions = flat.filter(function(l) { return l.type === 'region' || l.type === 'country'; });
+                var opts = '<option value="">Все регионы</option>';
+                for (var i = 0; i < regions.length; i++) {
+                    var r = regions[i];
+                    opts += '<option value="' + escapeHtml(r.id) + '">' + escapeHtml(r.name) + '</option>';
+                }
+                sel.innerHTML = opts || '<option value="">Все регионы</option>';
+            }
+            function onErr() {
+                sel.innerHTML = '<option value="">Все регионы</option><option value="">— Нет данных —</option>';
+            }
+            if (typeof window.RealCPA !== 'undefined' && window.RealCPA.getLocationsTree) {
+                window.RealCPA.getLocationsTree().then(onTree).catch(function() {
+                    fetchLocationsTreeFromApi().then(onTree).catch(onErr);
+                });
+            } else {
+                fetchLocationsTreeFromApi().then(onTree).catch(onErr);
+            }
+        }
         function loadOffers() {
             var params = { status: 'active' };
             var catFilter = document.getElementById('categoryFilter');
@@ -365,6 +403,7 @@
             }
         }
         loadCategories();
+        loadRegions();
         var searchBtn = document.getElementById('offerSearchBtn');
         var searchInput = document.getElementById('offerSearch');
         if (searchBtn) searchBtn.addEventListener('click', loadOffers);

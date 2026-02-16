@@ -35,13 +35,100 @@
         </aside>
         <main class="admin-main">
             <div class="admin-toolbar"><h1 class="admin-page-title">Финансы</h1></div>
-            <p class="admin-card-label">Раздел в разработке: балансы, выплаты, комиссии.</p>
+            <p class="admin-card-label" style="margin-bottom:1rem">Выплаты партнёрам. Одобренные лиды/продажи формируют баланс; партнёр запрашивает выплату — здесь можно отметить «Выплачено» после перевода.</p>
+            <div class="stats-grid" style="margin-bottom:1.5rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="stat-card">
+                    <div class="stat-content"><h3>В ожидании</h3><p class="stat-value" id="financePendingCount">0</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content"><h3>Выплачено всего, ₽</h3><p class="stat-value" id="financePaidSum">0</p></div>
+                </div>
+            </div>
+            <div class="admin-table-wrap">
+                <p class="admin-card-label">Фильтр: <select id="financeStatusFilter" class="filter-select" style="display:inline-block;width:auto;margin-left:0.5rem">
+                    <option value="">Все статусы</option>
+                    <option value="pending">Ожидание</option>
+                    <option value="processing">В обработке</option>
+                    <option value="paid">Выплачено</option>
+                    <option value="canceled">Отменено</option>
+                </select> <button type="button" class="btn btn-secondary btn-sm" id="financeRefreshBtn">Обновить</button></p>
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>Партнёр</th><th>Сумма</th><th>Валюта</th><th>Статус</th><th>Дата заявки</th><th>Действия</th></tr>
+                    </thead>
+                    <tbody id="financeTableBody">
+                        <tr><td colspan="6">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </main>
     </div>
     <script src="../api.js"></script>
     <script>
-    if(!window.RealCPA||!window.RealCPA.isLoggedIn()||window.RealCPA.getRole()!=='admin') window.location.href='../login.html?redirect='+encodeURIComponent('admin/finance.html');
-    else { var u=window.RealCPA.getUser(); document.getElementById('adminUserName').textContent=(u&&(u.name||u.email))||'Админ'; document.getElementById('adminLogout').onclick=function(e){e.preventDefault();window.RealCPA.clearAuth();window.location.href='../index.html';}; }
+    (function() {
+        if (!window.RealCPA || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'admin') {
+            window.location.href = '../login.html?redirect=' + encodeURIComponent('admin/finance.html');
+            return;
+        }
+        var u = window.RealCPA.getUser();
+        document.getElementById('adminUserName').textContent = (u && (u.name || u.email)) || 'Админ';
+        document.getElementById('adminLogout').onclick = function(e) { e.preventDefault(); window.RealCPA.clearAuth(); window.location.href = '../index.html'; };
+
+        function loadPayouts() {
+            var status = document.getElementById('financeStatusFilter').value || undefined;
+            var params = status ? { status: status } : {};
+            window.RealCPA.admin.payouts(params).then(function(list) {
+                var tbody = document.getElementById('financeTableBody');
+                var rows = Array.isArray(list) ? list : (list && list.list) ? list.list : [];
+                if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6">Нет выплат</td></tr>'; return; }
+                var statusLabel = { pending: 'Ожидание', processing: 'В обработке', paid: 'Выплачено', canceled: 'Отменено' };
+                tbody.innerHTML = rows.map(function(p) {
+                    var aff = p.affiliate ? (p.affiliate.name || p.affiliate.email) : '—';
+                    var amount = p.amount != null ? p.amount : '—';
+                    var currency = p.currency || 'RUB';
+                    var st = statusLabel[p.status] || p.status;
+                    var date = p.createdAt ? new Date(p.createdAt).toLocaleString('ru') : '—';
+                    var actions = '';
+                    if (p.status === 'pending' || p.status === 'processing') {
+                        actions = '<button type="button" class="btn btn-sm btn-primary finance-mark-paid" data-id="' + p.id + '">Выплачено</button> ';
+                        actions += '<button type="button" class="btn btn-sm btn-secondary finance-cancel" data-id="' + p.id + '">Отменить</button>';
+                    }
+                    return '<tr><td>' + aff + '</td><td>' + amount + '</td><td>' + currency + '</td><td>' + st + '</td><td>' + date + '</td><td>' + actions + '</td></tr>';
+                }).join('');
+                tbody.querySelectorAll('.finance-mark-paid').forEach(function(btn) {
+                    btn.onclick = function() {
+                        var id = this.getAttribute('data-id');
+                        if (!confirm('Отметить выплату как выполненную?')) return;
+                        window.RealCPA.admin.setPayoutStatus(id, 'paid').then(function() { loadPayouts(); updateSummary(); }).catch(function(err) { alert('Ошибка: ' + (err.message || '')); });
+                    };
+                });
+                tbody.querySelectorAll('.finance-cancel').forEach(function(btn) {
+                    btn.onclick = function() {
+                        var id = this.getAttribute('data-id');
+                        if (!confirm('Отменить выплату?')) return;
+                        window.RealCPA.admin.setPayoutStatus(id, 'canceled').then(function() { loadPayouts(); updateSummary(); }).catch(function(err) { alert('Ошибка: ' + (err.message || '')); });
+                    };
+                });
+            }).catch(function(err) {
+                document.getElementById('financeTableBody').innerHTML = '<tr><td colspan="6">Ошибка: ' + (err.message || 'загрузка') + '</td></tr>';
+            });
+        }
+        function updateSummary() {
+            window.RealCPA.admin.payouts({ status: 'pending' }).then(function(list) {
+                var arr = Array.isArray(list) ? list : [];
+                document.getElementById('financePendingCount').textContent = arr.length;
+            }).catch(function() {});
+            window.RealCPA.admin.payouts({ status: 'paid' }).then(function(list) {
+                var arr = Array.isArray(list) ? list : [];
+                var sum = arr.reduce(function(s, p) { return s + (Number(p.amount) || 0); }, 0);
+                document.getElementById('financePaidSum').textContent = sum;
+            }).catch(function() {});
+        }
+        document.getElementById('financeStatusFilter').addEventListener('change', loadPayouts);
+        document.getElementById('financeRefreshBtn').addEventListener('click', function() { loadPayouts(); updateSummary(); });
+        loadPayouts();
+        updateSummary();
+    })();
     </script>
 </body>
 </html>
