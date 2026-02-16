@@ -160,10 +160,7 @@
                 </div>
             </div>
 
-            <!-- Список офферов (тот же каталог, что и на главной партнёра) -->
-            <div class="offers-list offers-grid" id="offersList">
-                <p class="loading-offers">Загрузка офферов...</p>
-            </div>
+            <div class="offers-list offers-grid" id="offersList" aria-live="polite" aria-busy="false"></div>
             </div>
         </main>
     </div>
@@ -245,12 +242,14 @@
         }
         function renderOffers(offers) {
             if (!listEl) return;
+            if (listEl.getAttribute) listEl.setAttribute('aria-busy', 'false');
             if (!Array.isArray(offers)) {
-                listEl.innerHTML = '<p>Не удалось загрузить офферы: неверный ответ сервера.</p>';
+                listEl.innerHTML = '<p class="offers-err">Неверный ответ сервера. <button type="button" class="btn btn-secondary btn-sm" id="offersRetryBtn">Повторить</button></p>';
+                var rb = document.getElementById('offersRetryBtn'); if (rb) rb.addEventListener('click', loadOffers);
                 return;
             }
             if (!offers.length) {
-                listEl.innerHTML = '<p class="offers-empty-msg">Нет активных офферов.</p><p>Здесь отображаются офферы поставщиков со статусом «Активен» или «Приостановлен». Поставщики включают их в разделе «Мои офферы» (кнопка «В активные»).</p>';
+                listEl.innerHTML = '';
                 window.__lastOffersList = [];
                 return;
             }
@@ -349,10 +348,12 @@
             if (catFilter && catFilter.value && catFilter.value !== 'loading') params.category = catFilter.value;
             if (searchInput && searchInput.value.trim()) params.search = searchInput.value.trim();
             if (!listEl) return;
-            listEl.innerHTML = '<p class="loading-offers">Загрузка офферов...</p>';
+            if (listEl.getAttribute) listEl.setAttribute('aria-busy', 'true');
+            listEl.innerHTML = '';
             var loadTimeout = setTimeout(function() {
-                if (listEl && listEl.textContent.indexOf('Загрузка') !== -1) {
-                    listEl.innerHTML = '<p>Загрузка занимает больше времени. <button type="button" class="btn btn-secondary" id="offersRetryBtn">Повторить</button></p>';
+                if (listEl && listEl.getAttribute('aria-busy') === 'true') {
+                    listEl.setAttribute('aria-busy', 'false');
+                    listEl.innerHTML = '<p><button type="button" class="btn btn-secondary" id="offersRetryBtn">Повторить</button></p>';
                     var retryBtn = document.getElementById('offersRetryBtn');
                     if (retryBtn) retryBtn.addEventListener('click', loadOffers);
                 }
@@ -364,7 +365,8 @@
             }
             function showOffersError(msg) {
                 clearTimeout(loadTimeout);
-                listEl.innerHTML = '<p>Не удалось загрузить офферы: ' + escapeHtml(msg) + '.</p><p><button type="button" class="btn btn-primary" id="offersRetryBtn">Повторить запрос</button></p>';
+                if (listEl.getAttribute) listEl.setAttribute('aria-busy', 'false');
+                listEl.innerHTML = '<p class="offers-err">' + escapeHtml(msg) + ' <button type="button" class="btn btn-secondary btn-sm" id="offersRetryBtn">Повторить</button></p>';
                 var retryBtn = document.getElementById('offersRetryBtn');
                 if (retryBtn) retryBtn.addEventListener('click', loadOffers);
             }
