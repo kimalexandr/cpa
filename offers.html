@@ -260,20 +260,22 @@
                 var slug = catObj ? catObj.slug : '';
                 var icon = iconForSlug(slug);
                 var geo = o.targetGeo || '—';
-                var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
+                var rateStr = o.payoutAmount != null ? (o.payoutAmount + ' Р') : '—';
+                var ratingStr = (o.rating != null && o.reviewsCount != null) ? (o.rating + ' (' + o.reviewsCount + ' отзывов)') : '—';
                 return '<div class="offer-card animate-on-scroll" style="--i:' + i + '">' +
-                    '<div class="offer-image"><i class="fas ' + icon + '"></i></div>' +
-                    '<div class="offer-content">' +
-                    '<div class="offer-category">' + escapeHtml(cat) + '</div>' +
-                    '<h3>' + escapeHtml(o.title) + '</h3>' +
-                    '<p>' + escapeHtml((o.description || '').slice(0, 180)) + (o.description && o.description.length > 180 ? '…' : '') + '</p>' +
-                    '<div class="offer-meta">' +
-                    '<span><i class="fas fa-ruble-sign"></i> CPA: ' + escapeHtml(String(rate)) + '</span>' +
-                    '<span><i class="fas fa-map-marker-alt"></i> ' + escapeHtml(geo) + '</span>' +
+                    '<div class="offer-card__icon"><i class="fas ' + icon + '"></i></div>' +
+                    '<div class="offer-card__body">' +
+                    '<span class="offer-card__category">' + escapeHtml(cat) + '</span>' +
+                    '<h3 class="offer-card__title">' + escapeHtml(o.title) + '</h3>' +
+                    '<p class="offer-card__desc">' + escapeHtml((o.description || '').slice(0, 180)) + (o.description && o.description.length > 180 ? '…' : '') + '</p>' +
+                    '<div class="offer-card__meta">' +
+                    '<span class="offer-card__cpa"><i class="fas fa-ruble-sign"></i> CPA: ' + escapeHtml(String(rateStr)) + '</span>' +
+                    '<span class="offer-card__geo"><i class="fas fa-map-marker-alt"></i> ' + escapeHtml(geo) + '</span>' +
+                    '<span class="offer-card__rating"><i class="fas fa-star"></i> ' + escapeHtml(ratingStr) + '</span>' +
                     '</div>' +
-                    '<div class="offer-actions">' +
+                    '<div class="offer-card__actions">' +
                     '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-primary">Подключиться</a>' +
-                    '<button type="button" class="btn btn-secondary" data-open-offer-details data-offer-id="' + escapeHtml(o.id) + '">Детали</button>' +
+                    '<button type="button" class="btn btn-outline" data-open-offer-details data-offer-id="' + escapeHtml(o.id) + '">Детали</button>' +
                     '</div></div></div>';
             }).join('');
         }
