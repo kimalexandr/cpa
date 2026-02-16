@@ -19,6 +19,7 @@ async function main() {
       slug: 'products',
       description: 'Офферы по оптовым поставкам FMCG и HoReCa',
       isActive: true,
+      level: 1,
     },
   });
 
@@ -30,6 +31,7 @@ async function main() {
       slug: 'construction',
       description: 'CPA‑кампании для рынка строительства и ремонта',
       isActive: true,
+      level: 1,
     },
   });
 
@@ -41,6 +43,7 @@ async function main() {
       slug: 'auto',
       description: 'Запчасти, шины, автохимия',
       isActive: true,
+      level: 1,
     },
   });
 
@@ -52,6 +55,7 @@ async function main() {
       slug: 'electronics',
       description: 'Бытовая и цифровая техника, гаджеты',
       isActive: true,
+      level: 1,
     },
   });
 
@@ -63,6 +67,7 @@ async function main() {
       slug: 'clothing',
       description: 'Опт и дропшиппинг одежды и обуви',
       isActive: true,
+      level: 1,
     },
   });
 
@@ -74,6 +79,7 @@ async function main() {
       slug: 'other',
       description: 'Прочие офферы',
       isActive: true,
+      level: 1,
     },
   });
 
@@ -257,6 +263,21 @@ async function main() {
     },
   });
 
+  const offerCategoryPairs: { offerId: string; categoryId: string }[] = [
+    { offerId: offer1.id, categoryId: catConstruction.id },
+    { offerId: offer2.id, categoryId: catFood.id },
+    { offerId: offer3.id, categoryId: catConstruction.id },
+    { offerId: offer4.id, categoryId: catAuto.id },
+    { offerId: offer5.id, categoryId: catElectronics.id },
+    { offerId: offer6.id, categoryId: catClothing.id },
+  ];
+  for (const p of offerCategoryPairs) {
+    await prisma.offerCategory.upsert({
+      where: { offerId_categoryId: { offerId: p.offerId, categoryId: p.categoryId } },
+      create: p,
+      update: {},
+    });
+  }
   console.log('Offers:', offer1.id, offer2.id, offer3.id, offer4.id, offer5.id, offer6.id);
 
   // --- Заявка аффилиата на оффер и трекинг-ссылка (одобренная) ---

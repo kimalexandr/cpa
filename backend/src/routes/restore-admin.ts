@@ -116,6 +116,11 @@ router.post('/', async (_req: Request, res: Response) => {
           status: OfferStatus.active,
         },
       });
+      await prisma.offerCategory.upsert({
+        where: { offerId_categoryId: { offerId: o.id, categoryId: o.catId } },
+        create: { offerId: o.id, categoryId: o.catId },
+        update: {},
+      });
     }
 
     res.json({ ok: true, email: adminUser.email, offers: seedOffers.length });

@@ -4,37 +4,51 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 const prisma = new PrismaClient();
 
-const DEFAULT_CATEGORIES = [
-  { name: 'Продукты питания', slug: 'products', description: 'Офферы по оптовым поставкам FMCG и HoReCa' },
-  { name: 'Стройматериалы', slug: 'construction', description: 'CPA‑кампании для рынка строительства и ремонта' },
-  { name: 'Автозапчасти', slug: 'auto', description: 'Запчасти, шины, автохимия' },
-  { name: 'Электроника и техника', slug: 'electronics', description: 'Бытовая и цифровая техника, гаджеты' },
-  { name: 'Одежда и обувь', slug: 'clothing', description: 'Опт и дропшиппинг одежды и обуви' },
-  { name: 'Другое', slug: 'other', description: 'Прочие офферы' },
-];
-
-router.get('/', async (_req: Request, res: Response) => {
+/** Плоский список категорий (для фильтров, выбора) */
+router.get('/', async (req: Request, res: Response) => {
   try {
-    let categories = await prisma.category.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
+    const levelParam = req.query.level != null ? Number(req.query.level) : NaN;
+    const activeOnly = req.query.active !== 'false';
+    const where: { isActive?: boolean; level?: number } = {};
+    if (activeOnly) where.isActive = true;
+    if (Number.isInteger(levelParam) && levelParam >= 1) where.level = levelParam;
+
+    const categories = await prisma.category.findMany({
+      where,
+      orderBy: [{ level: 'asc' }, { name: 'asc' }],
     });
-    if (categories.length === 0) {
-      for (const c of DEFAULT_CATEGORIES) {
-        await prisma.category.upsert({
-          where: { slug: c.slug },
-          update: {},
-          create: { name: c.name, slug: c.slug, description: c.description, isActive: true },
-        });
-      }
-      categories = await prisma.category.findMany({
-        where: { isActive: true },
-        orderBy: { name: 'asc' },
-      });
-    }
     res.json(categories);
   } catch (e) {
     console.error('GET /api/categories:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+/** Дерево категорий (вложенный JSON для UI и фильтрации) */
+router.get('/tree', async (req: Request, res: Response) => {
+  try {
+    const activeOnly = req.query.active !== 'false';
+    const where: { isActive?: boolean } = activeOnly ? { isActive: true } : {};
+
+    const all = await prisma.category.findMany({
+      where,
+      orderBy: { name: 'asc' },
+    });
+    const byId = new Map(all.map((c) => [c.id, { ...c, children: [] as typeof all }]));
+    const roots: typeof all = [];
+    for (const c of all) {
+      const node = byId.get(c.id)!;
+      if (!c.parentId) {
+        roots.push(node);
+      } else {
+        const parent = byId.get(c.parentId);
+        if (parent) (parent as { children: typeof all }).children.push(node);
+        else roots.push(node);
+      }
+    }
+    res.json(roots);
+  } catch (e) {
+    console.error('GET /api/categories/tree:', e);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
