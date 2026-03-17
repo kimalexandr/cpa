@@ -16,6 +16,16 @@
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --error-color: #ef4444;
+
+    /* Factpay тема (тёмный лендинг) */
+    --fact-bg: #0b0f1a;
+    --fact-surface: #131829;
+    --fact-surface2: #1a2138;
+    --fact-accent: #f0a500;
+    --fact-accent2: #ff6b35;
+    --fact-text: #e8eaf0;
+    --fact-text-muted: #7a84a0;
+    --fact-border: rgba(255,255,255,0.07);
 }
 
 body {
@@ -23,6 +33,47 @@ body {
     color: var(--text-color);
     background-color: var(--background-color);
     line-height: 1.6;
+}
+
+/* Тёмная тема Factpay: включается добавлением класса fact-theme к body */
+body.fact-theme {
+    font-family: 'Onest', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background-color: var(--fact-bg);
+    color: var(--fact-text);
+}
+
+body.fact-theme .header {
+    background-color: rgba(11, 15, 26, 0.95);
+    border-bottom-color: var(--fact-border);
+    box-shadow: none;
+}
+
+body.fact-theme .logo {
+    color: var(--fact-text);
+}
+
+body.fact-theme .logo-link {
+    font-family: 'Unbounded', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+}
+
+body.fact-theme .logo-link span {
+    color: var(--fact-accent);
+}
+
+body.fact-theme .nav-link {
+    color: var(--fact-text-muted);
+}
+
+body.fact-theme .nav-link:hover,
+body.fact-theme .nav-link.active {
+    color: var(--fact-text);
+}
+
+body.fact-theme .btn-nav-login,
+body.fact-theme .btn-nav-register {
+    border-radius: 8px;
 }
 
 /* Ключевые кадры анимаций */
