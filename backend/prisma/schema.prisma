@@ -94,6 +94,7 @@ model User {
   trackingLinks      TrackingLink[]
   payouts            Payout[]
   notifications      Notification[]
+  emailConfirmationTokens EmailConfirmationToken[]
 
   @@index([email])
 }
