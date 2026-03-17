@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { signAccessToken, signRefreshToken, signPasswordResetToken, verifyPasswordResetToken, verifyToken } from '../middleware/auth';
-import { buildResetLink, sendResetPassword, sendWelcome } from '../lib/email';
+import { buildEmailConfirmLink, buildResetLink, sendEmailConfirmation, sendResetPassword, sendWelcome } from '../lib/email';
+import * as crypto from 'crypto';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -31,7 +32,7 @@ router.post('/register', async (req: Request, res: Response) => {
         role: role as 'affiliate' | 'supplier',
         name: name || null,
         companyName: companyName || null,
-        status: 'active',
+        status: 'pending_email_confirmation',
       },
     });
     if (role === 'affiliate') {
@@ -47,15 +48,19 @@ router.post('/register', async (req: Request, res: Response) => {
         },
       });
     }
+    // Email confirmation token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24 часа
+    await prisma.emailConfirmationToken.create({
+      data: { userId: user.id, token, expiresAt },
+    });
+    const confirmLink = buildEmailConfirmLink(token);
+    sendEmailConfirmation(user.email, confirmLink).catch(() => {});
+    // Дополнительно отправляем welcome-письмо (без автологина)
     sendWelcome(user.email, user.name || undefined).catch(() => {});
-    const payload = { userId: user.id, email: user.email, role: user.role };
-    const accessToken = signAccessToken(payload);
-    const refreshToken = signRefreshToken(payload);
     res.status(201).json({
-      user: { id: user.id, email: user.email, role: user.role, name: user.name, companyName: user.companyName },
-      accessToken,
-      refreshToken,
-      expiresIn: 3600,
+      message: 'Регистрация успешно завершена. Проверьте почту и подтвердите email по ссылке из письма.',
+      emailConfirmationSent: true,
     });
   } catch (e) {
     console.error('Register error:', e);
@@ -74,7 +79,15 @@ router.post('/login', async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({
       where: { email: String(email).toLowerCase() },
     });
-    if (!user || user.status !== 'active') {
+    if (!user) {
+      res.status(401).json({ error: 'Неверный email или пароль' });
+      return;
+    }
+    if (user.status === 'pending_email_confirmation') {
+      res.status(403).json({ error: 'Email ещё не подтверждён. Проверьте почту и перейдите по ссылке из письма.' });
+      return;
+    }
+    if (user.status !== 'active') {
       res.status(401).json({ error: 'Неверный email или пароль' });
       return;
     }
@@ -95,6 +108,74 @@ router.post('/login', async (req: Request, res: Response) => {
   } catch (e) {
     console.error('Login error:', e);
     res.status(500).json({ error: 'Ошибка входа' });
+  }
+});
+
+// Подтверждение email по токену (из письма)
+router.post('/confirm-email', async (req: Request, res: Response) => {
+  try {
+    const token = req.body.token && String(req.body.token).trim();
+    if (!token) {
+      res.status(400).json({ error: 'Не указан токен подтверждения.' });
+      return;
+    }
+    const now = new Date();
+    const record = await prisma.emailConfirmationToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+    if (!record || record.usedAt || record.expiresAt < now) {
+      res.status(400).json({ error: 'Ссылка недействительна или истекла.' });
+      return;
+    }
+    const user = record.user;
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: { status: 'active' },
+      }),
+      prisma.emailConfirmationToken.update({
+        where: { id: record.id },
+        data: { usedAt: now },
+      }),
+    ]);
+    res.json({ message: 'Email успешно подтверждён. Теперь вы можете войти.' });
+  } catch (e) {
+    console.error('Confirm email error:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Повторная отправка письма подтверждения
+router.post('/resend-confirmation', async (req: Request, res: Response) => {
+  try {
+    const email = (req.body.email && String(req.body.email).trim().toLowerCase()) || '';
+    if (!email) {
+      res.status(400).json({ error: 'Укажите email' });
+      return;
+    }
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user) {
+      res.json({ message: 'Если аккаунт с таким email существует, на него отправлена ссылка для подтверждения.' });
+      return;
+    }
+    if (user.status === 'active') {
+      res.json({ message: 'Email уже подтверждён.' });
+      return;
+    }
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+    await prisma.emailConfirmationToken.create({
+      data: { userId: user.id, token, expiresAt },
+    });
+    const confirmLink = buildEmailConfirmLink(token);
+    await sendEmailConfirmation(user.email, confirmLink);
+    res.json({ message: 'Ссылка для подтверждения email отправлена. Проверьте почту.' });
+  } catch (e) {
+    console.error('Resend confirmation error:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Подтверждение email — RealCPA Hub</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="fact-theme">
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <i class="fas fa-link"></i>
+          <a href="index.html" class="logo-link">Fact<span>pay</span></a>
+        </div>
+        <nav class="nav">
+          <a href="index.html" class="nav-link">Главная</a>
+          <a href="offers.html" class="nav-link">Офферы</a>
+          <a href="support.html" class="nav-link">Поддержка</a>
+          <a href="about.html" class="nav-link">О компании</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <section class="auth-section">
+    <div class="container">
+      <div class="auth-container">
+        <div class="auth-form active">
+          <h2>Подтверждение email</h2>
+          <p id="confirmEmailStatus">Обрабатываем ссылку подтверждения…</p>
+          <div id="confirmEmailActions" style="margin-top: 1.5rem; display:none;">
+            <a href="login.html" class="btn btn-primary btn-block">Перейти к входу</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="api.js"></script>
+  <script>
+  (function() {
+    function getToken() {
+      var m = window.location.search.match(/[?&]token=([^&]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+    var statusEl = document.getElementById('confirmEmailStatus');
+    var actionsEl = document.getElementById('confirmEmailActions');
+    var token = getToken();
+    if (!token) {
+      if (statusEl) statusEl.textContent = 'Не найден токен подтверждения. Проверьте ссылку из письма.';
+      if (actionsEl) actionsEl.style.display = 'block';
+      return;
+    }
+    if (typeof window.RealCPA === 'undefined') {
+      if (statusEl) statusEl.textContent = 'Подключите api.js.';
+      return;
+    }
+    window.RealCPA.auth.confirmEmail(token).then(function(r) {
+      if (statusEl) statusEl.textContent = (r && r.message) || 'Email успешно подтверждён. Теперь вы можете войти.';
+      if (actionsEl) actionsEl.style.display = 'block';
+    }).catch(function(err) {
+      if (statusEl) statusEl.textContent = (err && err.message) || (err && err.payload && err.payload.error) || 'Ошибка подтверждения. Возможно, ссылка устарела.';
+      if (actionsEl) actionsEl.style.display = 'block';
+    });
+  })();
+  </script>
+</body>
+</html>
+

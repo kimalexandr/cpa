@@ -314,16 +314,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.trafficSources = (document.getElementById('trafficSource') || {}).value || undefined;
             }
             window.RealCPA.auth.register(data)
-                .then(function() {
+                .then(function(r) {
+                    if (r && r.emailConfirmationSent) {
+                        alert('Регистрация завершена. Проверьте почту и подтвердите email по ссылке из письма.');
+                        window.location.href = 'login.html';
+                        return;
+                    }
                     var user = window.RealCPA.getUser();
                     if (user && user.role === 'supplier') {
                         window.location.href = 'dashboard-supplier.html';
-                    } else {
+                    } else if (user) {
                         window.location.href = 'dashboard-affiliate.html';
+                    } else {
+                        window.location.href = 'login.html';
                     }
                 })
                 .catch(function(err) {
-                    alert(err.message || err.payload?.error || 'Ошибка регистрации');
+                    alert(err.message || (err.payload && err.payload.error) || 'Ошибка регистрации');
                 });
         });
     }

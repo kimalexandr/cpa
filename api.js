@@ -89,8 +89,10 @@
       },
       register: function (data) {
         return request('POST', '/api/auth/register', data).then(function (r) {
-          setTokens(r.accessToken, r.refreshToken);
-          setUser(r.user);
+          if (r && r.accessToken && r.refreshToken && r.user) {
+            setTokens(r.accessToken, r.refreshToken);
+            setUser(r.user);
+          }
           return r;
         });
       },
@@ -112,6 +114,12 @@
       },
       resetPassword: function (token, newPassword) {
         return request('POST', '/api/auth/reset-password', { token: token, newPassword: newPassword });
+      },
+      confirmEmail: function (token) {
+        return request('POST', '/api/auth/confirm-email', { token: token });
+      },
+      resendConfirmation: function (email) {
+        return request('POST', '/api/auth/resend-confirmation', { email: email });
       }
     },
 

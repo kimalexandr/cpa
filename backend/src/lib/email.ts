@@ -62,8 +62,21 @@ export async function sendWelcome(to: string, name?: string): Promise<boolean> {
   const greeting = name ? `, ${name}` : '';
   const html = `
     <p>Здравствуйте${greeting}.</p>
-    <p>Вы зарегистрировались в RealCPA Hub. Войдите в кабинет и подключайтесь к офферам.</p>
+    <p>Вы зарегистрировались в RealCPA Hub.</p>
+    <p>Если вы ещё не подтвердили email, пожалуйста, перейдите по ссылке из письма для подтверждения.</p>
     <p><a href="${baseUrl}/login.html">Войти</a></p>
+    <p>— RealCPA Hub</p>
+  `;
+  return sendMail(to, subject, html);
+}
+
+export async function sendEmailConfirmation(to: string, confirmLink: string): Promise<boolean> {
+  const subject = 'Подтверждение email — RealCPA Hub';
+  const html = `
+    <p>Здравствуйте.</p>
+    <p>Вы зарегистрировались в RealCPA Hub. Подтвердите email, перейдя по ссылке:</p>
+    <p><a href="${confirmLink}">${confirmLink}</a></p>
+    <p>Ссылка действует ограниченное время. Если вы не создавали аккаунт, просто проигнорируйте это письмо.</p>
     <p>— RealCPA Hub</p>
   `;
   return sendMail(to, subject, html);
@@ -104,4 +117,8 @@ export async function sendPayoutPaid(to: string, amount: number, currency: strin
 
 export function buildResetLink(token: string): string {
   return baseUrl + '/reset-password.html?token=' + encodeURIComponent(token);
+}
+
+export function buildEmailConfirmLink(token: string): string {
+  return baseUrl + '/confirm-email.html?token=' + encodeURIComponent(token);
 }
