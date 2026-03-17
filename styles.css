@@ -986,6 +986,54 @@ body.role-admin #navAdminLink { display: block !important; }
     .auth-container { min-width: 0; }
 }
 
+/* Темная тема Factpay для форм */
+body.fact-theme .auth-section {
+    background-color: transparent;
+}
+
+body.fact-theme .auth-container {
+    background-color: var(--fact-surface);
+    border: 1px solid var(--fact-border);
+    box-shadow: 0 18px 45px rgba(0,0,0,0.5);
+}
+
+body.fact-theme .auth-form h2 {
+    color: var(--fact-text);
+}
+
+body.fact-theme .auth-form label,
+body.fact-theme .role-label {
+    color: var(--fact-text-muted);
+}
+
+body.fact-theme .auth-form input,
+body.fact-theme .auth-form select,
+body.fact-theme .auth-form textarea {
+    background-color: var(--fact-surface2);
+    border-color: var(--fact-border);
+    color: var(--fact-text);
+}
+
+body.fact-theme .auth-form input::placeholder,
+body.fact-theme .auth-form textarea::placeholder {
+    color: var(--fact-text-muted);
+}
+
+body.fact-theme .role-btn {
+    background-color: var(--fact-surface2);
+    border-color: var(--fact-border);
+}
+
+body.fact-theme .role-btn .role-desc {
+    color: var(--fact-text-muted);
+}
+
+body.fact-theme .role-btn.active {
+    border-color: var(--fact-accent);
+    background-color: rgba(240, 165, 0, 0.1);
+    box-shadow: 0 0 0 1px rgba(240, 165, 0, 0.35);
+}
+
 .auth-tabs {
     display: flex;
     border-bottom: 1px solid var(--border-color);
