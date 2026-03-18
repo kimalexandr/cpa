@@ -40,6 +40,28 @@ body.fact-theme {
     font-family: 'Onest', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background-color: var(--fact-bg);
     color: var(--fact-text);
+    /* Переопределяем базовые переменные проекта под тёмную тему,
+       чтобы все страницы (карточки/формы/тексты) стали читаемыми */
+    --background-color: var(--fact-bg);
+    --white: var(--fact-surface);
+    --border-color: var(--fact-border);
+    --text-color: var(--fact-text);
+    --text-light: var(--fact-text-muted);
+    --secondary-color: var(--fact-text-muted);
+    --primary-color: var(--fact-accent);
+}
+
+body.fact-theme a {
+    color: inherit;
+}
+
+body.fact-theme a:hover {
+    color: var(--fact-accent);
+}
+
+body.fact-theme code,
+body.fact-theme pre {
+    color: var(--fact-text);
 }
 
 body.fact-theme .header {
@@ -1032,6 +1054,28 @@ body.fact-theme .role-btn.active {
     border-color: var(--fact-accent);
     background-color: rgba(240, 165, 0, 0.1);
     box-shadow: 0 0 0 1px rgba(240, 165, 0, 0.35);
+}
+
+body.fact-theme .auth-tabs {
+    border-bottom-color: var(--fact-border);
+}
+
+body.fact-theme .auth-tab {
+    color: var(--fact-text-muted);
+}
+
+body.fact-theme .auth-tab.active {
+    color: var(--fact-accent);
+    border-bottom-color: var(--fact-accent);
+}
+
+body.fact-theme .auth-divider {
+    color: var(--fact-text-muted);
+}
+
+body.fact-theme .auth-divider::before,
+body.fact-theme .auth-divider::after {
+    background: var(--fact-border);
 }
 
 .auth-tabs {
