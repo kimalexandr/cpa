@@ -642,6 +642,17 @@
                     err.textContent = msg;
                     el.insertAdjacentElement('afterend', err);
                 }
+                function jumpToFieldError(el) {
+                    if (!el) return;
+                    var panel = el.closest ? el.closest('.wizard-panel') : null;
+                    if (panel && panel.dataset && panel.dataset.panel) {
+                        var stepNum = parseInt(panel.dataset.panel, 10);
+                        if (Number.isFinite(stepNum) && stepNum >= 1 && stepNum <= totalSteps) {
+                            goToStep(stepNum);
+                        }
+                    }
+                    try { el.focus(); } catch (e) {}
+                }
                 function parseMoneyInput(v) {
                     var s = String(v == null ? '' : v).trim();
                     if (!s) return NaN;
@@ -684,28 +695,32 @@
                     hasError = true;
                 }
                 if (hasError) {
+                    jumpToFieldError(!categoryId ? categoryEl : (!title || !title.trim()) ? titleEl : landingEl);
                     return;
                 }
                 var shortDesc = (document.getElementById('offerShortDesc') || {}).value;
                 if (!shortDesc || !shortDesc.trim()) {
                     showInlineError(shortDescEl, 'Добавьте краткое описание');
+                    jumpToFieldError(shortDescEl);
                     return;
                 }
                 var geoVal = geoSelect ? geoSelect.value : '';
                 var selectedLocationIds = window.__offerSelectedLocationIds || [];
                 if (!geoVal && (!selectedLocationIds || selectedLocationIds.length === 0)) {
                     showInlineError(geoSelect, 'Выберите географию из списка или через «Выбор региона»');
+                    jumpToFieldError(geoSelect);
                     return;
                 }
                 var cpaEl = document.getElementById('offerCpa');
                 var cpaVal = cpaEl ? cpaEl.value : '';
                 if (!cpaVal || parseFloat(String(cpaVal).replace(/[^\d.,]/g, '').replace(',', '.')) < 1) {
                     showInlineError(cpaEl, 'Укажите корректную CPA-ставку (от 1)');
-                    if (cpaEl) cpaEl.focus();
+                    jumpToFieldError(cpaEl);
                     return;
                 }
                 if (!Number.isFinite(payoutAmount) || payoutAmount < 0 || payoutAmount > 9999999999.99) {
                     showInlineError(cpaEl, 'CPA/ставка должна быть от 0 до 9 999 999 999.99');
+                    jumpToFieldError(cpaEl);
                     return;
                 }
                 var submitBtn = document.getElementById('wizardSubmit');
