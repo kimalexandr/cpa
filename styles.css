@@ -2407,6 +2407,18 @@ body.fact-theme .auth-divider::after {
     margin: 0.5rem 0;
 }
 
+.offer-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+.offer-badge-approved { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.35); }
+.offer-badge-pending { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.35); }
+.offer-badge-rejected { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
+
 /* Таблицы */
 .table-section {
     background-color: var(--white);

@@ -186,30 +186,106 @@ router.get('/offers/:id/affiliates', async (req: AuthRequest, res: Response) => 
 router.get('/affiliate-participations', async (req: AuthRequest, res: Response) => {
   try {
     const status = (req.query.status as string) || 'pending';
+    const pageRaw = Number(req.query.page);
+    const pageSizeRaw = Number(req.query.pageSize);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw) ? Math.max(1, Math.min(100, Math.floor(pageSizeRaw))) : 20;
+    const skip = (page - 1) * pageSize;
     const where: { status?: 'pending' | 'approved' | 'rejected' | 'blocked'; offer: { supplierId: string } } = {
       offer: { supplierId: req.user!.userId },
     };
     if (status === 'pending' || status === 'approved' || status === 'rejected' || status === 'blocked') {
       where.status = status;
     }
-    const list = await prisma.affiliateOfferParticipation.findMany({
-      where,
-      include: {
-        offer: { select: { id: true, title: true } },
-        affiliate: { select: { id: true, email: true, name: true, createdAt: true } },
+    const [list, total] = await Promise.all([
+      prisma.affiliateOfferParticipation.findMany({
+        where,
+        include: {
+          offer: { select: { id: true, title: true } },
+          affiliate: { select: { id: true, email: true, name: true, createdAt: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      prisma.affiliateOfferParticipation.count({ where }),
+    ]);
+    res.json({
+      items: list,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
       },
-      orderBy: { createdAt: 'desc' },
-      take: 300,
     });
-    res.json(list);
   } catch (e) {
     console.error('GET /api/supplier/affiliate-participations:', e);
     res.status(500).json({ error: 'Ошибка загрузки заявок' });
   }
 });
 
+/** Debug: посмотреть, какие заявки реально есть по офферам поставщика */
+router.get('/debug/participations', async (req: AuthRequest, res: Response) => {
+  try {
+    const statusQ = (req.query.status as string) || '';
+    const offerIdQ = (req.query.offerId as string) || '';
+    const affiliateIdQ = (req.query.affiliateId as string) || '';
+    const limitQ = Number(req.query.limit);
+    const limit = Number.isFinite(limitQ) ? Math.max(1, Math.min(500, Math.floor(limitQ))) : 100;
+
+    const where: {
+      status?: 'pending' | 'approved' | 'rejected' | 'blocked';
+      offerId?: string;
+      affiliateId?: string;
+      offer: { supplierId: string };
+    } = {
+      offer: { supplierId: req.user!.userId },
+    };
+    if (statusQ === 'pending' || statusQ === 'approved' || statusQ === 'rejected' || statusQ === 'blocked') {
+      where.status = statusQ;
+    }
+    if (offerIdQ) where.offerId = offerIdQ;
+    if (affiliateIdQ) where.affiliateId = affiliateIdQ;
+
+    const [items, counts] = await Promise.all([
+      prisma.affiliateOfferParticipation.findMany({
+        where,
+        include: {
+          offer: { select: { id: true, title: true, status: true, supplierId: true } },
+          affiliate: { select: { id: true, email: true, name: true, status: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      }),
+      prisma.affiliateOfferParticipation.groupBy({
+        by: ['status'],
+        where: { offer: { supplierId: req.user!.userId } },
+        _count: { id: true },
+      }),
+    ]);
+
+    res.json({
+      debug: {
+        supplierId: req.user!.userId,
+        filters: { status: statusQ || null, offerId: offerIdQ || null, affiliateId: affiliateIdQ || null, limit },
+        totalsByStatus: counts.reduce((acc, c) => {
+          acc[c.status] = c._count.id;
+          return acc;
+        }, {} as Record<string, number>),
+        returned: items.length,
+      },
+      items,
+    });
+  } catch (e) {
+    console.error('GET /api/supplier/debug/participations:', e);
+    res.status(500).json({ error: 'Ошибка debug-загрузки заявок' });
+  }
+});
+
 router.patch('/affiliate-participation/:id', async (req: AuthRequest, res: Response) => {
   const status = req.body.status;
+  const reason = req.body?.reason != null ? String(req.body.reason).trim() : '';
   if (status !== 'approved' && status !== 'rejected') {
     res.status(400).json({ error: 'Укажите status: approved или rejected' });
     return;
@@ -249,8 +325,10 @@ router.patch('/affiliate-participation/:id', async (req: AuthRequest, res: Respo
     userId: p.affiliateId,
     type: status === 'approved' ? 'participation_approved' : 'participation_rejected',
     title: status === 'approved' ? 'Заявка на оффер одобрена' : 'Заявка на оффер отклонена',
-    body: 'Оффер: ' + p.offer.title,
-    link: status === 'approved' ? '/dashboard-affiliate-connections.html' : undefined,
+    body: status === 'rejected' && reason
+      ? ('Оффер: ' + p.offer.title + '. Причина: ' + reason)
+      : ('Оффер: ' + p.offer.title),
+    link: '/offer.html?id=' + encodeURIComponent(p.offerId),
   });
   res.json(updated);
 });
@@ -403,6 +481,7 @@ router.patch('/events/:id', async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id;
     const status = req.body?.status;
+    const reason = req.body?.reason != null ? String(req.body.reason).trim() : '';
     if (!status || (status !== 'approved' && status !== 'rejected')) {
       res.status(400).json({ error: 'Укажите status: approved или rejected' });
       return;
@@ -436,6 +515,15 @@ router.patch('/events/:id', async (req: AuthRequest, res: Response) => {
           select: { token: true, offer: { select: { title: true } }, affiliate: { select: { email: true, name: true } } },
         },
       },
+    });
+    await createNotification(prisma, {
+      userId: event.trackingLink.affiliateId,
+      type: 'system',
+      title: status === 'approved' ? 'Лид/продажа одобрены' : 'Лид/продажа отклонены',
+      body: status === 'rejected' && reason
+        ? ('Оффер: ' + event.trackingLink.offer.title + '. Причина: ' + reason)
+        : ('Оффер: ' + event.trackingLink.offer.title),
+      link: '/analytics.html',
     });
     res.json(updated);
   } catch (e) {

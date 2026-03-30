@@ -748,6 +748,7 @@ router.patch('/moderation/participations/:id', async (req: AuthRequest, res: Res
   try {
     const id = req.params.id;
     const status = req.body?.status;
+    const reason = req.body?.reason != null ? String(req.body.reason).trim() : '';
     if (!status || (status !== 'approved' && status !== 'rejected')) {
       res.status(400).json({ error: 'Укажите status: approved или rejected' });
       return;
@@ -783,8 +784,10 @@ router.patch('/moderation/participations/:id', async (req: AuthRequest, res: Res
       userId: p.affiliateId,
       type: status === 'approved' ? 'participation_approved' : 'participation_rejected',
       title: status === 'approved' ? 'Заявка на оффер одобрена' : 'Заявка на оффер отклонена',
-      body: 'Оффер: ' + p.offer.title,
-      link: status === 'approved' ? '/dashboard-affiliate-connections.html' : undefined,
+      body: status === 'rejected' && reason
+        ? ('Оффер: ' + p.offer.title + '. Причина: ' + reason)
+        : ('Оффер: ' + p.offer.title),
+      link: '/offer.html?id=' + encodeURIComponent(p.offerId),
     });
     res.json(updated);
   } catch (e) {

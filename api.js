@@ -181,12 +181,18 @@
       getParticipations: function (params) {
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        if (params && params.page != null) q.push('page=' + encodeURIComponent(params.page));
+        if (params && params.pageSize != null) q.push('pageSize=' + encodeURIComponent(params.pageSize));
         return request('GET', '/api/supplier/affiliate-participations' + (q.length ? '?' + q.join('&') : ''));
       },
       setOfferLocations: function (offerId, locationIds) {
         return request('POST', '/api/supplier/offers/' + encodeURIComponent(offerId) + '/locations', { locationIds: locationIds || [] });
       },
-      setParticipation: function (participationId, status) { return request('PATCH', '/api/supplier/affiliate-participation/' + participationId, { status: status }); },
+      setParticipation: function (participationId, status, reason) {
+        var body = { status: status };
+        if (reason != null) body.reason = reason;
+        return request('PATCH', '/api/supplier/affiliate-participation/' + participationId, body);
+      },
       getEvents: function (params) {
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
@@ -249,8 +255,10 @@
         return request('PATCH', '/api/admin/offers/' + encodeURIComponent(offerId), data);
       },
       moderationParticipations: function () { return request('GET', '/api/admin/moderation/participations'); },
-      setParticipationStatus: function (participationId, status) {
-        return request('PATCH', '/api/admin/moderation/participations/' + encodeURIComponent(participationId), { status: status });
+      setParticipationStatus: function (participationId, status, reason) {
+        var body = { status: status };
+        if (reason != null) body.reason = reason;
+        return request('PATCH', '/api/admin/moderation/participations/' + encodeURIComponent(participationId), body);
       },
       getEvents: function (params) {
         var q = [];

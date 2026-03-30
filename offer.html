@@ -194,10 +194,45 @@
             };
         }
         function mapApiOfferToPage(api) {
+            function splitLines(v) {
+                return String(v || '').split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+            }
+            function parseRules(raw) {
+                var parsed = {
+                    attentionImportant: [],
+                    attentionProhibited: [],
+                    trafficAgreement: [],
+                    trafficForbidden: []
+                };
+                if (!raw || typeof raw !== 'string') return parsed;
+                var t = raw.trim();
+                if (!t) return parsed;
+                try {
+                    var j = JSON.parse(t);
+                    if (j && typeof j === 'object') {
+                        parsed.attentionImportant = Array.isArray(j.attentionImportant) ? j.attentionImportant : [];
+                        parsed.attentionProhibited = Array.isArray(j.attentionProhibited) ? j.attentionProhibited : [];
+                        parsed.trafficAgreement = Array.isArray(j.trafficAgreementChecks) ? j.trafficAgreementChecks.slice() : [];
+                        parsed.trafficForbidden = Array.isArray(j.trafficForbiddenChecks) ? j.trafficForbiddenChecks.slice() : [];
+                        if (j.allowedSourcesText) parsed.trafficAgreement = parsed.trafficAgreement.concat(splitLines(j.allowedSourcesText.replace(/,\s*/g, '\n')));
+                        if (j.forbiddenSourcesText) parsed.trafficForbidden = parsed.trafficForbidden.concat(splitLines(j.forbiddenSourcesText.replace(/,\s*/g, '\n')));
+                        parsed.trafficAgreement = parsed.trafficAgreement.filter(Boolean);
+                        parsed.trafficForbidden = parsed.trafficForbidden.filter(Boolean);
+                        return parsed;
+                    }
+                } catch (e) {}
+                // Backward compatibility: текстовые правила старого формата
+                var allowed = (t.match(/Разрешено:\s*(.+?)(?=\n|$)/) || [])[1] || '';
+                var forbidden = (t.match(/Запрещено:\s*(.+?)(?=\n|$)/) || [])[1] || '';
+                parsed.trafficAgreement = splitLines(allowed.replace(/,\s*/g, '\n'));
+                parsed.trafficForbidden = splitLines(forbidden.replace(/,\s*/g, '\n'));
+                return parsed;
+            }
             var supplier = api.supplier || {};
             var profile = supplier.supplierProfile || {};
             var cat = api.category ? api.category.name : '—';
             var rateStr = api.payoutAmount != null ? api.payoutAmount + ' ' + (api.currency || '₽') : '—';
+            var parsedRules = parseRules(api.rules);
             return {
                 title: api.title || '—',
                 category: cat,
@@ -209,11 +244,11 @@
                 paymentTerm: '—',
                 cookieLifetime: '—',
                 generalInfo: '<p>' + (api.description || '').replace(/\n/g, '</p><p>') + '</p>',
-                attention: { important: [], prohibited: [] },
+                attention: { important: parsedRules.attentionImportant || [], prohibited: parsedRules.attentionProhibited || [] },
                 rates: [{ name: api.payoutModel || 'CPA', value: rateStr }],
                 conditions: api.targetGeo ? [{ name: 'Геотаргетинг', value: api.targetGeo }] : [],
-                trafficAgreement: ['По согласованию с рекламодателем'],
-                trafficForbidden: [],
+                trafficAgreement: parsedRules.trafficAgreement || [],
+                trafficForbidden: parsedRules.trafficForbidden || [],
                 ctaLink: window.RealCPA && window.RealCPA.isLoggedIn() && window.RealCPA.getRole() === 'affiliate'
                     ? '#' : ('login.html?redirect=' + encodeURIComponent('offer.html?id=' + api.id)),
                 offerId: api.id
@@ -249,7 +284,25 @@
             var infoEl = document.getElementById('offerSectionInfo');
             if (infoEl) infoEl.innerHTML = offer.generalInfo || '';
             var attEl = document.getElementById('offerSectionAttention');
-            if (attEl) attEl.innerHTML = '<p>Нет дополнительных ограничений.</p>';
+            if (attEl) {
+                var important = (offer.attention && Array.isArray(offer.attention.important)) ? offer.attention.important : [];
+                var prohibited = (offer.attention && Array.isArray(offer.attention.prohibited)) ? offer.attention.prohibited : [];
+                if (!important.length && !prohibited.length) {
+                    attEl.innerHTML = '<p>Нет дополнительных ограничений.</p>';
+                } else {
+                    var html = '';
+                    function esc(s) {
+                        var d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+                    }
+                    if (important.length) {
+                        html += '<p><strong>Важно:</strong></p><ul>' + important.map(function(s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>';
+                    }
+                    if (prohibited.length) {
+                        html += '<p><strong>Запрещается:</strong></p><ul>' + prohibited.map(function(s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>';
+                    }
+                    attEl.innerHTML = html;
+                }
+            }
             var tbody = document.querySelector('#offerRatesTable tbody');
             if (tbody && offer.rates && offer.rates.length) {
                 tbody.innerHTML = offer.rates.map(function(r) {
@@ -309,15 +362,57 @@
                 if (window.RealCPA.isLoggedIn() && window.RealCPA.getRole() === 'affiliate') {
                     var cta = document.getElementById('offerSidebarCta');
                     if (cta) {
-                        cta.textContent = 'Подключиться к офферу';
-                        cta.href = '#';
-                        cta.onclick = function(e) {
-                            e.preventDefault();
-                            window.RealCPA.affiliate.joinOffer(api.id).then(function() {
-                                alert('Заявка на подключение отправлена. Ожидайте одобрения поставщика.');
-                                window.location.reload();
-                            }).catch(function(err) { alert(err.message || err.payload?.error || 'Ошибка'); });
-                        };
+                        function applyJoinAction() {
+                            cta.classList.remove('btn-secondary');
+                            cta.classList.add('btn-primary');
+                            cta.style.pointerEvents = '';
+                            cta.style.opacity = '';
+                            cta.textContent = 'Подключиться к офферу';
+                            cta.href = '#';
+                            cta.onclick = function(e) {
+                                e.preventDefault();
+                                window.RealCPA.affiliate.joinOffer(api.id).then(function(resp) {
+                                    var msg = (resp && resp.resubmitted)
+                                        ? 'Заявка отправлена повторно. Ожидайте одобрения поставщика.'
+                                        : 'Заявка на подключение отправлена. Ожидайте одобрения поставщика.';
+                                    alert(msg);
+                                    cta.classList.remove('btn-primary');
+                                    cta.classList.add('btn-secondary');
+                                    cta.style.pointerEvents = 'none';
+                                    cta.style.opacity = '0.9';
+                                    cta.textContent = 'Заявка уже подана';
+                                }).catch(function(err) { alert(err.message || err.payload?.error || 'Ошибка'); });
+                            };
+                        }
+                        function applyReadonlyState(text) {
+                            cta.classList.remove('btn-primary');
+                            cta.classList.add('btn-secondary');
+                            cta.style.pointerEvents = 'none';
+                            cta.style.opacity = '0.9';
+                            cta.href = '#';
+                            cta.onclick = function(e) { e.preventDefault(); };
+                            cta.textContent = text;
+                        }
+                        applyJoinAction();
+                        window.RealCPA.affiliate.myOffers().then(function(my) {
+                            var list = Array.isArray(my) ? my : [];
+                            var current = null;
+                            for (var i = 0; i < list.length; i++) {
+                                if (list[i] && list[i].offerId === api.id) { current = list[i]; break; }
+                            }
+                            if (!current) return;
+                            if (current.status === 'approved') {
+                                applyReadonlyState('Подключение одобрено');
+                                return;
+                            }
+                            if (current.status === 'pending') {
+                                applyReadonlyState('Заявка уже подана');
+                                return;
+                            }
+                            // rejected/blocked — разрешаем повторную отправку
+                            applyJoinAction();
+                            cta.textContent = 'Подать заявку повторно';
+                        }).catch(function() {});
                     }
                 }
                 fillSidebar(offer); fillKpi(offer); fillSections(offer); initCollapse();

@@ -100,6 +100,11 @@
                     </thead>
                     <tbody id="requestsTableBody"></tbody>
                 </table>
+                <div class="table-pagination" id="requestsPagination" style="display:none; margin-top:12px; gap:8px; align-items:center;">
+                    <button type="button" class="btn btn-sm btn-secondary" id="requestsPrevBtn">Назад</button>
+                    <span id="requestsPageInfo">Страница 1</span>
+                    <button type="button" class="btn btn-sm btn-secondary" id="requestsNextBtn">Вперёд</button>
+                </div>
             </div>
         </main>
     </div>
@@ -121,6 +126,12 @@
         var emptyState = document.getElementById('requestsEmptyState');
         var listWrapper = document.getElementById('requestsListWrapper');
         var tbody = document.getElementById('requestsTableBody');
+        var paginationEl = document.getElementById('requestsPagination');
+        var prevBtn = document.getElementById('requestsPrevBtn');
+        var nextBtn = document.getElementById('requestsNextBtn');
+        var pageInfo = document.getElementById('requestsPageInfo');
+        var currentPage = 1;
+        var pageSize = 20;
 
         function escapeHtml(s) {
             if (s == null) return '';
@@ -130,42 +141,95 @@
         }
 
         function setParticipationStatus(id, status) {
-            window.RealCPA.supplier.setParticipation(id, status)
-                .then(function() { loadRequests(); })
+            var reason = '';
+            if (status === 'rejected') {
+                reason = (window.prompt('Укажите причину отклонения (будет видна аффилиату):', '') || '').trim();
+            }
+            window.RealCPA.supplier.setParticipation(id, status, reason || null)
+                .then(function() { loadRequests(currentPage); })
                 .catch(function(err) { alert(err.message || 'Ошибка'); });
         }
 
-        function loadRequests() {
+        function loadRequests(page) {
+            currentPage = page || 1;
             if (!tbody) return;
-            window.RealCPA.supplier.getParticipations({ status: 'pending' })
+            function renderPendingRows(pending) {
+                pending = pending || [];
+                if (pending.length === 0) {
+                    if (emptyState) emptyState.style.display = 'block';
+                    if (listWrapper) listWrapper.style.display = 'none';
+                    return;
+                }
+                if (emptyState) emptyState.style.display = 'none';
+                if (listWrapper) listWrapper.style.display = 'block';
+                tbody.innerHTML = pending.map(function(p) {
+                    var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—';
+                    var offerTitle = p.offer && p.offer.title ? p.offer.title : (p.offerTitle || '—');
+                    var affiliateName = p.affiliate && p.affiliate.name ? p.affiliate.name : (p.affiliateName || '—');
+                    var affiliateEmail = p.affiliate && p.affiliate.email ? p.affiliate.email : (p.affiliateEmail || '—');
+                    return '<tr data-id="' + escapeHtml(p.id) + '">' +
+                        '<td>' + escapeHtml(offerTitle) + '</td>' +
+                        '<td>' + escapeHtml(affiliateName) + '</td>' +
+                        '<td>' + escapeHtml(affiliateEmail) + '</td>' +
+                        '<td>' + escapeHtml(date) + '</td>' +
+                        '<td><button type="button" class="btn btn-sm btn-primary request-approve" data-id="' + escapeHtml(p.id) + '">Одобрить</button> ' +
+                        '<button type="button" class="btn btn-sm btn-secondary request-reject" data-id="' + escapeHtml(p.id) + '">Отклонить</button></td></tr>';
+                }).join('');
+                tbody.querySelectorAll('.request-approve').forEach(function(btn) {
+                    btn.addEventListener('click', function() { setParticipationStatus(this.getAttribute('data-id'), 'approved'); });
+                });
+                tbody.querySelectorAll('.request-reject').forEach(function(btn) {
+                    btn.addEventListener('click', function() { setParticipationStatus(this.getAttribute('data-id'), 'rejected'); });
+                });
+            }
+            function loadLegacyPending() {
+                return window.RealCPA.supplier.getOffers()
+                    .then(function(offers) {
+                        if (!offers || !offers.length) return [];
+                        var promises = offers.map(function(o) {
+                            return window.RealCPA.supplier.getAffiliates(o.id).then(function(list) {
+                                return (list || []).map(function(p) {
+                                    return {
+                                        id: p.id,
+                                        offerTitle: o.title,
+                                        affiliateName: (p.affiliate && p.affiliate.name) || '—',
+                                        affiliateEmail: (p.affiliate && p.affiliate.email) || '—',
+                                        status: p.status,
+                                        createdAt: p.createdAt
+                                    };
+                                });
+                            });
+                        });
+                        return Promise.all(promises).then(function(arrays) {
+                            var all = [];
+                            arrays.forEach(function(arr) { all = all.concat(arr); });
+                            return all.filter(function(p) { return p.status === 'pending'; });
+                        });
+                    });
+            }
+            var hasNewApi = !!(window.RealCPA && window.RealCPA.supplier && typeof window.RealCPA.supplier.getParticipations === 'function');
+            var requestPromise = hasNewApi
+                ? window.RealCPA.supplier.getParticipations({ status: 'pending', page: currentPage, pageSize: pageSize })
+                : loadLegacyPending();
+            requestPromise
                 .then(function(pending) {
-                    pending = pending || [];
-                    if (pending.length === 0) {
-                        if (emptyState) emptyState.style.display = 'block';
-                        if (listWrapper) listWrapper.style.display = 'none';
-                        return;
+                    var list = pending;
+                    var meta = null;
+                    if (hasNewApi && pending && pending.items) {
+                        list = pending.items;
+                        meta = pending.pagination || null;
                     }
-                    if (emptyState) emptyState.style.display = 'none';
-                    if (listWrapper) listWrapper.style.display = 'block';
-                    tbody.innerHTML = pending.map(function(p) {
-                        var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—';
-                        var offerTitle = p.offer && p.offer.title ? p.offer.title : '—';
-                        var affiliateName = p.affiliate && p.affiliate.name ? p.affiliate.name : '—';
-                        var affiliateEmail = p.affiliate && p.affiliate.email ? p.affiliate.email : '—';
-                        return '<tr data-id="' + escapeHtml(p.id) + '">' +
-                            '<td>' + escapeHtml(offerTitle) + '</td>' +
-                            '<td>' + escapeHtml(affiliateName) + '</td>' +
-                            '<td>' + escapeHtml(affiliateEmail) + '</td>' +
-                            '<td>' + escapeHtml(date) + '</td>' +
-                            '<td><button type="button" class="btn btn-sm btn-primary request-approve" data-id="' + escapeHtml(p.id) + '">Одобрить</button> ' +
-                            '<button type="button" class="btn btn-sm btn-secondary request-reject" data-id="' + escapeHtml(p.id) + '">Отклонить</button></td></tr>';
-                    }).join('');
-                    tbody.querySelectorAll('.request-approve').forEach(function(btn) {
-                        btn.addEventListener('click', function() { setParticipationStatus(this.getAttribute('data-id'), 'approved'); });
-                    });
-                    tbody.querySelectorAll('.request-reject').forEach(function(btn) {
-                        btn.addEventListener('click', function() { setParticipationStatus(this.getAttribute('data-id'), 'rejected'); });
-                    });
+                    renderPendingRows(list);
+                    if (paginationEl) {
+                        if (meta) {
+                            paginationEl.style.display = 'flex';
+                            if (pageInfo) pageInfo.textContent = 'Страница ' + meta.page + ' из ' + meta.totalPages + ' (всего: ' + meta.total + ')';
+                            if (prevBtn) prevBtn.disabled = meta.page <= 1;
+                            if (nextBtn) nextBtn.disabled = meta.page >= meta.totalPages;
+                        } else {
+                            paginationEl.style.display = 'none';
+                        }
+                    }
                 })
                 .catch(function(err) {
                     if (emptyState) { emptyState.style.display = 'block'; emptyState.innerHTML = '<p>Не удалось загрузить заявки. ' + escapeHtml(err.message || 'Ошибка сети') + '</p>'; }
@@ -173,7 +237,9 @@
                 });
         }
 
-        loadRequests();
+        if (prevBtn) prevBtn.addEventListener('click', function() { if (currentPage > 1) loadRequests(currentPage - 1); });
+        if (nextBtn) nextBtn.addEventListener('click', function() { loadRequests(currentPage + 1); });
+        loadRequests(1);
     })();
     </script>
     <script src="script.js"></script>

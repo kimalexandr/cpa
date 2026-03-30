@@ -224,6 +224,16 @@
                 var conv = document.getElementById('offersStatConversion'); if (conv) conv.textContent = s.clicks ? ((s.leads || 0) / s.clicks * 100).toFixed(1) + '%' : '—';
             }).catch(function() {});
         }
+        var affiliateParticipationByOfferId = {};
+        if (role === 'affiliate' && window.RealCPA && window.RealCPA.affiliate && window.RealCPA.affiliate.myOffers) {
+            window.RealCPA.affiliate.myOffers().then(function(list) {
+                affiliateParticipationByOfferId = {};
+                (list || []).forEach(function(p) {
+                    if (p && p.offerId) affiliateParticipationByOfferId[p.offerId] = p.status || '';
+                });
+                loadOffers();
+            }).catch(function() {});
+        }
 
         function escapeHtml(s) {
             var div = document.createElement('div');
@@ -253,11 +263,18 @@
                 var catObj = getOfferCategory(o);
                 var cat = catObj ? catObj.name : '—';
                 var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
+                var ps = affiliateParticipationByOfferId[o.id] || '';
+                var badge = '';
+                var actionText = 'Подключиться';
+                if (ps === 'approved') { badge = '<span class="offer-badge offer-badge-approved">Подключен</span>'; actionText = 'Открыть'; }
+                else if (ps === 'pending') { badge = '<span class="offer-badge offer-badge-pending">На модерации</span>'; actionText = 'Открыть'; }
+                else if (ps === 'rejected' || ps === 'blocked') { badge = '<span class="offer-badge offer-badge-rejected">Отклонен</span>'; actionText = 'Подать повторно'; }
                 return '<div class="offer-card-mini">' +
                     '<div class="offer-category">' + escapeHtml(cat) + '</div>' +
+                    badge +
                     '<h3>' + escapeHtml(o.title) + '</h3>' +
                     '<p class="offer-cpa">CPA: ' + escapeHtml(String(rate)) + '</p>' +
-                    '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-primary">Подключиться</a>' +
+                    '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-primary">' + actionText + '</a>' +
                     '</div>';
             }).join('');
         }

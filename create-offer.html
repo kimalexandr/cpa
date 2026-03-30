@@ -398,6 +398,84 @@
     <script src="js/region-picker-modal.js"></script>
     <script>
     (function() {
+        function splitLines(v) {
+            return String(v || '')
+                .split('\n')
+                .map(function(s) { return s.trim(); })
+                .filter(Boolean);
+        }
+        function collectCheckedValues(name) {
+            return Array.prototype.slice.call(document.querySelectorAll('input[name="' + name + '"]:checked'))
+                .map(function(el) { return (el && el.value ? String(el.value).trim() : ''); })
+                .filter(Boolean);
+        }
+        function setCheckedValues(name, values) {
+            var set = {};
+            (values || []).forEach(function(v) { set[String(v)] = true; });
+            document.querySelectorAll('input[name="' + name + '"]').forEach(function(el) {
+                el.checked = !!set[el.value];
+            });
+        }
+        function buildRulesPayloadForSave() {
+            var allowedEl = document.getElementById('offerAllowedSources');
+            var forbiddenEl = document.getElementById('offerForbiddenSources');
+            var creativeEl = document.getElementById('offerCreativeRules');
+            var leadCritEl = document.getElementById('offerLeadCriteria');
+            var attImportantEl = document.getElementById('offerAttentionImportant');
+            var attProhibitedEl = document.getElementById('offerAttentionProhibited');
+            return {
+                version: 2,
+                trafficAgreementChecks: collectCheckedValues('trafficAgreement'),
+                trafficForbiddenChecks: collectCheckedValues('trafficForbidden'),
+                allowedSourcesText: allowedEl ? String(allowedEl.value || '').trim() : '',
+                forbiddenSourcesText: forbiddenEl ? String(forbiddenEl.value || '').trim() : '',
+                creativeRules: creativeEl ? String(creativeEl.value || '').trim() : '',
+                leadCriteria: leadCritEl ? String(leadCritEl.value || '').trim() : '',
+                attentionImportant: attImportantEl ? splitLines(attImportantEl.value) : [],
+                attentionProhibited: attProhibitedEl ? splitLines(attProhibitedEl.value) : []
+            };
+        }
+        function parseRulesForForm(rulesRaw) {
+            var empty = {
+                trafficAgreementChecks: [],
+                trafficForbiddenChecks: [],
+                allowedSourcesText: '',
+                forbiddenSourcesText: '',
+                creativeRules: '',
+                leadCriteria: '',
+                attentionImportant: [],
+                attentionProhibited: []
+            };
+            if (!rulesRaw || typeof rulesRaw !== 'string') return empty;
+            var trimmed = rulesRaw.trim();
+            if (!trimmed) return empty;
+            try {
+                var json = JSON.parse(trimmed);
+                if (json && typeof json === 'object') {
+                    return {
+                        trafficAgreementChecks: Array.isArray(json.trafficAgreementChecks) ? json.trafficAgreementChecks : [],
+                        trafficForbiddenChecks: Array.isArray(json.trafficForbiddenChecks) ? json.trafficForbiddenChecks : [],
+                        allowedSourcesText: json.allowedSourcesText || '',
+                        forbiddenSourcesText: json.forbiddenSourcesText || '',
+                        creativeRules: json.creativeRules || '',
+                        leadCriteria: json.leadCriteria || '',
+                        attentionImportant: Array.isArray(json.attentionImportant) ? json.attentionImportant : [],
+                        attentionProhibited: Array.isArray(json.attentionProhibited) ? json.attentionProhibited : []
+                    };
+                }
+            } catch (e) {}
+            // Backward compatibility: старый текстовый формат.
+            return {
+                trafficAgreementChecks: [],
+                trafficForbiddenChecks: [],
+                allowedSourcesText: (trimmed.match(/Разрешено:\s*(.+?)(?=\n|$)/) || [])[1] || '',
+                forbiddenSourcesText: (trimmed.match(/Запрещено:\s*(.+?)(?=\n|$)/) || [])[1] || '',
+                creativeRules: (trimmed.match(/Креативы:\s*([\s\S]+?)(?=\nКритерии|$)/) || [])[1] || '',
+                leadCriteria: (trimmed.match(/Критерии лида:\s*([\s\S]+)/) || [])[1] || '',
+                attentionImportant: [],
+                attentionProhibited: []
+            };
+        }
         var urlParams = new URLSearchParams(window.location.search);
         var editOfferId = urlParams.get('id') || null;
         window.__offerIdForEdit = editOfferId || undefined;
@@ -448,14 +526,21 @@
                     var capMonthEl = document.getElementById('offerCapMonth');
                     if (capMonthEl && o.capConversions != null) capMonthEl.value = o.capConversions;
                     if (o.rules && typeof o.rules === 'string') {
+                        var parsedRules = parseRulesForForm(o.rules);
                         var allowedEl = document.getElementById('offerAllowedSources');
                         var forbiddenEl = document.getElementById('offerForbiddenSources');
                         var creativeEl = document.getElementById('offerCreativeRules');
                         var leadCritEl = document.getElementById('offerLeadCriteria');
-                        if (allowedEl) allowedEl.value = (o.rules.match(/Разрешено:\s*(.+?)(?=\n|$)/) || [])[1] || '';
-                        if (forbiddenEl) forbiddenEl.value = (o.rules.match(/Запрещено:\s*(.+?)(?=\n|$)/) || [])[1] || '';
-                        if (creativeEl) creativeEl.value = (o.rules.match(/Креативы:\s*([\s\S]+?)(?=\nКритерии|$)/) || [])[1] || '';
-                        if (leadCritEl) leadCritEl.value = (o.rules.match(/Критерии лида:\s*([\s\S]+)/) || [])[1] || '';
+                        var attImportantEl = document.getElementById('offerAttentionImportant');
+                        var attProhibitedEl = document.getElementById('offerAttentionProhibited');
+                        if (allowedEl) allowedEl.value = parsedRules.allowedSourcesText || '';
+                        if (forbiddenEl) forbiddenEl.value = parsedRules.forbiddenSourcesText || '';
+                        if (creativeEl) creativeEl.value = parsedRules.creativeRules || '';
+                        if (leadCritEl) leadCritEl.value = parsedRules.leadCriteria || '';
+                        if (attImportantEl && parsedRules.attentionImportant && parsedRules.attentionImportant.length) attImportantEl.value = parsedRules.attentionImportant.join('\n');
+                        if (attProhibitedEl && parsedRules.attentionProhibited && parsedRules.attentionProhibited.length) attProhibitedEl.value = parsedRules.attentionProhibited.join('\n');
+                        setCheckedValues('trafficAgreement', parsedRules.trafficAgreementChecks || []);
+                        setCheckedValues('trafficForbidden', parsedRules.trafficForbiddenChecks || []);
                     }
                     var h1 = document.querySelector('.create-offer-header h1');
                     if (h1) h1.textContent = 'Редактировать оффер';
@@ -584,16 +669,15 @@
                 var holdDaysEl = document.getElementById('offerHoldDays');
                 var budgetEl = document.getElementById('offerBudget');
                 var capMonthEl = document.getElementById('offerCapMonth');
-                var allowedEl = document.getElementById('offerAllowedSources');
-                var forbiddenEl = document.getElementById('offerForbiddenSources');
-                var creativeEl = document.getElementById('offerCreativeRules');
-                var leadCritEl = document.getElementById('offerLeadCriteria');
-                var rulesParts = [];
-                if (allowedEl && allowedEl.value.trim()) rulesParts.push('Разрешено: ' + allowedEl.value.trim());
-                if (forbiddenEl && forbiddenEl.value.trim()) rulesParts.push('Запрещено: ' + forbiddenEl.value.trim());
-                if (creativeEl && creativeEl.value.trim()) rulesParts.push('Креативы: ' + creativeEl.value.trim());
-                if (leadCritEl && leadCritEl.value.trim()) rulesParts.push('Критерии лида: ' + leadCritEl.value.trim());
-                var rulesStr = rulesParts.length ? rulesParts.join('\n') : undefined;
+                var rulesData = buildRulesPayloadForSave();
+                var hasAnyRules =
+                    (rulesData.trafficAgreementChecks && rulesData.trafficAgreementChecks.length) ||
+                    (rulesData.trafficForbiddenChecks && rulesData.trafficForbiddenChecks.length) ||
+                    rulesData.allowedSourcesText || rulesData.forbiddenSourcesText ||
+                    rulesData.creativeRules || rulesData.leadCriteria ||
+                    (rulesData.attentionImportant && rulesData.attentionImportant.length) ||
+                    (rulesData.attentionProhibited && rulesData.attentionProhibited.length);
+                var rulesStr = hasAnyRules ? JSON.stringify(rulesData) : undefined;
                 var payload = {
                     categoryId: categoryId,
                     title: title,

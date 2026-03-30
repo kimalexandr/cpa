@@ -106,6 +106,16 @@ router.get('/my-offers', async (req: AuthRequest, res: Response) => {
       },
       orderBy: { createdAt: 'desc' },
     });
+    // Для старых данных: если одобрено, но trackingLink отсутствует — создаём детерминированный токен.
+    const approvedWithoutLink = participations.filter((p: { status: string; offerId: string }) => p.status === 'approved');
+    for (const p of approvedWithoutLink) {
+      const expectedToken = 'tk-' + req.user!.userId.slice(0, 8) + '-' + p.offerId.slice(0, 8);
+      await prisma.trackingLink.upsert({
+        where: { token: expectedToken },
+        update: {},
+        create: { offerId: p.offerId, affiliateId: req.user!.userId, token: expectedToken },
+      });
+    }
     const trackingLinks = await prisma.trackingLink.findMany({
       where: { affiliateId: req.user!.userId },
       select: { offerId: true, token: true },

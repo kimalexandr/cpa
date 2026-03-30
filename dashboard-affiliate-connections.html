@@ -98,11 +98,17 @@
             navigator.clipboard.writeText(text).then(function() { if (thenShowToast) showToast(); });
         }
         window.RealCPA.affiliate.myOffers().then(function(list) {
-            var approved = list.filter(function(p) { return p.status === 'approved' && p.trackingLink; });
-            if (approved.length === 0) return;
+            var allParticipations = Array.isArray(list) ? list : [];
+            var approved = allParticipations.filter(function(p) { return p.status === 'approved' && p.trackingLink; });
             var origin = typeof window !== 'undefined' && window.location && window.location.origin ? window.location.origin : '';
             var postbackUrl = (origin || '').replace(/\/?$/, '') + '/api/events';
             var postbackExample = '{\n  "token": "ваш_token_из_карточки_оффера",\n  "event_type": "lead",\n  "amount": 500,\n  "external_id": "id_заказа_в_вашей_системе"\n}';
+            var templateExamples = {
+                generic: '{\n  "token": "ваш_token_из_карточки_оффера",\n  "event_type": "lead",\n  "amount": 500,\n  "external_id": "id_заказа_в_вашей_системе"\n}',
+                amo: '{\n  "token": "ваш_token_из_карточки_оффера",\n  "event_type": "sale",\n  "amount": 1500,\n  "external_id": "amo_{{lead.id}}"\n}',
+                bitrix: '{\n  "token": "ваш_token_из_карточки_оффера",\n  "event_type": "lead",\n  "amount": 700,\n  "external_id": "bx24_{{ID}}"\n}',
+                retailcrm: '{\n  "token": "ваш_token_из_карточки_оффера",\n  "event_type": "sale",\n  "amount": 2000,\n  "external_id": "retailcrm_{{order.id}}"\n}'
+            };
             function isIpHost(hostname) {
                 return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname || '');
             }
@@ -160,6 +166,35 @@
                     '</div>' +
                     '<div class="connection-meta">' + rows.join('') + '</div></div>';
             }).join('');
+            function statusLabel(st) {
+                if (st === 'approved') return 'Одобрено';
+                if (st === 'pending') return 'На модерации';
+                if (st === 'rejected') return 'Отклонено';
+                if (st === 'blocked') return 'Заблокировано';
+                return st || '—';
+            }
+            window.RealCPA.getNotifications({ limit: 200, unreadOnly: false }).then(function(notifyResp) {
+                var items = (notifyResp && notifyResp.items) ? notifyResp.items : [];
+                var reasonByOfferId = {};
+                items.forEach(function(n) {
+                    if (!n || n.type !== 'participation_rejected') return;
+                    var link = n.link || '';
+                    var offerId = '';
+                    if (link.indexOf('offer.html?id=') !== -1) offerId = link.split('offer.html?id=')[1].split('&')[0];
+                    if (!offerId) return;
+                    var body = n.body || '';
+                    var m = body.match(/Причина:\s*([\s\S]+)/);
+                    if (m && m[1]) reasonByOfferId[offerId] = m[1].trim();
+                });
+                var moderationHtml = allParticipations.length ? allParticipations.map(function(p) {
+                    var title = p.offer && p.offer.title ? p.offer.title : (p.offerId || '—');
+                    var reason = (p.status === 'rejected' && reasonByOfferId[p.offerId]) ? ('<div class="connection-meta-row"><span class="connection-meta-label">Причина</span><span class="connection-meta-value">' + escapeHtml(reasonByOfferId[p.offerId]) + '</span></div>') : '';
+                    return '<div class="connection-card">' +
+                        '<div class="connection-card-header"><h2 class="connection-card-title">' + escapeHtml(title) + '</h2>' +
+                        '<span class="connection-status-badge">' + escapeHtml(statusLabel(p.status)) + '</span></div>' +
+                        '<div class="connection-meta">' + reason + '</div></div>';
+                }).join('') : '<p class="offers-empty-msg">Пока нет заявок на подключение.</p>';
+            var firstToken = approved.length ? ((approved[0].trackingLink || '').split('/t/')[1] || '').split('?')[0] : '';
             var postbackHtml = '<div class="postback-card">' +
                 '<h2><i class="fas fa-paper-plane" style="margin-right:0.35rem"></i> Постбек (уведомление о лиде/продаже)</h2>' +
                 '<p>Отправляйте POST-запрос на URL для учёта конверсий:</p>' +
@@ -168,12 +203,24 @@
                 '<button type="button" class="connection-copy-btn" id="copyPostbackUrl" data-url="' + escapeHtml(postbackUrl) + '"><i class="fas fa-copy"></i> Копировать URL</button>' +
                 '</div>' +
                 '<p><strong>Тело запроса (JSON):</strong></p>' +
+                '<div class="postback-url-row" style="margin-bottom:8px">' +
+                '<select id="postbackTemplateSelect" class="filter-select" style="max-width:360px">' +
+                '<option value="generic">Универсальный шаблон</option>' +
+                '<option value="amo">amoCRM</option>' +
+                '<option value="bitrix">Bitrix24</option>' +
+                '<option value="retailcrm">RetailCRM</option>' +
+                '</select>' +
+                '<button type="button" class="connection-copy-btn" id="testPostbackBtn" data-token="' + escapeHtml(firstToken) + '"><i class="fas fa-vial"></i> Проверить postback тестом</button>' +
+                '</div>' +
                 '<div class="postback-code-wrap">' +
                 '<button type="button" class="postback-copy-code" id="copyPostbackBody" data-body="' + postbackExample.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/\n/g, '&#10;').replace(/</g, '&lt;') + '">Копировать</button>' +
                 '<pre>' + escapeHtml(postbackExample) + '</pre></div>' +
                 '<p class="postback-hint"><code>token</code> — из карточки оффера выше. <code>event_type</code>: <code>lead</code> или <code>sale</code>. <code>amount</code> (₽) и <code>external_id</code> — по желанию.</p>' +
                 '</div>';
-            container.innerHTML = '<h2 class="connections-section-title">Подключённые офферы</h2><div class="connections-cards">' + cardsHtml + '</div>' + postbackHtml;
+                var approvedBlock = approved.length
+                    ? ('<h2 class="connections-section-title">Подключённые офферы</h2><div class="connections-cards">' + cardsHtml + '</div>' + postbackHtml)
+                    : '<h2 class="connections-section-title">Подключённые офферы</h2><p class="offers-empty-msg">Пока нет одобренных подключений.</p>';
+                container.innerHTML = approvedBlock + '<h2 class="connections-section-title" style="margin-top:18px">История модерации заявок</h2><div class="connections-cards">' + moderationHtml + '</div>';
             container.querySelectorAll('.copy-link').forEach(function(btn) {
                 btn.addEventListener('click', function() { copyToClipboard(this.dataset.url, true); });
             });
@@ -186,6 +233,46 @@
             if (copyBodyBtn) copyBodyBtn.addEventListener('click', function() {
                 var body = (this.dataset.body || '').replace(/&#10;/g, '\n');
                 copyToClipboard(body, true);
+            });
+            var templateSelect = document.getElementById('postbackTemplateSelect');
+            if (templateSelect) templateSelect.addEventListener('change', function() {
+                var key = this.value || 'generic';
+                var body = templateExamples[key] || templateExamples.generic;
+                var pre = container.querySelector('.postback-code-wrap pre');
+                if (pre) pre.textContent = body;
+                if (copyBodyBtn) copyBodyBtn.dataset.body = body.replace(/\n/g, '&#10;');
+            });
+            var testBtn = document.getElementById('testPostbackBtn');
+            if (testBtn) testBtn.addEventListener('click', function() {
+                var tk = this.dataset.token;
+                if (!tk) { alert('Нет токена для теста: сначала нужно одобренное подключение.'); return; }
+                fetch('/api/events', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: tk,
+                        event_type: 'lead',
+                        amount: 1,
+                        external_id: 'test_' + Date.now()
+                    })
+                }).then(function(r) { return r.json().then(function(p) { return { ok: r.ok, payload: p }; }); })
+                .then(function(resp) {
+                    if (!resp.ok) throw new Error((resp.payload && resp.payload.error) || 'Ошибка теста');
+                    alert('Тестовый postback отправлен. Событие создано и уйдёт на модерацию.');
+                }).catch(function(err) {
+                    alert('Не удалось отправить тестовый postback: ' + (err.message || 'ошибка'));
+                });
+            });
+            }).catch(function() {
+                // Если уведомления не загрузились, всё равно показываем базовую историю без причин.
+                var moderationHtml = allParticipations.length ? allParticipations.map(function(p) {
+                    var title = p.offer && p.offer.title ? p.offer.title : (p.offerId || '—');
+                    return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + escapeHtml(title) + '</h2><span class="connection-status-badge">' + escapeHtml(statusLabel(p.status)) + '</span></div></div>';
+                }).join('') : '<p class="offers-empty-msg">Пока нет заявок на подключение.</p>';
+                var approvedBlock = approved.length
+                    ? ('<h2 class="connections-section-title">Подключённые офферы</h2><div class="connections-cards">' + cardsHtml + '</div>' + postbackHtml)
+                    : '<h2 class="connections-section-title">Подключённые офферы</h2><p class="offers-empty-msg">Пока нет одобренных подключений.</p>';
+                container.innerHTML = approvedBlock + '<h2 class="connections-section-title" style="margin-top:18px">История модерации заявок</h2><div class="connections-cards">' + moderationHtml + '</div>';
             });
         }).catch(function() {});
         function escapeHtml(s) {
