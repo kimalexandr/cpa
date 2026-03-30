@@ -6,6 +6,14 @@ import { createNotification } from '../lib/notifications';
 
 const router = Router();
 const prisma = new PrismaClient();
+const MAX_MONEY = 9999999999.99;
+
+function parseMoney(value: unknown): number | null {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return n;
+}
 
 router.use(requireAuth);
 router.use(requireRole('supplier'));
@@ -22,9 +30,19 @@ router.get('/offers', async (req: AuthRequest, res: Response) => {
 router.post('/offers', async (req: AuthRequest, res: Response) => {
   try {
     const b = req.body;
+    const payoutAmount = parseMoney(b.payoutAmount);
+    const capAmount = parseMoney(b.capAmount);
     const categoryIds: string[] = Array.isArray(b.categoryIds) ? b.categoryIds.map((id: unknown) => String(id)) : b.categoryId != null ? [String(b.categoryId)] : [];
     if (!categoryIds.length || !b.title || !b.landingUrl) {
       res.status(400).json({ error: 'Укажите хотя бы одну категорию, название и ссылку на лендинг' });
+      return;
+    }
+    if (payoutAmount == null || payoutAmount < 0 || payoutAmount > MAX_MONEY) {
+      res.status(400).json({ error: 'Некорректная сумма payoutAmount (должна быть от 0 до 9 999 999 999.99)' });
+      return;
+    }
+    if (capAmount != null && (capAmount < 0 || capAmount > MAX_MONEY)) {
+      res.status(400).json({ error: 'Некорректная сумма capAmount (должна быть от 0 до 9 999 999 999.99)' });
       return;
     }
     const categories = await prisma.category.findMany({
@@ -43,13 +61,13 @@ router.post('/offers', async (req: AuthRequest, res: Response) => {
         description: String(b.description || ''),
         targetGeo: b.targetGeo ? String(b.targetGeo) : null,
         payoutModel: (b.payoutModel as 'CPA' | 'CPL' | 'RevShare') || 'CPA',
-        payoutAmount: Number(b.payoutAmount) || 0,
+        payoutAmount,
         currency: String(b.currency || 'RUB'),
         landingUrl: String(b.landingUrl),
         status: 'draft',
         holdDays: b.holdDays != null ? Number(b.holdDays) : null,
         rules: b.rules != null ? String(b.rules) : null,
-        capAmount: b.capAmount != null ? Number(b.capAmount) : null,
+        capAmount,
         capConversions: b.capConversions != null ? Number(b.capConversions) : null,
         rating: b.rating != null ? Number(b.rating) : null,
         reviewsCount: b.reviewsCount != null ? Number(b.reviewsCount) : null,
@@ -93,12 +111,29 @@ router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
   if (b.description != null) data.description = b.description;
   if (b.targetGeo != null) data.targetGeo = b.targetGeo;
   if (b.payoutModel != null) data.payoutModel = b.payoutModel;
-  if (b.payoutAmount != null) data.payoutAmount = Number(b.payoutAmount);
+  if (b.payoutAmount != null) {
+    const payoutAmount = parseMoney(b.payoutAmount);
+    if (payoutAmount == null || payoutAmount < 0 || payoutAmount > MAX_MONEY) {
+      res.status(400).json({ error: 'Некорректная сумма payoutAmount (должна быть от 0 до 9 999 999 999.99)' });
+      return;
+    }
+    data.payoutAmount = payoutAmount;
+  }
   if (b.currency != null) data.currency = b.currency;
   if (b.landingUrl != null) data.landingUrl = b.landingUrl;
   if (b.holdDays !== undefined) data.holdDays = b.holdDays == null ? null : Number(b.holdDays);
   if (b.rules !== undefined) data.rules = b.rules == null ? null : String(b.rules);
-  if (b.capAmount !== undefined) data.capAmount = b.capAmount == null ? null : Number(b.capAmount);
+  if (b.capAmount !== undefined) {
+    if (b.capAmount == null) data.capAmount = null;
+    else {
+      const capAmount = parseMoney(b.capAmount);
+      if (capAmount == null || capAmount < 0 || capAmount > MAX_MONEY) {
+        res.status(400).json({ error: 'Некорректная сумма capAmount (должна быть от 0 до 9 999 999 999.99)' });
+        return;
+      }
+      data.capAmount = capAmount;
+    }
+  }
   if (b.capConversions !== undefined) data.capConversions = b.capConversions == null ? null : Number(b.capConversions);
   if (b.rating !== undefined) data.rating = b.rating == null ? null : Number(b.rating);
   if (b.reviewsCount !== undefined) data.reviewsCount = b.reviewsCount == null ? null : Number(b.reviewsCount);

@@ -627,6 +627,14 @@
         if (form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+                function parseMoneyInput(v) {
+                    var s = String(v == null ? '' : v).trim();
+                    if (!s) return NaN;
+                    // Берём первое похожее на число значение, а не "склеиваем" все цифры из строки.
+                    var m = s.match(/-?\d+(?:[.,]\d{1,2})?/);
+                    if (!m) return NaN;
+                    return Number(m[0].replace(',', '.'));
+                }
                 if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'supplier') {
                     alert('Войдите как поставщик.');
                     var redir = 'create-offer.html' + (window.location.search || '');
@@ -642,7 +650,9 @@
                 var rateVal = (document.querySelector('.offer-rate-value') || {}).value || '';
                 var cpaInput = document.getElementById('offerCpa');
                 var cpaVal = cpaInput ? cpaInput.value : '';
-                var payoutAmount = parseFloat(String(rateVal).replace(/[^\d.,]/g, '').replace(',', '.')) || parseFloat(String(cpaVal).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                var payoutAmount = parseMoneyInput(rateVal);
+                if (!Number.isFinite(payoutAmount)) payoutAmount = parseMoneyInput(cpaVal);
+                if (!Number.isFinite(payoutAmount)) payoutAmount = 0;
                 if (!categoryId || !title || !landingUrl) {
                     alert('Заполните категорию, название и ссылку на лендинг.');
                     return;
@@ -663,6 +673,10 @@
                 if (!cpaVal || parseFloat(String(cpaVal).replace(/[^\d.,]/g, '').replace(',', '.')) < 1) {
                     alert('Укажите основную CPA-ставку (шаг 3).');
                     if (cpaEl) cpaEl.focus();
+                    return;
+                }
+                if (!Number.isFinite(payoutAmount) || payoutAmount < 0 || payoutAmount > 9999999999.99) {
+                    alert('CPA/ставка должна быть от 0 до 9 999 999 999.99');
                     return;
                 }
                 var submitBtn = document.getElementById('wizardSubmit');
