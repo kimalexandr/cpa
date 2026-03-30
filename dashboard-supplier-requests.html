@@ -137,55 +137,34 @@
 
         function loadRequests() {
             if (!tbody) return;
-            window.RealCPA.supplier.getOffers()
-                .then(function(offers) {
-                    if (!offers || !offers.length) {
+            window.RealCPA.supplier.getParticipations({ status: 'pending' })
+                .then(function(pending) {
+                    pending = pending || [];
+                    if (pending.length === 0) {
                         if (emptyState) emptyState.style.display = 'block';
                         if (listWrapper) listWrapper.style.display = 'none';
                         return;
                     }
-                    var promises = offers.map(function(o) {
-                        return window.RealCPA.supplier.getAffiliates(o.id).then(function(list) {
-                            return (list || []).map(function(p) {
-                                return {
-                                    id: p.id,
-                                    offerTitle: o.title,
-                                    offerId: o.id,
-                                    affiliateName: (p.affiliate && p.affiliate.name) || '—',
-                                    affiliateEmail: (p.affiliate && p.affiliate.email) || '—',
-                                    status: p.status,
-                                    createdAt: p.createdAt
-                                };
-                            });
-                        });
+                    if (emptyState) emptyState.style.display = 'none';
+                    if (listWrapper) listWrapper.style.display = 'block';
+                    tbody.innerHTML = pending.map(function(p) {
+                        var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—';
+                        var offerTitle = p.offer && p.offer.title ? p.offer.title : '—';
+                        var affiliateName = p.affiliate && p.affiliate.name ? p.affiliate.name : '—';
+                        var affiliateEmail = p.affiliate && p.affiliate.email ? p.affiliate.email : '—';
+                        return '<tr data-id="' + escapeHtml(p.id) + '">' +
+                            '<td>' + escapeHtml(offerTitle) + '</td>' +
+                            '<td>' + escapeHtml(affiliateName) + '</td>' +
+                            '<td>' + escapeHtml(affiliateEmail) + '</td>' +
+                            '<td>' + escapeHtml(date) + '</td>' +
+                            '<td><button type="button" class="btn btn-sm btn-primary request-approve" data-id="' + escapeHtml(p.id) + '">Одобрить</button> ' +
+                            '<button type="button" class="btn btn-sm btn-secondary request-reject" data-id="' + escapeHtml(p.id) + '">Отклонить</button></td></tr>';
+                    }).join('');
+                    tbody.querySelectorAll('.request-approve').forEach(function(btn) {
+                        btn.addEventListener('click', function() { setParticipationStatus(this.getAttribute('data-id'), 'approved'); });
                     });
-                    return Promise.all(promises).then(function(arrays) {
-                        var all = [];
-                        arrays.forEach(function(arr) { all = all.concat(arr); });
-                        var pending = all.filter(function(p) { return p.status === 'pending'; });
-                        if (pending.length === 0) {
-                            if (emptyState) emptyState.style.display = 'block';
-                            if (listWrapper) listWrapper.style.display = 'none';
-                            return;
-                        }
-                        if (emptyState) emptyState.style.display = 'none';
-                        if (listWrapper) listWrapper.style.display = 'block';
-                        tbody.innerHTML = pending.map(function(p) {
-                            var date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—';
-                            return '<tr data-id="' + escapeHtml(p.id) + '">' +
-                                '<td>' + escapeHtml(p.offerTitle) + '</td>' +
-                                '<td>' + escapeHtml(p.affiliateName) + '</td>' +
-                                '<td>' + escapeHtml(p.affiliateEmail) + '</td>' +
-                                '<td>' + escapeHtml(date) + '</td>' +
-                                '<td><button type="button" class="btn btn-sm btn-primary request-approve" data-id="' + escapeHtml(p.id) + '">Одобрить</button> ' +
-                                '<button type="button" class="btn btn-sm btn-secondary request-reject" data-id="' + escapeHtml(p.id) + '">Отклонить</button></td></tr>';
-                        }).join('');
-                        tbody.querySelectorAll('.request-approve').forEach(function(btn) {
-                            btn.addEventListener('click', function() { setParticipationStatus(this.getAttribute('data-id'), 'approved'); });
-                        });
-                        tbody.querySelectorAll('.request-reject').forEach(function(btn) {
-                            btn.addEventListener('click', function() { setParticipationStatus(this.getAttribute('data-id'), 'rejected'); });
-                        });
+                    tbody.querySelectorAll('.request-reject').forEach(function(btn) {
+                        btn.addEventListener('click', function() { setParticipationStatus(this.getAttribute('data-id'), 'rejected'); });
                     });
                 })
                 .catch(function(err) {

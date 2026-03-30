@@ -139,11 +139,18 @@
   .btn-hero:hover { background: #ffb820; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(240,165,0,0.3); }
   .btn-hero-outline {
     padding: 14px 32px; border-radius: 10px;
-    border: 1px solid var(--border); color: var(--text);
+    border: 1px solid rgba(232, 234, 240, 0.28);
+    color: #e8eaf0 !important;
     font-family: 'Onest', sans-serif; font-size: 0.95rem; font-weight: 500;
-    text-decoration: none; transition: all 0.2s; background: transparent;
+    text-decoration: none; transition: all 0.2s;
+    background: rgba(18, 26, 48, 0.62);
+    backdrop-filter: blur(2px);
   }
-  .btn-hero-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-hero-outline:hover {
+    border-color: var(--accent);
+    color: var(--accent) !important;
+    background: rgba(28, 40, 72, 0.78);
+  }
 
   .hero-stats {
     display: flex; gap: 40px; margin-top: 60px;

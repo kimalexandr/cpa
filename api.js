@@ -178,6 +178,11 @@
       updateOffer: function (id, data) { return request('PATCH', '/api/supplier/offers/' + id, data); },
       setOfferStatus: function (id, status) { return request('PATCH', '/api/supplier/offers/' + id + '/status', { status: status }); },
       getAffiliates: function (offerId) { return request('GET', '/api/supplier/offers/' + offerId + '/affiliates'); },
+      getParticipations: function (params) {
+        var q = [];
+        if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        return request('GET', '/api/supplier/affiliate-participations' + (q.length ? '?' + q.join('&') : ''));
+      },
       setOfferLocations: function (offerId, locationIds) {
         return request('POST', '/api/supplier/offers/' + encodeURIComponent(offerId) + '/locations', { locationIds: locationIds || [] });
       },

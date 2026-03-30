@@ -182,6 +182,32 @@ router.get('/offers/:id/affiliates', async (req: AuthRequest, res: Response) => 
   res.json(list);
 });
 
+/** Все заявки на подключение к офферам поставщика (по умолчанию pending) */
+router.get('/affiliate-participations', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = (req.query.status as string) || 'pending';
+    const where: { status?: 'pending' | 'approved' | 'rejected' | 'blocked'; offer: { supplierId: string } } = {
+      offer: { supplierId: req.user!.userId },
+    };
+    if (status === 'pending' || status === 'approved' || status === 'rejected' || status === 'blocked') {
+      where.status = status;
+    }
+    const list = await prisma.affiliateOfferParticipation.findMany({
+      where,
+      include: {
+        offer: { select: { id: true, title: true } },
+        affiliate: { select: { id: true, email: true, name: true, createdAt: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 300,
+    });
+    res.json(list);
+  } catch (e) {
+    console.error('GET /api/supplier/affiliate-participations:', e);
+    res.status(500).json({ error: 'Ошибка загрузки заявок' });
+  }
+});
+
 router.patch('/affiliate-participation/:id', async (req: AuthRequest, res: Response) => {
   const status = req.body.status;
   if (status !== 'approved' && status !== 'rejected') {

@@ -126,8 +126,22 @@
                 if (!path) return url;
                 return normalizeToCurrentOrigin(url);
             }
+            function normalizeIpUrlText(text) {
+                if (!text || typeof text !== 'string' || !origin) return text;
+                var trimmed = text.trim();
+                if (!/^https?:\/\//i.test(trimmed)) return text;
+                try {
+                    var parsed = new URL(trimmed);
+                    if (isIpHost(parsed.hostname)) {
+                        return origin.replace(/\/$/, '') + parsed.pathname + (parsed.search || '') + (parsed.hash || '');
+                    }
+                    return text;
+                } catch (e) {
+                    return text;
+                }
+            }
             var cardsHtml = approved.map(function(p) {
-                var name = p.offer ? p.offer.title : p.offerId;
+                var name = p.offer ? normalizeIpUrlText(p.offer.title) : p.offerId;
                 var link = toRealTrackingUrl(p.trackingLink || '');
                 var token = (link && link.indexOf('/t/') !== -1) ? link.split('/t/')[1].split('?')[0] : (p.trackingLink && p.trackingLink.indexOf('/t/') !== -1 ? p.trackingLink.split('/t/')[1].split('?')[0] : '');
                 var payout = p.offer && p.offer.payoutAmount != null ? p.offer.payoutAmount + ' ' + (p.offer.currency || '₽') : '';
