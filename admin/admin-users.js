@@ -31,12 +31,42 @@
                 var statusCl = user.status === 'active' ? 'admin-badge-active' : 'admin-badge-blocked';
                 var disableReset = user.role === 'admin';
                 var btnTitle = disableReset ? 'Для админов сброс отключён' : 'Сбросить пароль и отправить временный пароль на email';
-                var actionHtml = '<button type="button" class="btn btn-sm btn-outline user-reset-pass-btn" data-user-id="' + user.id + '" data-user-email="' + (user.email || '') + '" ' + (disableReset ? 'disabled' : '') + ' title="' + btnTitle + '">Сбросить пароль</button>';
+                var actionHtml = '<button type="button" class="btn btn-sm btn-outline user-reset-pass-btn" data-user-id="' + user.id + '" data-user-email="' + (user.email || '') + '" ' + (disableReset ? 'disabled' : '') + ' title="' + btnTitle + '">Сбросить пароль</button> ' +
+                    '<button type="button" class="btn btn-sm btn-secondary user-delete-btn" data-user-id="' + user.id + '" data-user-email="' + (user.email || '') + '" ' + (disableReset ? 'disabled' : '') + ' title="' + (disableReset ? 'Удаление админов запрещено' : 'Удалить аккаунт и связанные данные') + '">Удалить</button>';
                 return '<tr><td>' + (user.id || '').slice(0, 8) + '</td><td>' + (user.name || '—') + '</td><td>' + (user.email || '') + '</td><td><span class="admin-badge">' + (roleLabels[user.role] || user.role) + '</span></td><td><span class="admin-badge ' + statusCl + '">' + (statusLabels[user.status] || user.status) + '</span></td><td>' + created + '</td><td>' + actionHtml + '</td></tr>';
             }).join('');
             bindResetButtons();
+            bindDeleteButtons();
         }).catch(function(err) {
             document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="7">Ошибка: ' + (err.message || '') + '</td></tr>';
+        });
+    }
+    function bindDeleteButtons() {
+        var buttons = document.querySelectorAll('.user-delete-btn');
+        buttons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var userId = btn.getAttribute('data-user-id');
+                var userEmail = btn.getAttribute('data-user-email') || '';
+                if (!userId) return;
+                var confirmText = window.prompt('Для подтверждения удаления введите email пользователя:\n' + userEmail, '');
+                if (confirmText === null) return;
+                if (String(confirmText).trim().toLowerCase() !== String(userEmail).trim().toLowerCase()) {
+                    alert('Email не совпадает. Удаление отменено.');
+                    return;
+                }
+                var oldText = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = 'Удаление...';
+                window.RealCPA.admin.deleteUser(userId).then(function(resp) {
+                    alert((resp && resp.message) ? resp.message : 'Пользователь удалён.');
+                    load();
+                }).catch(function(err) {
+                    alert('Ошибка удаления: ' + (err.message || 'неизвестная ошибка'));
+                }).finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = oldText || 'Удалить';
+                });
+            });
         });
     }
 

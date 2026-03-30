@@ -343,6 +343,94 @@ router.post('/users/:id/reset-password', async (req: AuthRequest, res: Response)
   }
 });
 
+/** Удаление пользователя и связанных данных (админ) */
+router.delete('/users/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const targetUserId = req.params.id;
+    const actorId = req.user!.userId;
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, email: true, role: true },
+    });
+    if (!target) {
+      res.status(404).json({ error: 'Пользователь не найден' });
+      return;
+    }
+    if (target.id === actorId) {
+      res.status(400).json({ error: 'Нельзя удалить свой аккаунт из админки' });
+      return;
+    }
+    if (target.role === 'admin') {
+      res.status(403).json({ error: 'Удаление администраторов запрещено' });
+      return;
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1) Прямые зависимости пользователя
+      await tx.notification.deleteMany({ where: { userId: target.id } });
+      await tx.emailConfirmationToken.deleteMany({ where: { userId: target.id } });
+      await tx.affiliateProfile.deleteMany({ where: { userId: target.id } });
+      await tx.supplierProfile.deleteMany({ where: { userId: target.id } });
+      await tx.payout.deleteMany({ where: { affiliateId: target.id } });
+      await tx.affiliateOfferParticipation.deleteMany({ where: { affiliateId: target.id } });
+
+      // 2) Трекинг-ссылки пользователя как аффилиата + их события
+      const affiliateLinks = await tx.trackingLink.findMany({
+        where: { affiliateId: target.id },
+        select: { id: true },
+      });
+      const affiliateLinkIds = affiliateLinks.map((l) => l.id);
+      if (affiliateLinkIds.length) {
+        await tx.event.deleteMany({ where: { trackingLinkId: { in: affiliateLinkIds } } });
+      }
+      await tx.trackingLink.deleteMany({ where: { affiliateId: target.id } });
+
+      // 3) Если пользователь поставщик — удаляем его офферы и все связанные данные
+      const supplierOffers = await tx.offer.findMany({
+        where: { supplierId: target.id },
+        select: { id: true },
+      });
+      const offerIds = supplierOffers.map((o) => o.id);
+      if (offerIds.length) {
+        await tx.affiliateOfferParticipation.deleteMany({ where: { offerId: { in: offerIds } } });
+        const offerLinks = await tx.trackingLink.findMany({
+          where: { offerId: { in: offerIds } },
+          select: { id: true },
+        });
+        const offerLinkIds = offerLinks.map((l) => l.id);
+        if (offerLinkIds.length) {
+          await tx.event.deleteMany({ where: { trackingLinkId: { in: offerLinkIds } } });
+        }
+        await tx.trackingLink.deleteMany({ where: { offerId: { in: offerIds } } });
+        await tx.offerLocation.deleteMany({ where: { offerId: { in: offerIds } } });
+        await tx.offerCategory.deleteMany({ where: { offerId: { in: offerIds } } });
+        await tx.offer.deleteMany({ where: { id: { in: offerIds } } });
+      }
+
+      await tx.user.delete({ where: { id: target.id } });
+      return { deletedUserId: target.id, deletedOffers: offerIds.length };
+    });
+
+    console.info('[admin-delete-user]', {
+      at: new Date().toISOString(),
+      actorId,
+      targetUserId: target.id,
+      targetEmail: target.email,
+      targetRole: target.role,
+      deletedOffers: result.deletedOffers,
+    });
+
+    res.json({
+      message: 'Пользователь и связанные данные удалены',
+      deletedUserId: result.deletedUserId,
+      deletedOffers: result.deletedOffers,
+    });
+  } catch (e) {
+    console.error('Admin delete user error:', e);
+    res.status(500).json({ error: 'Ошибка удаления пользователя' });
+  }
+});
+
 /** Список офферов (админ) */
 router.get('/offers', async (req: AuthRequest, res: Response) => {
   try {

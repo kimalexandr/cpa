@@ -242,6 +242,9 @@
       resetUserPassword: function (userId) {
         return request('POST', '/api/admin/users/' + encodeURIComponent(userId) + '/reset-password', {});
       },
+      deleteUser: function (userId) {
+        return request('DELETE', '/api/admin/users/' + encodeURIComponent(userId), {});
+      },
       offers: function (params) {
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
