@@ -129,12 +129,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
+            var lastUnreadIds = {};
+            function showNotifToast(text) {
+                var toast = document.getElementById('globalNotifToast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'globalNotifToast';
+                    toast.className = 'toast-copy';
+                    toast.style.zIndex = '3000';
+                    document.body.appendChild(toast);
+                }
+                toast.textContent = text;
+                toast.classList.add('show');
+                clearTimeout(toast._t);
+                toast._t = setTimeout(function() { toast.classList.remove('show'); }, 2600);
+            }
             function loadNotificationsAndBadge() {
                 window.RealCPA.getNotifications({ limit: 15 }).then(function(r) {
                     if (notifBadge) {
                         var c = r.unreadCount || 0;
                         notifBadge.textContent = c > 99 ? '99+' : c;
                         notifBadge.classList.toggle('empty', c === 0);
+                    }
+                    var unread = (r.items || []).filter(function(n) { return !n.readAt; });
+                    var newOnes = unread.filter(function(n) { return !lastUnreadIds[n.id]; });
+                    unread.forEach(function(n) { lastUnreadIds[n.id] = true; });
+                    if (newOnes.length) {
+                        var first = newOnes[0];
+                        showNotifToast(first.title || 'Новое уведомление');
                     }
                     renderNotifications(r.items || []);
                 }).catch(function() {
@@ -144,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             loadNotificationsAndBadge();
+            setInterval(loadNotificationsAndBadge, 15000);
             if (bellBtn && notifDropdown) {
                 bellBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -322,9 +345,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     var user = window.RealCPA.getUser();
                     if (user && user.role === 'supplier') {
-                        window.location.href = 'dashboard-supplier.html';
+                        try { localStorage.setItem('onboarding_supplier_done', '0'); } catch (e) {}
+                        window.location.href = 'onboarding.html?role=supplier';
                     } else if (user) {
-                        window.location.href = 'dashboard-affiliate.html';
+                        try { localStorage.setItem('onboarding_affiliate_done', '0'); } catch (e) {}
+                        window.location.href = 'onboarding.html?role=affiliate';
                     } else {
                         window.location.href = 'login.html';
                     }

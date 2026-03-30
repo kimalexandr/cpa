@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Онбординг — RealCPA Hub</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard-page fact-theme">
+  <main class="container" style="padding:40px 0;">
+    <h1>Быстрый старт в 3 шага</h1>
+    <div id="onboardingSteps" class="connections-cards"></div>
+    <div style="margin-top:16px;">
+      <button id="onboardingDoneBtn" class="btn btn-primary" type="button">Перейти в кабинет</button>
+    </div>
+  </main>
+  <script src="api.js"></script>
+  <script>
+  (function() {
+    if (!window.RealCPA || !window.RealCPA.isLoggedIn()) { window.location.href = 'login.html'; return; }
+    var role = (new URLSearchParams(window.location.search)).get('role') || window.RealCPA.getRole() || 'affiliate';
+    var wrap = document.getElementById('onboardingSteps');
+    var items = role === 'supplier'
+      ? [
+          ['Создайте оффер', 'create-offer.html', 'Создать'],
+          ['Активируйте оффер', 'dashboard-supplier-offers.html', 'Мои офферы'],
+          ['Просмотрите заявки', 'dashboard-supplier-requests.html', 'Заявки']
+        ]
+      : [
+          ['Подключитесь к офферу', 'offers.html', 'Каталог'],
+          ['Сделайте первый клик', 'dashboard-affiliate-connections.html', 'Мои подключения'],
+          ['Отправьте тестовый лид', 'dashboard-affiliate-connections.html', 'Postback тест']
+        ];
+    wrap.innerHTML = items.map(function(it, idx) {
+      return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + (idx + 1) + ') ' + it[0] + '</h2><a class="btn btn-sm btn-primary" href="' + it[1] + '">' + it[2] + '</a></div></div>';
+    }).join('');
+    document.getElementById('onboardingDoneBtn').addEventListener('click', function() {
+      try { localStorage.setItem('onboarding_' + role + '_done', '1'); } catch (e) {}
+      window.location.href = role === 'supplier' ? 'dashboard-supplier.html' : 'dashboard-affiliate.html';
+    });
+  })();
+  </script>
+</body>
+</html>

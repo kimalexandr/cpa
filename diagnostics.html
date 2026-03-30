@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Диагностика интеграций — RealCPA Hub</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard-page fact-theme">
+  <header class="header"><div class="container"><div class="header-content"><a href="index.html" class="logo-link">RealCPA Hub</a></div></div></header>
+  <main class="dashboard-main container" style="padding-top:24px;">
+    <h1>Диагностика</h1>
+    <div class="dashboard-block">
+      <label>Токен трекинга</label>
+      <input id="diagToken" class="form-input" placeholder="tk-...">
+      <button id="diagCheckClick" class="btn btn-primary" type="button">Проверить переход (/t/:token)</button>
+    </div>
+    <div class="dashboard-block">
+      <button id="diagPostbackTest" class="btn btn-secondary" type="button">Проверить postback тестом</button>
+    </div>
+    <div class="dashboard-block">
+      <h2>Последний ответ API</h2>
+      <pre id="diagResponse" style="white-space:pre-wrap;word-break:break-word;">—</pre>
+    </div>
+  </main>
+  <script src="api.js"></script>
+  <script>
+  (function() {
+    var out = document.getElementById('diagResponse');
+    function setOut(v) { out.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    document.getElementById('diagCheckClick').addEventListener('click', function() {
+      var token = (document.getElementById('diagToken').value || '').trim();
+      if (!token) { setOut('Введите токен'); return; }
+      fetch('/t/' + encodeURIComponent(token), { method: 'GET', redirect: 'manual' })
+        .then(function(r) { setOut({ ok: r.ok, status: r.status, statusText: r.statusText, url: r.url }); })
+        .catch(function(e) { setOut({ error: e.message || 'Ошибка запроса' }); });
+    });
+    document.getElementById('diagPostbackTest').addEventListener('click', function() {
+      if (!window.RealCPA || !window.RealCPA.request) { setOut('api.js не подключен'); return; }
+      window.RealCPA.request('/api/events', { method: 'POST', body: { eventType: 'lead', orderId: 'diag-' + Date.now(), amount: 1 } })
+        .then(function(r) { setOut({ postbackTest: 'ok', response: r }); })
+        .catch(function(e) { setOut({ postbackTest: 'fail', error: e.message, payload: e.payload || null }); });
+    });
+  })();
+  </script>
+</body>
+</html>

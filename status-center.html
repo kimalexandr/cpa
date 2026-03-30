@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Центр статусов — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page fact-theme">
+    <header class="header">
+        <div class="container"><div class="header-content"><div class="logo"><i class="fas fa-link"></i><a href="index.html" class="logo-link">RealCPA Hub</a></div><nav class="nav"><a href="dashboard-affiliate.html" class="nav-link">Кабинет партнёра</a><a href="offers.html" class="nav-link">Офферы</a></nav></div></div>
+    </header>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="dashboard-affiliate.html" class="sidebar-link"><i class="fas fa-home"></i><span>Главная</span></a>
+                <a href="offers.html" class="sidebar-link"><i class="fas fa-th-large"></i><span>Каталог офферов</span></a>
+                <a href="dashboard-affiliate-connections.html" class="sidebar-link"><i class="fas fa-link"></i><span>Мои подключения</span></a>
+                <a href="status-center.html" class="sidebar-link active"><i class="fas fa-list-check"></i><span>Центр статусов</span></a>
+            </nav>
+        </aside>
+        <main class="dashboard-main">
+            <div class="dashboard-header"><h1>Центр статусов и причин</h1></div>
+            <div id="statusCenterList" class="connections-cards"><p class="loading-offers">Загрузка...</p></div>
+        </main>
+    </div>
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+    <script>
+    (function () {
+        if (!window.RealCPA || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'affiliate') {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('status-center.html');
+            return;
+        }
+        var wrap = document.getElementById('statusCenterList');
+        function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+        function statusLabel(s) {
+            if (s === 'approved') return 'Одобрено';
+            if (s === 'pending') return 'На модерации';
+            if (s === 'rejected') return 'Отклонено';
+            if (s === 'blocked') return 'Заблокировано';
+            return s || '—';
+        }
+        Promise.all([
+            window.RealCPA.affiliate.myOffers().catch(function(){ return []; }),
+            window.RealCPA.getNotifications({ limit: 200, unreadOnly: false }).catch(function(){ return { items: [] }; })
+        ]).then(function(res) {
+            var list = Array.isArray(res[0]) ? res[0] : [];
+            var notifs = (res[1] && res[1].items) ? res[1].items : [];
+            var reasonByOfferId = {};
+            notifs.forEach(function(n) {
+                if (!n || n.type !== 'participation_rejected') return;
+                var link = n.link || '';
+                var offerId = '';
+                if (link.indexOf('offer.html?id=') !== -1) offerId = link.split('offer.html?id=')[1].split('&')[0];
+                var m = String(n.body || '').match(/Причина:\s*([\s\S]+)/);
+                if (offerId && m && m[1]) reasonByOfferId[offerId] = m[1].trim();
+            });
+            if (!list.length) { wrap.innerHTML = '<p class="offers-empty-msg">Пока нет статусов подключений.</p>'; return; }
+            wrap.innerHTML = list.map(function(p) {
+                var title = p.offer && p.offer.title ? p.offer.title : (p.offerId || '—');
+                var reason = p.status === 'rejected' && reasonByOfferId[p.offerId] ? '<div class="connection-meta-row"><span class="connection-meta-label">Причина</span><span class="connection-meta-value">' + esc(reasonByOfferId[p.offerId]) + '</span></div>' : '';
+                var action = (p.status === 'rejected' || p.status === 'blocked') ? '<a class="btn btn-sm btn-primary" href="offer.html?id=' + encodeURIComponent(p.offerId) + '">Исправить и подать снова</a>' : '';
+                return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(title) + '</h2><span class="connection-status-badge">' + esc(statusLabel(p.status)) + '</span></div><div class="connection-meta">' + reason + '</div>' + action + '</div>';
+            }).join('');
+        });
+    })();
+    </script>
+</body>
+</html>

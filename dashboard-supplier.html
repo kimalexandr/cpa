@@ -69,6 +69,10 @@
                     <i class="fas fa-clipboard-list"></i>
                     <span>Лиды и продажи</span>
                 </a>
+                <a href="diagnostics.html" class="sidebar-link">
+                    <i class="fas fa-stethoscope"></i>
+                    <span>Диагностика</span>
+                </a>
                 <a href="analytics.html" class="sidebar-link">
                     <i class="fas fa-chart-line"></i>
                     <span>Аналитика</span>
@@ -125,6 +129,17 @@
 
             <div class="dashboard-block">
                 <div class="dashboard-block-header">
+                    <h2>Онбординг: старт за 3 шага</h2>
+                </div>
+                <div class="connections-cards">
+                    <div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">1) Создайте оффер</h2><a href="create-offer.html" class="btn btn-sm btn-primary">Создать</a></div></div>
+                    <div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">2) Активируйте оффер</h2><a href="dashboard-supplier-offers.html" class="btn btn-sm btn-primary">Мои офферы</a></div></div>
+                    <div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">3) Проверьте заявки</h2><a href="dashboard-supplier-requests.html" class="btn btn-sm btn-primary">Заявки</a></div></div>
+                </div>
+            </div>
+
+            <div class="dashboard-block">
+                <div class="dashboard-block-header">
                     <h2>Мои офферы</h2>
                     <a href="create-offer.html" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> Добавить оффер
@@ -168,6 +183,15 @@
             var r = document.getElementById('statRequests'); if (r) r.textContent = '0';
             var l = document.getElementById('statLeads'); if (l) l.textContent = String(s.leads || 0);
             var p = document.getElementById('statPayout'); if (p) p.textContent = (s.totalPayout || 0) + ' ₽';
+            if (window.RealCPA.supplier.getParticipations) {
+                window.RealCPA.supplier.getParticipations({ status: 'pending', page: 1, pageSize: 1 }).then(function(resp) {
+                    var total = resp && resp.pagination ? resp.pagination.total : 0;
+                    if (r) r.textContent = String(total || 0);
+                    try {
+                        if ((s.offersCount || 0) > 0 && (total || 0) > 0) localStorage.setItem('onboarding_supplier_done', '1');
+                    } catch (e) {}
+                }).catch(function() {});
+            }
         });
     })();
     </script>
