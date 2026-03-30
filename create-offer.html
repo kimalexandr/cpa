@@ -435,6 +435,7 @@
                 attentionProhibited: attProhibitedEl ? splitLines(attProhibitedEl.value) : []
             };
         }
+        window.__buildRulesPayloadForSave = buildRulesPayloadForSave;
         function parseRulesForForm(rulesRaw) {
             var empty = {
                 trafficAgreementChecks: [],
@@ -669,7 +670,19 @@
                 var holdDaysEl = document.getElementById('offerHoldDays');
                 var budgetEl = document.getElementById('offerBudget');
                 var capMonthEl = document.getElementById('offerCapMonth');
-                var rulesData = buildRulesPayloadForSave();
+                var rulesData = (typeof window.__buildRulesPayloadForSave === 'function')
+                    ? window.__buildRulesPayloadForSave()
+                    : {
+                        version: 2,
+                        trafficAgreementChecks: [],
+                        trafficForbiddenChecks: [],
+                        allowedSourcesText: '',
+                        forbiddenSourcesText: '',
+                        creativeRules: '',
+                        leadCriteria: '',
+                        attentionImportant: [],
+                        attentionProhibited: []
+                    };
                 var hasAnyRules =
                     (rulesData.trafficAgreementChecks && rulesData.trafficAgreementChecks.length) ||
                     (rulesData.trafficForbiddenChecks && rulesData.trafficForbiddenChecks.length) ||
