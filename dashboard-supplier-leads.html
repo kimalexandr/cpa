@@ -128,7 +128,8 @@
         function loadEvents() {
             var status = statusFilter ? statusFilter.value : 'pending';
             window.RealCPA.supplier.getEvents({ status: status })
-                .then(function(events) {
+                .then(function(resp) {
+                    var events = Array.isArray(resp) ? resp : ((resp && resp.items) ? resp.items : []);
                     if (!events.length) {
                         emptyState.style.display = 'block';
                         listWrapper.style.display = 'none';

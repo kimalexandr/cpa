@@ -36,6 +36,24 @@ document.addEventListener('DOMContentLoaded', function() {
         if (role === 'affiliate') {
             document.querySelectorAll('.header .nav a[href="dashboard-supplier.html"]').forEach(function(el) { el.style.display = 'none'; });
         }
+        // Быстрые ссылки в шапке по роли
+        var navRoot = document.querySelector('.header .nav');
+        if (navRoot && !document.getElementById('navStatusCenterLink') && role === 'affiliate') {
+            var statusLink = document.createElement('a');
+            statusLink.id = 'navStatusCenterLink';
+            statusLink.className = 'nav-link';
+            statusLink.href = 'status-center.html';
+            statusLink.textContent = 'Центр статусов';
+            navRoot.appendChild(statusLink);
+        }
+        if (navRoot && !document.getElementById('navDiagnosticsLink') && role === 'supplier') {
+            var diagLink = document.createElement('a');
+            diagLink.id = 'navDiagnosticsLink';
+            diagLink.className = 'nav-link';
+            diagLink.href = 'diagnostics.html';
+            diagLink.textContent = 'Диагностика';
+            navRoot.appendChild(diagLink);
+        }
 
         // Кабинет аффилиата: верхнее меню заменить на Главная / Каталог офферов, остальное — внизу
         if (role === 'affiliate' && document.querySelector('.dashboard-layout')) {
@@ -166,7 +184,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             loadNotificationsAndBadge();
-            setInterval(loadNotificationsAndBadge, 15000);
+            var fallbackPoll = setInterval(loadNotificationsAndBadge, 15000);
+            // Realtime через SSE (с fallback на polling)
+            if (window.RealCPA.realtimeStreamUrl) {
+                var streamUrl = window.RealCPA.realtimeStreamUrl();
+                if (streamUrl && typeof EventSource !== 'undefined') {
+                    try {
+                        var es = new EventSource(streamUrl);
+                        es.addEventListener('notifications_update', function() {
+                            loadNotificationsAndBadge();
+                        });
+                        es.onerror = function() {
+                            // polling already active; просто оставляем fallback
+                        };
+                    } catch (e) {}
+                }
+            }
             if (bellBtn && notifDropdown) {
                 bellBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -320,8 +353,22 @@ document.addEventListener('DOMContentLoaded', function() {
             var email = (document.getElementById('registerEmail') || {}).value || '';
             var password = (document.getElementById('registerPassword') || {}).value || '';
             var name = (document.getElementById('registerName') || {}).value || '';
-            if (!email || !password) {
-                alert('Введите email и пароль');
+            var emailEl = document.getElementById('registerEmail');
+            var passEl = document.getElementById('registerPassword');
+            if (window.FormValidation && emailEl && passEl) {
+                window.FormValidation.clear(emailEl);
+                window.FormValidation.clear(passEl);
+            }
+            var invalid = false;
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+                if (window.FormValidation && emailEl) window.FormValidation.set(emailEl, 'Введите корректный email');
+                invalid = true;
+            }
+            if (!password || String(password).length < 6) {
+                if (window.FormValidation && passEl) window.FormValidation.set(passEl, 'Минимум 6 символов');
+                invalid = true;
+            }
+            if (invalid) {
                 return;
             }
             if (typeof window.RealCPA === 'undefined') {

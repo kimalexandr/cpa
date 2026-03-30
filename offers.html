@@ -225,9 +225,20 @@
             }).catch(function() {});
         }
         var affiliateParticipations = [];
+        var statusCenterByOffer = {};
         if (role === 'affiliate' && window.RealCPA && window.RealCPA.affiliate && window.RealCPA.affiliate.myOffers) {
             window.RealCPA.affiliate.myOffers().then(function(list) {
                 affiliateParticipations = Array.isArray(list) ? list : [];
+                loadOffers();
+            }).catch(function() {});
+        }
+        if (role === 'affiliate' && window.RealCPA && window.RealCPA.statusCenter) {
+            window.RealCPA.statusCenter().then(function(resp) {
+                var items = resp && Array.isArray(resp.items) ? resp.items : [];
+                statusCenterByOffer = {};
+                items.forEach(function(it) {
+                    if (it && it.offerId) statusCenterByOffer[String(it.offerId)] = it;
+                });
                 loadOffers();
             }).catch(function() {});
         }
@@ -274,15 +285,23 @@
                 var ps = resolveParticipationStatus(o);
                 var badge = '';
                 var actionText = 'Подключиться';
+                var hint = '';
                 if (ps === 'approved') { badge = '<span class="offer-badge offer-badge-approved">Подключен</span>'; actionText = 'Открыть'; }
                 else if (ps === 'pending') { badge = '<span class="offer-badge offer-badge-pending">На модерации</span>'; actionText = 'Открыть'; }
                 else if (ps === 'rejected' || ps === 'blocked') { badge = '<span class="offer-badge offer-badge-rejected">Отклонен</span>'; actionText = 'Подать повторно'; }
                 else if (role === 'affiliate') { badge = '<span class="offer-badge offer-badge-neutral">Не подключен</span>'; }
+                var sc = statusCenterByOffer[String(o.id)] || null;
+                if (sc && sc.nextStep) {
+                    hint = '<p class="offer-next-step">' + escapeHtml(sc.nextStep) + '</p>';
+                } else if (ps === 'rejected') {
+                    hint = '<p class="offer-next-step">Отклонено: исправьте условия и подайте снова</p>';
+                }
                 return '<div class="offer-card-mini">' +
                     '<div class="offer-category">' + escapeHtml(cat) + '</div>' +
                     badge +
                     '<h3>' + escapeHtml(o.title) + '</h3>' +
                     '<p class="offer-cpa">CPA: ' + escapeHtml(String(rate)) + '</p>' +
+                    hint +
                     '<a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-primary">' + actionText + '</a>' +
                     '</div>';
             }).join('');

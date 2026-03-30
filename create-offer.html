@@ -770,12 +770,12 @@
                     var offerId = res && res.id;
                     if (offerId && selectedLocationIds && selectedLocationIds.length > 0 && window.RealCPA.supplier.setOfferLocations) {
                         return window.RealCPA.supplier.setOfferLocations(offerId, selectedLocationIds).then(function() {
-                            alert('Оффер создан. География сохранена. Статус — черновик; измените на «Активен» в разделе «Мои офферы».');
-                            window.location.href = 'dashboard-supplier-offers.html';
+                            alert('Оффер отправлен на модерацию. География сохранена. Статус: «На модерации». Отслеживайте статус в разделе «Мои офферы».');
+                            window.location.href = 'dashboard-supplier-offers.html?status=moderation';
                         });
                     }
-                    alert('Оффер создан. Он сохранён как черновик — измените статус на «Активен» в разделе «Мои офферы».');
-                    window.location.href = 'dashboard-supplier-offers.html';
+                    alert('Оффер отправлен на модерацию. Статус: «На модерации». Отслеживайте статус в разделе «Мои офферы».');
+                    window.location.href = 'dashboard-supplier-offers.html?status=moderation';
                 }).catch(function(err) {
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Отправить на модерацию'; }
                     var msg = (err && err.message) || (err && err.payload && err.payload.error) || 'Ошибка создания оффера';

@@ -42,28 +42,17 @@
             if (s === 'blocked') return 'Заблокировано';
             return s || '—';
         }
-        Promise.all([
-            window.RealCPA.affiliate.myOffers().catch(function(){ return []; }),
-            window.RealCPA.getNotifications({ limit: 200, unreadOnly: false }).catch(function(){ return { items: [] }; })
-        ]).then(function(res) {
-            var list = Array.isArray(res[0]) ? res[0] : [];
-            var notifs = (res[1] && res[1].items) ? res[1].items : [];
-            var reasonByOfferId = {};
-            notifs.forEach(function(n) {
-                if (!n || n.type !== 'participation_rejected') return;
-                var link = n.link || '';
-                var offerId = '';
-                if (link.indexOf('offer.html?id=') !== -1) offerId = link.split('offer.html?id=')[1].split('&')[0];
-                var m = String(n.body || '').match(/Причина:\s*([\s\S]+)/);
-                if (offerId && m && m[1]) reasonByOfferId[offerId] = m[1].trim();
-            });
+        window.RealCPA.statusCenter().then(function(resp) {
+            var list = resp && Array.isArray(resp.items) ? resp.items : [];
             if (!list.length) { wrap.innerHTML = '<p class="offers-empty-msg">Пока нет статусов подключений.</p>'; return; }
             wrap.innerHTML = list.map(function(p) {
-                var title = p.offer && p.offer.title ? p.offer.title : (p.offerId || '—');
-                var reason = p.status === 'rejected' && reasonByOfferId[p.offerId] ? '<div class="connection-meta-row"><span class="connection-meta-label">Причина</span><span class="connection-meta-value">' + esc(reasonByOfferId[p.offerId]) + '</span></div>' : '';
-                var action = (p.status === 'rejected' || p.status === 'blocked') ? '<a class="btn btn-sm btn-primary" href="offer.html?id=' + encodeURIComponent(p.offerId) + '">Исправить и подать снова</a>' : '';
-                return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(title) + '</h2><span class="connection-status-badge">' + esc(statusLabel(p.status)) + '</span></div><div class="connection-meta">' + reason + '</div>' + action + '</div>';
+                var reason = p.reason ? '<div class="connection-meta-row"><span class="connection-meta-label">Причина</span><span class="connection-meta-value">' + esc(p.reason) + '</span></div>' : '';
+                var nextStep = p.nextStep ? '<div class="connection-meta-row"><span class="connection-meta-label">Что делать дальше</span><span class="connection-meta-value">' + esc(p.nextStep) + '</span></div>' : '';
+                var action = p.retryAllowed ? '<a class="btn btn-sm btn-primary" href="' + esc(p.actionLink || ('offer.html?id=' + p.offerId)) + '">Исправить и подать снова</a>' : '';
+                return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(p.offerTitle || p.offerId || '—') + '</h2><span class="connection-status-badge">' + esc(statusLabel(p.status)) + '</span></div><div class="connection-meta">' + reason + nextStep + '</div>' + action + '</div>';
             }).join('');
+        }).catch(function() {
+            wrap.innerHTML = '<p class="offers-empty-msg">Не удалось загрузить центр статусов.</p>';
         });
     })();
     </script>

@@ -11,9 +11,12 @@
   <main class="dashboard-main container" style="padding-top:24px;">
     <h1>Диагностика</h1>
     <div class="dashboard-block">
+      <label>Токен (авто из активных)</label>
+      <select id="diagTokenSelect" class="form-input" style="margin-bottom:10px;"></select>
       <label>Токен трекинга</label>
       <input id="diagToken" class="form-input" placeholder="tk-...">
       <button id="diagCheckClick" class="btn btn-primary" type="button">Проверить переход (/t/:token)</button>
+      <button id="diagCopyUrl" class="btn btn-secondary" type="button">Скопировать готовый URL</button>
     </div>
     <div class="dashboard-block">
       <button id="diagPostbackTest" class="btn btn-secondary" type="button">Проверить postback тестом</button>
@@ -22,12 +25,40 @@
       <h2>Последний ответ API</h2>
       <pre id="diagResponse" style="white-space:pre-wrap;word-break:break-word;">—</pre>
     </div>
+    <div class="dashboard-block">
+      <h2>История последних 10 postback</h2>
+      <div id="diagHistory">—</div>
+    </div>
   </main>
   <script src="api.js"></script>
   <script>
   (function() {
     var out = document.getElementById('diagResponse');
+    var tokenSelect = document.getElementById('diagTokenSelect');
+    var tokenInput = document.getElementById('diagToken');
+    var postbackUrl = '';
     function setOut(v) { out.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+    function statusBadge(s) {
+      if (s === 'approved') return '<span class="offer-badge offer-badge-approved">OK</span>';
+      if (s === 'pending') return '<span class="offer-badge offer-badge-pending">WARN</span>';
+      return '<span class="offer-badge offer-badge-rejected">FAIL</span>';
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
+    if (window.RealCPA && window.RealCPA.integrationsHealth) {
+      window.RealCPA.integrationsHealth().then(function(r) {
+        postbackUrl = r.postbackUrl || '';
+        var tokens = Array.isArray(r.trackingTokens) ? r.trackingTokens : [];
+        tokenSelect.innerHTML = '<option value="">Выберите токен</option>' + tokens.map(function(t){
+          return '<option value="' + esc(t.token) + '">' + esc(t.offerTitle + ' (' + t.token + ')') + '</option>';
+        }).join('');
+        var h = document.getElementById('diagHistory');
+        var rows = Array.isArray(r.lastResponses) ? r.lastResponses : [];
+        h.innerHTML = rows.length ? rows.map(function(x){
+          return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(x.offerTitle) + '</h2>' + statusBadge(x.status) + '</div><div class="connection-meta"><div class="connection-meta-row"><span class="connection-meta-label">Событие</span><span class="connection-meta-value">' + esc(x.eventType) + '</span></div><div class="connection-meta-row"><span class="connection-meta-label">Токен</span><span class="connection-meta-value"><code>' + esc(x.token) + '</code></span></div></div></div>';
+        }).join('') : 'Нет событий';
+      }).catch(function(){});
+    }
+    tokenSelect.addEventListener('change', function() { tokenInput.value = tokenSelect.value || ''; });
     document.getElementById('diagCheckClick').addEventListener('click', function() {
       var token = (document.getElementById('diagToken').value || '').trim();
       if (!token) { setOut('Введите токен'); return; }
@@ -40,6 +71,13 @@
       window.RealCPA.request('/api/events', { method: 'POST', body: { eventType: 'lead', orderId: 'diag-' + Date.now(), amount: 1 } })
         .then(function(r) { setOut({ postbackTest: 'ok', response: r }); })
         .catch(function(e) { setOut({ postbackTest: 'fail', error: e.message, payload: e.payload || null }); });
+    });
+    document.getElementById('diagCopyUrl').addEventListener('click', function() {
+      var token = (tokenInput.value || '').trim();
+      if (!postbackUrl || !token) { setOut('Выберите токен для копирования URL'); return; }
+      var url = postbackUrl + ' (token=' + token + ')';
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url);
+      setOut({ copied: url });
     });
   })();
   </script>

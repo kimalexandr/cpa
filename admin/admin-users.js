@@ -18,7 +18,8 @@
         if (role) params.role = role;
         if (status) params.status = status;
         if (search) params.search = search;
-        window.RealCPA.admin.users(params).then(function(list) {
+        window.RealCPA.admin.users(params).then(function(resp) {
+            var list = Array.isArray(resp) ? resp : ((resp && resp.items) ? resp.items : []);
             var tbody = document.getElementById('usersTableBody');
             if (!list.length) {
                 tbody.innerHTML = '<tr><td colspan="7">Нет пользователей</td></tr>';

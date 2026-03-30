@@ -116,7 +116,7 @@
         window.RealCPA.admin.getEvents({ status: 'pending' })
             .then(function(data) {
                 var tbody = document.getElementById('eventsTableBody');
-                var events = Array.isArray(data) ? data : (data && data.events) ? data.events : [];
+                var events = Array.isArray(data) ? data : (data && data.items) ? data.items : (data && data.events) ? data.events : [];
                 if (!events.length) { tbody.innerHTML = '<tr><td colspan="6">Нет лидов/продаж на модерации</td></tr>'; return; }
                 tbody.innerHTML = events.map(function(e) {
                     var type = e.eventType === 'sale' ? 'Продажа' : 'Лид';

@@ -212,6 +212,7 @@
     <div id="footer-placeholder"></div>
     <script src="footer-include.js"></script>
     <script src="api.js"></script>
+    <script src="validation.js"></script>
     <script src="script.js"></script>
     <script>
     (function() {
@@ -251,8 +252,14 @@
         if (editForm) {
             editForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                var nameEl = document.getElementById('editName');
+                if (window.FormValidation && nameEl) window.FormValidation.clear(nameEl);
+                if (!nameEl.value.trim()) {
+                    if (window.FormValidation && nameEl) window.FormValidation.set(nameEl, 'Введите имя');
+                    return;
+                }
                 var data = {
-                    name: document.getElementById('editName').value.trim() || undefined,
+                    name: nameEl.value.trim() || undefined,
                     country: document.getElementById('editCountry').value.trim() || undefined,
                     city: document.getElementById('editCity').value.trim() || undefined
                 };
@@ -346,7 +353,9 @@
             phoneForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 var normalized = normalizePhone(phoneInput.value);
+                if (window.FormValidation && phoneInput) window.FormValidation.clear(phoneInput);
                 if (!/^[0-9+\-\s()]{6,25}$/.test(normalized)) {
+                    if (window.FormValidation && phoneInput) window.FormValidation.set(phoneInput, 'Проверьте формат номера');
                     phoneErr.textContent = 'Некорректный формат номера.';
                     phoneErr.style.display = 'block';
                     return;

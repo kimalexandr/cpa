@@ -78,6 +78,25 @@
     getUser: getUser,
     isLoggedIn: function () { return !!getToken(); },
     getRole: function () { var u = getUser(); return u && u.role ? u.role : null; },
+    request: function (path, opts) {
+      opts = opts || {};
+      var method = opts.method || 'GET';
+      return request(method, path, opts.body != null ? opts.body : null, opts);
+    },
+    statusCenter: function () {
+      return request('GET', '/api/status-center');
+    },
+    onboardingProgress: function () {
+      return request('GET', '/api/onboarding/progress');
+    },
+    integrationsHealth: function () {
+      return request('GET', '/api/integrations/health');
+    },
+    realtimeStreamUrl: function () {
+      var token = getToken();
+      if (!token) return null;
+      return BASE + '/api/realtime/stream?token=' + encodeURIComponent(token);
+    },
 
     auth: {
       login: function (email, password) {
@@ -196,6 +215,8 @@
       getEvents: function (params) {
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        if (params && params.page != null) q.push('page=' + encodeURIComponent(params.page));
+        if (params && params.pageSize != null) q.push('pageSize=' + encodeURIComponent(params.pageSize));
         return request('GET', '/api/supplier/events' + (q.length ? '?' + q.join('&') : ''));
       },
       setEventStatus: function (eventId, status, amount) {
@@ -237,6 +258,8 @@
         if (params && params.role) q.push('role=' + encodeURIComponent(params.role));
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
         if (params && params.search) q.push('search=' + encodeURIComponent(params.search));
+        if (params && params.page != null) q.push('page=' + encodeURIComponent(params.page));
+        if (params && params.pageSize != null) q.push('pageSize=' + encodeURIComponent(params.pageSize));
         return request('GET', '/api/admin/users' + (q.length ? '?' + q.join('&') : ''));
       },
       resetUserPassword: function (userId) {
@@ -249,6 +272,8 @@
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
         if (params && params.search) q.push('search=' + encodeURIComponent(params.search));
+        if (params && params.page != null) q.push('page=' + encodeURIComponent(params.page));
+        if (params && params.pageSize != null) q.push('pageSize=' + encodeURIComponent(params.pageSize));
         return request('GET', '/api/admin/offers' + (q.length ? '?' + q.join('&') : ''));
       },
       setOfferStatus: function (offerId, status) {
@@ -266,6 +291,8 @@
       getEvents: function (params) {
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        if (params && params.page != null) q.push('page=' + encodeURIComponent(params.page));
+        if (params && params.pageSize != null) q.push('pageSize=' + encodeURIComponent(params.pageSize));
         return request('GET', '/api/admin/events' + (q.length ? '?' + q.join('&') : ''));
       },
       setEventStatus: function (eventId, status, amount) {

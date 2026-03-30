@@ -156,6 +156,7 @@
     <div id="footer-placeholder"></div>
     <script src="footer-include.js"></script>
     <script src="api.js"></script>
+    <script src="validation.js"></script>
     <script src="script.js"></script>
     <script>
     (function() {
@@ -235,7 +236,12 @@
                     e.preventDefault();
                     var amountEl = document.getElementById('withdrawAmount');
                     var amount = amountEl ? parseFloat(amountEl.value) : 0;
+                    if (window.FormValidation && amountEl) window.FormValidation.clear(amountEl);
                     if (withdrawError) { withdrawError.style.display = 'none'; withdrawError.textContent = ''; }
+                    if (!Number.isFinite(amount) || amount <= 0) {
+                        if (window.FormValidation && amountEl) window.FormValidation.set(amountEl, 'Введите корректную сумму');
+                        return;
+                    }
                     if (withdrawSubmitBtn) withdrawSubmitBtn.disabled = true;
                     window.RealCPA.affiliate.requestPayout(amount).then(function() {
                         closeModal('withdrawModal');

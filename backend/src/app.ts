@@ -13,6 +13,10 @@ import eventsRoutes from './routes/events';
 import pagesRoutes from './routes/pages';
 import adminRoutes from './routes/admin';
 import restoreAdminRoutes from './routes/restore-admin';
+import statusCenterRoutes from './routes/status-center';
+import realtimeRoutes from './routes/realtime';
+import onboardingRoutes from './routes/onboarding';
+import integrationsRoutes from './routes/integrations';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -30,6 +34,10 @@ app.use('/api/events', eventsRoutes);
 app.use('/api/pages', pagesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/restore-admin', restoreAdminRoutes);
+app.use('/api/status-center', statusCenterRoutes);
+app.use('/api/realtime', realtimeRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/integrations', integrationsRoutes);
 app.use('/t', trackingRoutes);
 
 app.get('/health', (_req, res) => {

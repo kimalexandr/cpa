@@ -9,9 +9,15 @@
 <body class="dashboard-page fact-theme">
   <main class="container" style="padding:40px 0;">
     <h1>Быстрый старт в 3 шага</h1>
+    <div class="dashboard-block" style="margin-bottom:12px;">
+      <div id="onboardingProgressText">Прогресс: 0/3</div>
+      <div style="height:8px;background:#1e293b;border-radius:999px;overflow:hidden;margin-top:8px;">
+        <div id="onboardingProgressBar" style="height:100%;width:0%;background:#2563eb;"></div>
+      </div>
+    </div>
     <div id="onboardingSteps" class="connections-cards"></div>
     <div style="margin-top:16px;">
-      <button id="onboardingDoneBtn" class="btn btn-primary" type="button">Перейти в кабинет</button>
+      <button id="onboardingDoneBtn" class="btn btn-primary" type="button">Сделать следующий шаг</button>
     </div>
   </main>
   <script src="api.js"></script>
@@ -20,23 +26,32 @@
     if (!window.RealCPA || !window.RealCPA.isLoggedIn()) { window.location.href = 'login.html'; return; }
     var role = (new URLSearchParams(window.location.search)).get('role') || window.RealCPA.getRole() || 'affiliate';
     var wrap = document.getElementById('onboardingSteps');
-    var items = role === 'supplier'
-      ? [
-          ['Создайте оффер', 'create-offer.html', 'Создать'],
-          ['Активируйте оффер', 'dashboard-supplier-offers.html', 'Мои офферы'],
-          ['Просмотрите заявки', 'dashboard-supplier-requests.html', 'Заявки']
-        ]
-      : [
-          ['Подключитесь к офферу', 'offers.html', 'Каталог'],
-          ['Сделайте первый клик', 'dashboard-affiliate-connections.html', 'Мои подключения'],
-          ['Отправьте тестовый лид', 'dashboard-affiliate-connections.html', 'Postback тест']
-        ];
-    wrap.innerHTML = items.map(function(it, idx) {
-      return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + (idx + 1) + ') ' + it[0] + '</h2><a class="btn btn-sm btn-primary" href="' + it[1] + '">' + it[2] + '</a></div></div>';
-    }).join('');
+    var nextActionLink = role === 'supplier' ? 'dashboard-supplier.html' : 'dashboard-affiliate.html';
+    function renderFromProgress(progress) {
+      var done = progress && progress.done ? progress.done : 0;
+      var total = progress && progress.total ? progress.total : 3;
+      var steps = progress && Array.isArray(progress.steps) ? progress.steps : [];
+      var pct = total ? Math.round(done * 100 / total) : 0;
+      var text = document.getElementById('onboardingProgressText');
+      var bar = document.getElementById('onboardingProgressBar');
+      if (text) text.textContent = 'Прогресс: ' + done + '/' + total;
+      if (bar) bar.style.width = pct + '%';
+      wrap.innerHTML = steps.map(function(it, idx) {
+        var mark = it.done ? ' <span class="offer-badge offer-badge-approved">Готово</span>' : '';
+        if (!it.done && !nextActionLink) nextActionLink = it.actionLink;
+        return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + (idx + 1) + ') ' + it.title + mark + '</h2><a class="btn btn-sm btn-primary" href="' + it.actionLink + '">' + (it.done ? 'Проверить' : 'Сделать') + '</a></div></div>';
+      }).join('');
+      var firstPending = steps.find(function(s) { return !s.done; });
+      nextActionLink = firstPending ? firstPending.actionLink : (role === 'supplier' ? 'dashboard-supplier.html' : 'dashboard-affiliate.html');
+      var btn = document.getElementById('onboardingDoneBtn');
+      if (btn) btn.textContent = firstPending ? 'Сделать следующий шаг' : 'Перейти в кабинет';
+    }
+    if (window.RealCPA.onboardingProgress) {
+      window.RealCPA.onboardingProgress().then(renderFromProgress).catch(function() {});
+    }
     document.getElementById('onboardingDoneBtn').addEventListener('click', function() {
       try { localStorage.setItem('onboarding_' + role + '_done', '1'); } catch (e) {}
-      window.location.href = role === 'supplier' ? 'dashboard-supplier.html' : 'dashboard-affiliate.html';
+      window.location.href = nextActionLink || (role === 'supplier' ? 'dashboard-supplier.html' : 'dashboard-affiliate.html');
     });
   })();
   </script>

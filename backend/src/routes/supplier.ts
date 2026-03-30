@@ -363,7 +363,9 @@ router.patch('/affiliate-participation/:id', async (req: AuthRequest, res: Respo
     body: status === 'rejected' && reason
       ? ('Оффер: ' + p.offer.title + '. Причина: ' + reason)
       : ('Оффер: ' + p.offer.title),
-    link: '/offer.html?id=' + encodeURIComponent(p.offerId),
+    link: status === 'rejected'
+      ? ('/offer.html?id=' + encodeURIComponent(p.offerId) + '&retry=1')
+      : ('/offer.html?id=' + encodeURIComponent(p.offerId)),
   });
   res.json(updated);
 });
@@ -459,6 +461,11 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
 router.get('/events', async (req: AuthRequest, res: Response) => {
   try {
     const status = (req.query.status as string) || 'pending';
+    const pageRaw = Number(req.query.page);
+    const pageSizeRaw = Number(req.query.pageSize);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw) ? Math.max(1, Math.min(100, Math.floor(pageSizeRaw))) : 20;
+    const skip = (page - 1) * pageSize;
     const offers = await prisma.offer.findMany({
       where: { supplierId: req.user!.userId },
       select: { id: true },
@@ -475,7 +482,8 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
     };
     if (status === 'pending' || status === 'approved' || status === 'rejected') where.status = status as EventStatus;
 
-    const events = await prisma.event.findMany({
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
       where,
       include: {
         trackingLink: {
@@ -487,9 +495,13 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 200,
-    });
-    res.json(events.map((e) => {
+      skip,
+      take: pageSize,
+    }),
+      prisma.event.count({ where }),
+    ]);
+    res.json({
+      items: events.map((e) => {
       const link = e.trackingLink;
       return {
         id: e.id,
@@ -504,7 +516,14 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
         token: link.token,
         affiliate: link.affiliate,
       };
-    }));
+    }),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
   } catch (e) {
     console.error('GET /api/supplier/events:', e);
     res.status(500).json({ error: 'Ошибка сервера' });

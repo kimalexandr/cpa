@@ -43,7 +43,7 @@
                 <input type="text" id="offerSearch" placeholder="Поиск по названию">
                 <select id="offerStatusFilter">
                     <option value="">Все статусы</option>
-                    <option value="draft">Черновик</option>
+                    <option value="draft">На модерации</option>
                     <option value="active">Активен</option>
                     <option value="paused">Приостановлен</option>
                     <option value="closed">Закрыт</option>
@@ -92,10 +92,11 @@
             if (status) params.status = status;
             if (search) params.search = search;
             window.RealCPA.admin.offers(params)
-                .then(function(list) {
+                .then(function(resp) {
+                    var list = Array.isArray(resp) ? resp : ((resp && resp.items) ? resp.items : []);
                     var tbody = document.getElementById('offersTableBody');
                     if (!list.length) { tbody.innerHTML = '<tr><td colspan="10">Нет офферов</td></tr>'; return; }
-                    var statusLabels = { draft: 'Черновик', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
+                    var statusLabels = { draft: 'На модерации', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
                     tbody.innerHTML = list.map(function(o) {
                         var cat = o.category ? o.category.name : '—';
                         var sup = o.supplier ? (o.supplier.name || o.supplier.email) : '—';
@@ -106,7 +107,7 @@
                         var statusCl = o.status === 'active' ? 'admin-badge-active' : (o.status === 'draft' ? 'admin-badge-pending' : 'admin-badge-blocked');
                         var actions = '';
                         if (o.status === 'draft') {
-                            actions = '<button type="button" class="btn btn-primary btn-sm admin-offer-confirm" data-offer-id="' + (o.id || '') + '" title="Активировать оффер">Подтвердить</button> ';
+                            actions = '<button type="button" class="btn btn-primary btn-sm admin-offer-confirm" data-offer-id="' + (o.id || '') + '" title="Одобрить публикацию">Одобрить</button> ';
                         }
                         actions += '<button type="button" class="btn btn-secondary btn-sm admin-offer-rating" data-offer-id="' + (o.id || '') + '" data-rating="' + (o.rating != null ? o.rating : '') + '" data-reviews="' + (o.reviewsCount != null ? o.reviewsCount : '') + '" title="Изм. рейтинг и отзывы">Рейтинг</button>';
                         return '<tr><td>' + (o.id || '').slice(0, 8) + '…</td><td><a href="../offer.html?id=' + encodeURIComponent(o.id) + '">' + (o.title || '—').slice(0, 40) + '</a></td><td>' + sup + '</td><td>' + cat + '</td><td><span class="admin-badge ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span></td><td>' + rate + '</td><td>' + rating + '</td><td>' + reviews + '</td><td>' + updated + '</td><td>' + actions + '</td></tr>';

@@ -62,6 +62,10 @@
                     <span class="admin-card-label">Заявки на модерации</span>
                     <span class="admin-card-value" id="metricModeration">—</span>
                 </div>
+                <div class="admin-card admin-card-metric" data-link="offers.html">
+                    <span class="admin-card-label">Офферы на модерации</span>
+                    <span class="admin-card-value" id="metricOffersModeration">—</span>
+                </div>
                 <div class="admin-card admin-card-metric">
                     <span class="admin-card-label">Лиды (новые / одобр. / откл.)</span>
                     <span class="admin-card-value" id="metricLeads">—</span>
@@ -105,10 +109,11 @@
                 document.getElementById('metricAdmins').textContent = d.users.admins;
                 document.getElementById('metricOffersActive').textContent = d.offers.active;
                 document.getElementById('metricModeration').textContent = d.moderation.participationsPending;
+                document.getElementById('metricOffersModeration').textContent = d.moderation.offersOnModeration;
                 document.getElementById('metricLeads').textContent = d.leads.new + ' / ' + d.leads.approved + ' / ' + d.leads.rejected;
                 document.getElementById('metricPayouts').textContent = d.payouts.pendingCount;
                 document.getElementById('metricPaidSum').textContent = d.payouts.paidSum + ' ₽';
-                if (d.moderation.participationsPending > 0) document.getElementById('adminCtaModeration').style.display = 'inline-flex';
+                if (d.moderation.participationsPending > 0 || d.moderation.offersOnModeration > 0) document.getElementById('adminCtaModeration').style.display = 'inline-flex';
             })
             .catch(function(err) {
                 document.getElementById('adminDashboardCards').innerHTML = '<p class="admin-error">Не удалось загрузить метрики: ' + (err.message || 'ошибка') + '</p>';

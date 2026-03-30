@@ -40,7 +40,7 @@ router.get('/dashboard', async (_req: AuthRequest, res: Response) => {
     res.json({
       users: { affiliates, suppliers, admins },
       offers: { active: activeOffers, draft: draftOffers, total: offersCounts.reduce((a, c) => a + c._count.id, 0) },
-      moderation: { participationsPending, offersOnModeration: 0 },
+      moderation: { participationsPending, offersOnModeration: draftOffers },
       leads: { new: leadsNew, approved: leadsApproved, rejected: leadsRejected },
       payouts: { pendingCount: payoutsPending, paidSum: Number(payoutsSum._sum.amount ?? 0) },
     });
@@ -244,6 +244,12 @@ router.post('/categories/import', async (req: AuthRequest, res: Response) => {
 /** Список пользователей */
 router.get('/users', async (req: AuthRequest, res: Response) => {
   try {
+    const pageRaw = Number(req.query.page);
+    const pageSizeRaw = Number(req.query.pageSize);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw) ? Math.max(1, Math.min(100, Math.floor(pageSizeRaw))) : 20;
+    const skip = (page - 1) * pageSize;
+
     const role = req.query.role as string | undefined;
     const status = req.query.status as string | undefined;
     const search = req.query.search as string | undefined;
@@ -259,7 +265,8 @@ router.get('/users', async (req: AuthRequest, res: Response) => {
       ];
     }
 
-    const users = await prisma.user.findMany({
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
       where,
       select: {
         id: true,
@@ -271,10 +278,21 @@ router.get('/users', async (req: AuthRequest, res: Response) => {
         updatedAt: true,
       },
       orderBy: { createdAt: 'desc' },
-      take: 200,
-    });
+      skip,
+      take: pageSize,
+    }),
+      prisma.user.count({ where }),
+    ]);
 
-    res.json(users);
+    res.json({
+      items: users,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
   } catch (e) {
     console.error('Admin users list error:', e);
     res.status(500).json({ error: 'Ошибка загрузки пользователей' });
@@ -434,6 +452,12 @@ router.delete('/users/:id', async (req: AuthRequest, res: Response) => {
 /** Список офферов (админ) */
 router.get('/offers', async (req: AuthRequest, res: Response) => {
   try {
+    const pageRaw = Number(req.query.page);
+    const pageSizeRaw = Number(req.query.pageSize);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw) ? Math.max(1, Math.min(100, Math.floor(pageSizeRaw))) : 20;
+    const skip = (page - 1) * pageSize;
+
     const status = req.query.status as string | undefined;
     const search = req.query.search as string | undefined;
 
@@ -443,17 +467,29 @@ router.get('/offers', async (req: AuthRequest, res: Response) => {
       where.title = { contains: search.trim(), mode: 'insensitive' };
     }
 
-    const offers = await prisma.offer.findMany({
+    const [offers, total] = await Promise.all([
+      prisma.offer.findMany({
       where,
       include: {
         category: { select: { id: true, name: true, slug: true } },
         supplier: { select: { id: true, email: true, name: true } },
       },
       orderBy: { updatedAt: 'desc' },
-      take: 200,
-    });
+      skip,
+      take: pageSize,
+    }),
+      prisma.offer.count({ where }),
+    ]);
 
-    res.json(offers);
+    res.json({
+      items: offers,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
   } catch (e) {
     console.error('Admin offers list error:', e);
     res.status(500).json({ error: 'Ошибка загрузки офферов' });
@@ -586,10 +622,16 @@ router.patch('/payouts/:id', async (req: AuthRequest, res: Response) => {
 router.get('/events', async (req: AuthRequest, res: Response) => {
   try {
     const status = (req.query.status as string) || 'pending';
+    const pageRaw = Number(req.query.page);
+    const pageSizeRaw = Number(req.query.pageSize);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw) ? Math.max(1, Math.min(100, Math.floor(pageSizeRaw))) : 20;
+    const skip = (page - 1) * pageSize;
     const where: { eventType: { in: EventType[] }; status?: EventStatus } = { eventType: { in: [EventType.lead, EventType.sale] } };
     if (status === 'pending' || status === 'approved' || status === 'rejected') where.status = status as EventStatus;
 
-    const events = await prisma.event.findMany({
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
       where,
       include: {
         trackingLink: {
@@ -601,9 +643,13 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 200,
-    });
-    res.json(events.map((e) => {
+      skip,
+      take: pageSize,
+    }),
+      prisma.event.count({ where }),
+    ]);
+    res.json({
+      items: events.map((e) => {
       const link = e.trackingLink;
       return {
         id: e.id,
@@ -619,7 +665,14 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
         affiliate: link.affiliate,
         supplier: link.offer.supplier,
       };
-    }));
+    }),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
   } catch (e) {
     console.error('Admin GET events error:', e);
     const msg = e instanceof Error ? e.message : String(e);
@@ -875,7 +928,9 @@ router.patch('/moderation/participations/:id', async (req: AuthRequest, res: Res
       body: status === 'rejected' && reason
         ? ('Оффер: ' + p.offer.title + '. Причина: ' + reason)
         : ('Оффер: ' + p.offer.title),
-      link: '/offer.html?id=' + encodeURIComponent(p.offerId),
+      link: status === 'rejected'
+        ? ('/offer.html?id=' + encodeURIComponent(p.offerId) + '&retry=1')
+        : ('/offer.html?id=' + encodeURIComponent(p.offerId)),
     });
     res.json(updated);
   } catch (e) {

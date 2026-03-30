@@ -83,6 +83,9 @@
                 <h1>Мои офферы</h1>
                 <a href="create-offer.html" class="btn btn-primary"><i class="fas fa-plus"></i> Создать оффер</a>
             </div>
+            <div class="dashboard-block" id="moderationHintBlock" style="display:none; margin-bottom:1rem;">
+                <p class="dashboard-block-desc">Оффер отправлен на модерацию. Статус «На модерации» означает, что администратор ещё не одобрил публикацию.</p>
+            </div>
             <div class="dashboard-empty-state" id="supplierOffersEmpty">
                 <i class="fas fa-briefcase"></i>
                 <p>Здесь будут отображаться ваши офферы. Добавьте первый оффер, чтобы партнёры могли к нему подключаться.</p>
@@ -153,7 +156,7 @@
                     }
                     emptyEl.style.display = 'none';
                     listEl.style.display = 'block';
-                    var statusLabels = { draft: 'Черновик', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
+                    var statusLabels = { draft: 'На модерации', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
                     tbody.innerHTML = offers.map(function(o) {
                         var cat = o.category ? o.category.name : '—';
                         var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
@@ -162,7 +165,7 @@
                         var statusBtn = '';
                         if (o.status === 'active') {
                             statusBtn = '<button type="button" class="btn btn-sm btn-outline-warning btn-offer-status" data-id="' + encodeURIComponent(o.id) + '" data-status="paused" title="Снять с публикации">Снять с публикации</button>';
-                        } else if (o.status === 'paused' || o.status === 'draft') {
+                        } else if (o.status === 'paused') {
                             statusBtn = '<button type="button" class="btn btn-sm btn-outline-success btn-offer-status" data-id="' + encodeURIComponent(o.id) + '" data-status="active" title="Сделать активным">В активные</button>';
                         }
                         var title = normalizeIpUrlText(o.title || '—');
@@ -206,6 +209,11 @@
                     var p = emptyEl.querySelector('p');
                     if (p) p.textContent = 'Ошибка загрузки: ' + (err.message || 'попробуйте обновить страницу');
                 });
+        }
+        var qs = new URLSearchParams(window.location.search);
+        if (qs.get('status') === 'moderation') {
+            var hint = document.getElementById('moderationHintBlock');
+            if (hint) hint.style.display = 'block';
         }
         loadMyOffers();
     })();

@@ -1905,6 +1905,13 @@ body.fact-theme .auth-divider::after {
     box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
 }
 
+.offer-next-step {
+    margin: 0.35rem 0 0.5rem;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
 /* Бейдж роли в шапке */
 .user-role-badge {
     display: inline-block;
