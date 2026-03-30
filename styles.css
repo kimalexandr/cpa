@@ -64,6 +64,28 @@ body.fact-theme pre {
     color: var(--fact-text);
 }
 
+body.fact-theme footer,
+body.fact-theme .footer {
+    background: var(--fact-surface);
+    border-top: 1px solid var(--fact-border);
+}
+
+body.fact-theme .footer-bottom {
+    background: #0a0e18;
+    border-top: 1px solid var(--fact-border);
+    color: var(--fact-text-muted);
+}
+
+body.fact-theme .footer-brand p,
+body.fact-theme .footer-col h4,
+body.fact-theme .footer-col ul a {
+    color: var(--fact-text-muted);
+}
+
+body.fact-theme .footer-col ul a:hover {
+    color: var(--fact-accent);
+}
+
 body.fact-theme .header {
     background-color: rgba(11, 15, 26, 0.95);
     border-bottom-color: var(--fact-border);
@@ -983,6 +1005,50 @@ body.role-admin #navAdminLink { display: block !important; }
     padding-top: 2rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     opacity: 0.8;
+}
+
+/* Общий (partials/footer.html) футер в тёмной теме */
+body.fact-theme .footer {
+    background-color: var(--fact-surface) !important;
+    color: var(--fact-text) !important;
+    border-top: 1px solid var(--fact-border);
+}
+
+body.fact-theme .footer-section h4,
+body.fact-theme .footer-section p,
+body.fact-theme .footer-bottom p {
+    color: rgba(232, 234, 240, 0.92) !important;
+}
+
+body.fact-theme .footer-section a,
+body.fact-theme .social-link {
+    color: rgba(232, 234, 240, 0.78) !important;
+    opacity: 1;
+}
+
+body.fact-theme .footer-section a:hover,
+body.fact-theme .social-link:hover {
+    color: var(--fact-accent) !important;
+}
+
+body.fact-theme .footer-bottom {
+    border-top-color: var(--fact-border) !important;
+    color: var(--fact-text-muted) !important;
+}
+
+/* Кнопки в тёмной теме: убираем белые подложки */
+body.fact-theme .btn-secondary,
+body.fact-theme .btn-outline {
+    background-color: #1a2340 !important;
+    color: #dbe4ff !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.fact-theme .btn-secondary:hover,
+body.fact-theme .btn-outline:hover {
+    background-color: #24315a !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
 }
 
 /* Страница входа/регистрации */
