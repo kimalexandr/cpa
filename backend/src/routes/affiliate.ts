@@ -63,7 +63,21 @@ router.post('/offers/:id/join', async (req: AuthRequest, res: Response) => {
       },
     });
     if (existing) {
-      res.status(400).json({ error: 'Заявка уже подана', participation: existing });
+      if (existing.status === 'pending') {
+        res.status(400).json({ error: 'Заявка уже подана', participation: existing });
+        return;
+      }
+      if (existing.status === 'approved') {
+        res.status(400).json({ error: 'Вы уже подключены к этому офферу', participation: existing });
+        return;
+      }
+      // Позволяем подать заявку повторно после отклонения/блокировки.
+      const reopened = await prisma.affiliateOfferParticipation.update({
+        where: { id: existing.id },
+        data: { status: 'pending' },
+        include: { offer: { select: { id: true, title: true, status: true } } },
+      });
+      res.json({ ...reopened, resubmitted: true });
       return;
     }
     const participation = await prisma.affiliateOfferParticipation.create({
