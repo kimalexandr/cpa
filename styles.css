@@ -948,10 +948,11 @@ body.role-admin #navAdminLink { display: block !important; }
 
 /* Футер */
 .footer {
-    background-color: var(--text-color);
-    color: var(--white);
+    background-color: var(--fact-surface);
+    color: var(--fact-text);
     padding: 3rem 0 1rem;
     margin-top: 4rem;
+    border-top: 1px solid var(--fact-border);
 }
 
 .footer-content {
@@ -974,14 +975,15 @@ body.role-admin #navAdminLink { display: block !important; }
 }
 
 .footer-section a {
-    color: var(--white);
+    color: var(--fact-text-muted);
     text-decoration: none;
-    opacity: 0.8;
+    opacity: 1;
     transition: opacity 0.3s;
 }
 
 .footer-section a:hover {
     opacity: 1;
+    color: var(--fact-accent);
 }
 
 .social-links {
@@ -991,20 +993,22 @@ body.role-admin #navAdminLink { display: block !important; }
 
 .social-link {
     font-size: 1.5rem;
-    color: var(--white);
-    opacity: 0.8;
+    color: var(--fact-text-muted);
+    opacity: 1;
     transition: opacity 0.3s;
 }
 
 .social-link:hover {
     opacity: 1;
+    color: var(--fact-accent);
 }
 
 .footer-bottom {
     text-align: center;
     padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    opacity: 0.8;
+    border-top: 1px solid var(--fact-border);
+    color: var(--fact-text-muted);
+    opacity: 1;
 }
 
 /* Общий (partials/footer.html) футер в тёмной теме */
@@ -3365,6 +3369,78 @@ body.fact-theme .auth-divider::after {
 @media (max-width: 900px) {
     .offer-detail-layout { grid-template-columns: 1fr; }
     .offer-sidebar { position: static; }
+}
+
+/* Читаемость страницы оффера в тёмной теме */
+body.fact-theme .offer-sidebar,
+body.fact-theme .offer-kpi-card,
+body.fact-theme .offer-collapse-section {
+    background: var(--fact-surface) !important;
+    border: 1px solid var(--fact-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+body.fact-theme .offer-sidebar-title,
+body.fact-theme .offer-kpi-value,
+body.fact-theme .offer-section-content,
+body.fact-theme .offer-traffic-list,
+body.fact-theme .offer-traffic-subtitle {
+    color: var(--fact-text) !important;
+}
+
+body.fact-theme .offer-sidebar-url,
+body.fact-theme .offer-sidebar-footer,
+body.fact-theme .offer-kpi-label {
+    color: rgba(232, 234, 240, 0.88) !important;
+}
+
+body.fact-theme .offer-sidebar-category {
+    background: rgba(255, 193, 7, 0.16) !important;
+    color: #ffd166 !important;
+}
+
+body.fact-theme .offer-collapse-head {
+    background: #1a2340 !important;
+    color: var(--fact-text) !important;
+}
+
+body.fact-theme .offer-collapse-head span {
+    color: var(--fact-text) !important;
+    opacity: 1 !important;
+}
+
+body.fact-theme .offer-collapse-head:hover,
+body.fact-theme .offer-collapse-section.active .offer-collapse-head {
+    background: #24315a !important;
+}
+
+body.fact-theme .offer-collapse-head i {
+    color: var(--fact-text-muted) !important;
+}
+
+body.fact-theme .offer-collapse-body {
+    border-top-color: var(--fact-border) !important;
+}
+
+body.fact-theme .offer-rates-table tr,
+body.fact-theme .offer-conditions-table tr {
+    border-bottom-color: var(--fact-border) !important;
+}
+
+body.fact-theme .offer-rates-table td,
+body.fact-theme .offer-conditions-table td,
+body.fact-theme .offer-table-value,
+body.fact-theme .offer-section-content p,
+body.fact-theme .offer-section-content li {
+    color: var(--fact-text) !important;
+}
+
+body.fact-theme .offer-section-content a {
+    color: var(--fact-accent) !important;
+}
+
+body.fact-theme .offer-copy-inn {
+    color: var(--fact-text-muted) !important;
 }
 
 /* Модальное окно «Выбор региона» */

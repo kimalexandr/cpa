@@ -21,18 +21,46 @@
         window.RealCPA.admin.users(params).then(function(list) {
             var tbody = document.getElementById('usersTableBody');
             if (!list.length) {
-                tbody.innerHTML = '<tr><td colspan="6">Нет пользователей</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7">Нет пользователей</td></tr>';
                 return;
             }
             var roleLabels = { affiliate: 'Аффилиат', supplier: 'Поставщик', admin: 'Admin' };
-            var statusLabels = { active: 'Активен', blocked: 'Заблокирован' };
+            var statusLabels = { active: 'Активен', blocked: 'Заблокирован', pending_email_confirmation: 'Ожидает подтверждения' };
             tbody.innerHTML = list.map(function(user) {
                 var created = user.createdAt ? new Date(user.createdAt).toLocaleDateString('ru') : '—';
                 var statusCl = user.status === 'active' ? 'admin-badge-active' : 'admin-badge-blocked';
-                return '<tr><td>' + (user.id || '').slice(0, 8) + '</td><td>' + (user.name || '—') + '</td><td>' + (user.email || '') + '</td><td><span class="admin-badge">' + (roleLabels[user.role] || user.role) + '</span></td><td><span class="admin-badge ' + statusCl + '">' + (statusLabels[user.status] || user.status) + '</span></td><td>' + created + '</td></tr>';
+                var disableReset = user.role === 'admin';
+                var btnTitle = disableReset ? 'Для админов сброс отключён' : 'Сбросить пароль и отправить временный пароль на email';
+                var actionHtml = '<button type="button" class="btn btn-sm btn-outline user-reset-pass-btn" data-user-id="' + user.id + '" data-user-email="' + (user.email || '') + '" ' + (disableReset ? 'disabled' : '') + ' title="' + btnTitle + '">Сбросить пароль</button>';
+                return '<tr><td>' + (user.id || '').slice(0, 8) + '</td><td>' + (user.name || '—') + '</td><td>' + (user.email || '') + '</td><td><span class="admin-badge">' + (roleLabels[user.role] || user.role) + '</span></td><td><span class="admin-badge ' + statusCl + '">' + (statusLabels[user.status] || user.status) + '</span></td><td>' + created + '</td><td>' + actionHtml + '</td></tr>';
             }).join('');
+            bindResetButtons();
         }).catch(function(err) {
-            document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="6">Ошибка: ' + (err.message || '') + '</td></tr>';
+            document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="7">Ошибка: ' + (err.message || '') + '</td></tr>';
+        });
+    }
+
+    function bindResetButtons() {
+        var buttons = document.querySelectorAll('.user-reset-pass-btn');
+        buttons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var userId = btn.getAttribute('data-user-id');
+                var userEmail = btn.getAttribute('data-user-email') || '';
+                if (!userId) return;
+                var ok = window.confirm('Сбросить пароль для ' + userEmail + '?\nПользователю будет отправлен временный пароль.');
+                if (!ok) return;
+                var oldText = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = 'Сброс...';
+                window.RealCPA.admin.resetUserPassword(userId).then(function(resp) {
+                    window.alert((resp && resp.message) ? resp.message : 'Пароль сброшен.');
+                }).catch(function(err) {
+                    window.alert('Ошибка сброса пароля: ' + (err.message || 'неизвестная ошибка'));
+                }).finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = oldText || 'Сбросить пароль';
+                });
+            });
         });
     }
     document.getElementById('userApplyFilters').addEventListener('click', load);

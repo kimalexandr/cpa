@@ -228,6 +228,9 @@
         if (params && params.search) q.push('search=' + encodeURIComponent(params.search));
         return request('GET', '/api/admin/users' + (q.length ? '?' + q.join('&') : ''));
       },
+      resetUserPassword: function (userId) {
+        return request('POST', '/api/admin/users/' + encodeURIComponent(userId) + '/reset-password', {});
+      },
       offers: function (params) {
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));

@@ -290,7 +290,31 @@
         }
         document.getElementById('profilePhoneLink').addEventListener('click', function(e) {
             e.preventDefault();
-            alert('Указание телефона будет доступно в следующей версии.');
+            var currentPhone = (document.getElementById('profilePhone').textContent || '').trim();
+            var initial = currentPhone && currentPhone !== '—' ? currentPhone : '';
+            var phone = prompt('Введите номер телефона (например, +7 999 123-45-67):', initial);
+            if (phone === null) return;
+            var normalized = phone.trim();
+            if (!normalized) {
+                // Пустое значение = удалить номер
+                window.RealCPA.patchMe({ phone: null }).then(function(user) {
+                    document.getElementById('profilePhone').textContent = user.phone || '—';
+                    document.getElementById('profilePhoneLink').textContent = 'Указать номер телефона';
+                }).catch(function(err) {
+                    alert(err.message || (err.payload && err.payload.error) || 'Ошибка сохранения телефона');
+                });
+                return;
+            }
+            if (!/^[0-9+\-\s()]{6,25}$/.test(normalized)) {
+                alert('Некорректный формат номера телефона.');
+                return;
+            }
+            window.RealCPA.patchMe({ phone: normalized }).then(function(user) {
+                document.getElementById('profilePhone').textContent = user.phone || '—';
+                document.getElementById('profilePhoneLink').textContent = 'Изменить номер телефона';
+            }).catch(function(err) {
+                alert(err.message || (err.payload && err.payload.error) || 'Ошибка сохранения телефона');
+            });
         });
         document.getElementById('profileDeleteAccount').addEventListener('click', function(e) {
             e.preventDefault();
@@ -308,14 +332,40 @@
                 el.checked = profile && profile[key] !== false;
             });
         }
-        function saveNotifyToProfile() {
-            if (window.RealCPA.getRole() !== 'affiliate') return;
-            window.RealCPA.patchAffiliateProfile({
+        function getNotifyPayloadFromUI() {
+            return {
                 notifyNews: document.getElementById('notifyNews').checked,
                 notifySystem: document.getElementById('notifySystem').checked,
                 notifyParticipation: document.getElementById('notifyParticipation').checked,
                 notifyPayouts: document.getElementById('notifyPayouts').checked
-            }).catch(function() {});
+            };
+        }
+        function getNotifyStorageKey() {
+            var u = (typeof window.RealCPA !== 'undefined' && window.RealCPA.getUser) ? window.RealCPA.getUser() : null;
+            var uid = u && u.id ? String(u.id) : 'guest';
+            return 'realcpa_notify_settings_' + uid;
+        }
+        function loadNotifyFromLocalStorage() {
+            try {
+                var raw = localStorage.getItem(getNotifyStorageKey());
+                if (!raw) return null;
+                var parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            } catch (e) { return null; }
+        }
+        function saveNotifyToLocalStorage(payload) {
+            try { localStorage.setItem(getNotifyStorageKey(), JSON.stringify(payload)); } catch (e) {}
+        }
+        function saveNotifyToProfile() {
+            var payload = getNotifyPayloadFromUI();
+            if (window.RealCPA.getRole() === 'affiliate') {
+                window.RealCPA.patchAffiliateProfile(payload)
+                    .then(function() { saveNotifyToLocalStorage(payload); })
+                    .catch(function() {});
+                return;
+            }
+            // Для admin/supplier сохраняем локально (персистентно в браузере)
+            saveNotifyToLocalStorage(payload);
         }
         if (window.RealCPA.getRole() === 'affiliate') {
             var payoutSection = document.getElementById('profilePayoutSection');
@@ -324,9 +374,12 @@
             if (payoutSection) payoutSection.style.display = 'block';
             window.RealCPA.getAffiliateProfile().then(function(p) {
                 setNotifyFromProfile(p);
+                saveNotifyToLocalStorage(getNotifyPayloadFromUI());
                 if (payoutDetailsEl && p && p.payoutDetails != null) payoutDetailsEl.value = p.payoutDetails;
             }).catch(function() {
-                setNotifyFromProfile(null);
+                var localNotify = loadNotifyFromLocalStorage();
+                if (localNotify) setNotifyFromProfile(localNotify);
+                else setNotifyFromProfile({ notifyNews: true, notifySystem: true, notifyParticipation: true, notifyPayouts: true });
             });
             if (savePayoutBtn && payoutDetailsEl) {
                 savePayoutBtn.addEventListener('click', function() {
@@ -341,7 +394,9 @@
                 });
             }
         } else {
-            setNotifyFromProfile(null);
+            var localNotify = loadNotifyFromLocalStorage();
+            if (localNotify) setNotifyFromProfile(localNotify);
+            else setNotifyFromProfile({ notifyNews: true, notifySystem: true, notifyParticipation: true, notifyPayouts: true });
         }
         ['notifyNews', 'notifySystem', 'notifyParticipation', 'notifyPayouts'].forEach(function(id) {
             var el = document.getElementById(id);

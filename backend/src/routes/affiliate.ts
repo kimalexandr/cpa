@@ -100,9 +100,11 @@ router.get('/my-offers', async (req: AuthRequest, res: Response) => {
     trackingLinks.forEach((t: { offerId: string; token: string }) => {
       tokenByOfferId[t.offerId] = t.token;
     });
-    const baseUrl =
-      process.env.API_BASE_URL ||
-      (req.protocol && req.get('host') ? `${req.protocol}://${req.get('host')}` : 'http://localhost:3000');
+    // Для пользовательских ссылок приоритет у фактического домена запроса (Host),
+    // чтобы не показывать IP/localhost при наличии прокси (Nginx).
+    const requestBase =
+      req.protocol && req.get('host') ? `${req.protocol}://${req.get('host')}` : '';
+    const baseUrl = requestBase || process.env.API_BASE_URL || 'http://localhost:3000';
     const list = participations.map((p: { offerId: string; [k: string]: unknown }) => ({
       ...p,
       trackingLink: tokenByOfferId[p.offerId] ? baseUrl + '/t/' + tokenByOfferId[p.offerId] : null,

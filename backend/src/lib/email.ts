@@ -115,6 +115,20 @@ export async function sendPayoutPaid(to: string, amount: number, currency: strin
   return sendMail(to, subject, html);
 }
 
+export async function sendAdminPasswordReset(to: string, tempPassword: string): Promise<boolean> {
+  const subject = 'Временный пароль — RealCPA Hub';
+  const html = `
+    <p>Здравствуйте.</p>
+    <p>Администратор сбросил пароль вашей учётной записи.</p>
+    <p><strong>Временный пароль:</strong> <code>${tempPassword}</code></p>
+    <p>Войдите в систему и сразу смените пароль в профиле:</p>
+    <p><a href="${baseUrl}/login.html">${baseUrl}/login.html</a></p>
+    <p>Если вы не запрашивали смену пароля, обратитесь в поддержку.</p>
+    <p>— RealCPA Hub</p>
+  `;
+  return sendMail(to, subject, html);
+}
+
 export function buildResetLink(token: string): string {
   return baseUrl + '/reset-password.html?token=' + encodeURIComponent(token);
 }

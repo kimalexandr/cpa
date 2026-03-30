@@ -1,8 +1,10 @@
 import { Router, Response } from 'express';
 import { PrismaClient, EventType, EventStatus } from '@prisma/client';
 import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
-import { sendPayoutPaid, sendParticipationApproved, sendParticipationRejected } from '../lib/email';
+import { sendAdminPasswordReset, sendPayoutPaid, sendParticipationApproved, sendParticipationRejected } from '../lib/email';
 import { createNotification } from '../lib/notifications';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -276,6 +278,68 @@ router.get('/users', async (req: AuthRequest, res: Response) => {
   } catch (e) {
     console.error('Admin users list error:', e);
     res.status(500).json({ error: 'Ошибка загрузки пользователей' });
+  }
+});
+
+/** Сброс пароля пользователя (админ): временный пароль отправляется на email */
+router.post('/users/:id/reset-password', async (req: AuthRequest, res: Response) => {
+  try {
+    const targetUserId = req.params.id;
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, email: true, name: true, role: true, status: true },
+    });
+    if (!target) {
+      res.status(404).json({ error: 'Пользователь не найден' });
+      return;
+    }
+
+    // Не даём админам сбрасывать пароль другим админам
+    if (target.role === 'admin') {
+      res.status(403).json({ error: 'Сброс пароля администратора запрещён' });
+      return;
+    }
+
+    const tempPassword = crypto.randomBytes(6).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) + 'A1!';
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { passwordHash, status: 'active' },
+    });
+
+    const emailSent = await sendAdminPasswordReset(target.email, tempPassword);
+
+    // Логируем событие: создаём системное уведомление всем админам + пишем в stdout
+    const actorId = req.user!.userId;
+    console.info('[admin-reset-password]', {
+      at: new Date().toISOString(),
+      actorId,
+      targetUserId: target.id,
+      targetEmail: target.email,
+      emailSent,
+    });
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin', status: 'active' },
+      select: { id: true },
+    });
+    await Promise.all(admins.map((a) => createNotification(prisma, {
+      userId: a.id,
+      type: 'system',
+      title: 'Сброс пароля пользователю',
+      body: `Админ ${actorId.slice(0, 8)} сбросил пароль пользователю ${target.email}`,
+      link: '/admin/users.html',
+    })));
+
+    res.json({
+      message: emailSent
+        ? 'Временный пароль сгенерирован и отправлен пользователю на email.'
+        : 'Временный пароль сгенерирован, но письмо не отправлено (SMTP не настроен).',
+      emailSent,
+    });
+  } catch (e) {
+    console.error('Admin reset user password error:', e);
+    res.status(500).json({ error: 'Ошибка сброса пароля' });
   }
 });
 
