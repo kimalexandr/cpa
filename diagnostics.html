@@ -40,6 +40,12 @@
       <h2>Отчёт end-to-end</h2>
       <pre id="diagE2EReport" style="white-space:pre-wrap;word-break:break-word;">—</pre>
     </div>
+    <div class="dashboard-block">
+      <h2>Проверка external_id</h2>
+      <input id="diagExternalId" class="form-input" placeholder="Введите external_id клиента">
+      <button id="diagCheckExternalId" class="btn btn-secondary" type="button">Проверить в событиях</button>
+      <pre id="diagExternalResult" style="white-space:pre-wrap;word-break:break-word;">—</pre>
+    </div>
   </main>
   <script src="api.js"></script>
   <script>
@@ -49,6 +55,7 @@
     var tokenInput = document.getElementById('diagToken');
     var postbackUrl = '';
     var e2eOut = document.getElementById('diagE2EReport');
+    var extOut = document.getElementById('diagExternalResult');
     function setOut(v) { out.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
     function setLight(id, state) {
       var el = document.getElementById(id);
@@ -127,6 +134,20 @@
           e2eOut.textContent = JSON.stringify(report, null, 2);
           setLight('diagPostbackState', 'FAIL');
         });
+    });
+    document.getElementById('diagCheckExternalId').addEventListener('click', function() {
+      var externalId = (document.getElementById('diagExternalId').value || '').trim();
+      if (!externalId) { extOut.textContent = 'Введите external_id'; return; }
+      if (!window.RealCPA || !window.RealCPA.affiliate || !window.RealCPA.affiliate.getEvents) {
+        extOut.textContent = 'Проверка доступна в кабинете аффилиата';
+        return;
+      }
+      window.RealCPA.affiliate.getEvents({ externalId: externalId, page: 1, pageSize: 10 }).then(function(resp) {
+        var items = (resp && resp.items) ? resp.items : [];
+        extOut.textContent = JSON.stringify({ found: items.length, items: items }, null, 2);
+      }).catch(function(e) {
+        extOut.textContent = JSON.stringify({ error: e.message || 'Ошибка проверки' }, null, 2);
+      });
     });
   })();
   </script>

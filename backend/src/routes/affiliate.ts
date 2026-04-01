@@ -342,4 +342,117 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
   }
 });
 
+/** События аффилиата с фильтрами и прозрачным статусом по external_id */
+router.get('/events', async (req: AuthRequest, res: Response) => {
+  try {
+    const statusQ = (req.query.status as string) || '';
+    const externalIdQ = (req.query.externalId as string) || '';
+    const pageRaw = Number(req.query.page);
+    const pageSizeRaw = Number(req.query.pageSize);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw) ? Math.max(1, Math.min(100, Math.floor(pageSizeRaw))) : 20;
+    const skip = (page - 1) * pageSize;
+
+    const links = await prisma.trackingLink.findMany({
+      where: { affiliateId: req.user!.userId },
+      select: { id: true },
+    });
+    const linkIds = links.map((l) => l.id);
+    if (!linkIds.length) {
+      return res.json({ items: [], pagination: { page, pageSize, total: 0, totalPages: 1 } });
+    }
+    const where: { trackingLinkId: { in: string[] }; status?: 'pending' | 'approved' | 'rejected'; externalId?: { contains: string; mode: 'insensitive' } } = {
+      trackingLinkId: { in: linkIds },
+    };
+    if (statusQ === 'pending' || statusQ === 'approved' || statusQ === 'rejected') where.status = statusQ;
+    if (externalIdQ.trim()) where.externalId = { contains: externalIdQ.trim(), mode: 'insensitive' };
+
+    const [events, total, notifs] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        include: {
+          trackingLink: {
+            select: {
+              token: true,
+              offer: { select: { id: true, title: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      prisma.event.count({ where }),
+      prisma.notification.findMany({
+        where: {
+          userId: req.user!.userId,
+          link: '/analytics.html',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 400,
+        select: { title: true, body: true, createdAt: true },
+      }),
+    ]);
+
+    function parseReason(body: string | null) {
+      if (!body) return { reason: null as string | null, code: null as string | null };
+      const rm = body.match(/Причина:\s*([^\.]+)(?:\.|$)/i);
+      const cm = body.match(/Код:\s*([^\.]+)(?:\.|$)/i);
+      return { reason: rm && rm[1] ? rm[1].trim() : null, code: cm && cm[1] ? cm[1].trim() : null };
+    }
+    function parseExternal(body: string | null) {
+      if (!body) return null;
+      const em = body.match(/external_id:\s*([^\.\s]+)/i);
+      return em && em[1] ? em[1].trim() : null;
+    }
+
+    const items = events.map((e) => {
+      let moderatedAt: Date | null = null;
+      let reason: string | null = null;
+      let reasonCode: string | null = null;
+      for (const n of notifs) {
+        const ext = parseExternal(n.body || null);
+        if (!ext || !e.externalId || ext !== e.externalId) continue;
+        if ((n.title || '').indexOf('Лид/продажа') !== -1) {
+          moderatedAt = n.createdAt;
+          const pr = parseReason(n.body || null);
+          reason = pr.reason;
+          reasonCode = pr.code;
+          break;
+        }
+      }
+      return {
+        id: e.id,
+        offerId: e.trackingLink.offer.id,
+        offerTitle: e.trackingLink.offer.title,
+        token: e.trackingLink.token,
+        eventType: e.eventType,
+        status: e.status,
+        amount: e.amount != null ? Number(e.amount) : null,
+        externalId: e.externalId,
+        createdAt: e.createdAt,
+        moderatedAt,
+        reason,
+        reasonCode,
+        timeline: [
+          { key: 'received', title: 'Событие получено', at: e.createdAt, done: true },
+          { key: 'moderation', title: e.status === 'pending' ? 'На модерации' : (e.status === 'approved' ? 'Одобрено' : 'Отклонено'), at: moderatedAt, done: e.status !== 'pending' },
+        ],
+      };
+    });
+    res.json({
+      items,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
+  } catch (e) {
+    console.error('GET /api/affiliate/events:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 export default router;

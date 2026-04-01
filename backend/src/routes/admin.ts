@@ -697,6 +697,8 @@ router.patch('/events/:id', async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id;
     const status = req.body?.status;
+    const reason = req.body?.reason != null ? String(req.body.reason).trim() : '';
+    const reasonCode = req.body?.reasonCode != null ? String(req.body.reasonCode).trim() : '';
     if (!status || (status !== 'approved' && status !== 'rejected')) {
       res.status(400).json({ error: 'Укажите status: approved или rejected' });
       return;
@@ -717,6 +719,15 @@ router.patch('/events/:id', async (req: AuthRequest, res: Response) => {
     const updated = await prisma.event.update({
       where: { id },
       data: updateData,
+    });
+    await createNotification(prisma, {
+      userId: event.trackingLink.affiliateId,
+      type: 'system',
+      title: status === 'approved' ? 'Лид/продажа одобрены' : 'Лид/продажа отклонены',
+      body: status === 'rejected' && reason
+        ? ('Оффер: ' + event.trackingLink.offer.title + '. Причина: ' + reason + (reasonCode ? ('. Код: ' + reasonCode) : '') + (event.externalId ? ('. external_id: ' + event.externalId) : ''))
+        : ('Оффер: ' + event.trackingLink.offer.title + (event.externalId ? ('. external_id: ' + event.externalId) : '')),
+      link: '/analytics.html',
     });
     res.json(updated);
   } catch (e) {

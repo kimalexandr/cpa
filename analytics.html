@@ -132,6 +132,31 @@
                     </table>
                 </div>
             </div>
+            <div class="table-section" id="affiliateEventsSection" style="display:none">
+                <h2>Проверка целевых действий клиентов</h2>
+                <div class="filters-section" style="margin-bottom:12px">
+                    <input type="text" class="search-input" id="affiliateExternalIdSearch" placeholder="Поиск по external_id">
+                    <select class="filter-select" id="affiliateEventsStatusFilter">
+                        <option value="">Все статусы</option>
+                        <option value="pending">На модерации</option>
+                        <option value="approved">Одобрено</option>
+                        <option value="rejected">Отклонено</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" id="affiliateEventsSearchBtn" type="button">Найти</button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Оффер</th><th>Тип</th><th>Статус</th><th>external_id</th><th>Timeline</th><th>Причина</th>
+                            </tr>
+                        </thead>
+                        <tbody id="affiliateEventsTableBody">
+                            <tr><td colspan="6" style="color:#64748b;">Загрузка...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -164,6 +189,8 @@
         var periodSelect = document.getElementById('analyticsPeriod');
         var summaryEl = document.getElementById('analyticsSummary');
         var tbody = document.getElementById('analyticsTableBody');
+        var affiliateEventsSection = document.getElementById('affiliateEventsSection');
+        var affiliateEventsBody = document.getElementById('affiliateEventsTableBody');
 
         function getFromTo() {
             var days = periodSelect ? parseInt(periodSelect.value, 10) || 30 : 30;
@@ -234,6 +261,46 @@
         }
         if (periodSelect) periodSelect.addEventListener('change', loadAnalytics);
         loadAnalytics();
+        function esc(s) {
+            var d = document.createElement('div');
+            d.textContent = s == null ? '' : String(s);
+            return d.innerHTML;
+        }
+        function statusText(st) {
+            if (st === 'approved') return 'Одобрено';
+            if (st === 'rejected') return 'Отклонено';
+            return 'На модерации';
+        }
+        function loadAffiliateEvents() {
+            if (role !== 'affiliate' || !window.RealCPA.affiliate.getEvents) return;
+            var externalId = (document.getElementById('affiliateExternalIdSearch').value || '').trim();
+            var status = document.getElementById('affiliateEventsStatusFilter').value || '';
+            window.RealCPA.affiliate.getEvents({ externalId: externalId, status: status, page: 1, pageSize: 30 }).then(function(resp) {
+                var items = (resp && resp.items) ? resp.items : [];
+                if (!items.length) {
+                    affiliateEventsBody.innerHTML = '<tr><td colspan="6" style="color:#64748b;">События не найдены</td></tr>';
+                    return;
+                }
+                affiliateEventsBody.innerHTML = items.map(function(e) {
+                    var t1 = e.timeline && e.timeline[0] ? ('получено: ' + new Date(e.timeline[0].at).toLocaleString('ru-RU')) : 'получено';
+                    var t2 = e.timeline && e.timeline[1] ? (e.timeline[1].done ? (e.timeline[1].title.toLowerCase() + ': ' + (e.timeline[1].at ? new Date(e.timeline[1].at).toLocaleString('ru-RU') : '')) : 'на модерации') : '';
+                    var reason = e.reason ? (e.reason + (e.reasonCode ? (' (' + e.reasonCode + ')') : '')) : '—';
+                    return '<tr><td>' + esc(e.offerTitle) + '</td><td>' + esc(e.eventType) + '</td><td>' + esc(statusText(e.status)) + '</td><td>' + esc(e.externalId || '—') + '</td><td>' + esc(t1 + ' -> ' + t2) + '</td><td>' + esc(reason) + '</td></tr>';
+                }).join('');
+            }).catch(function() {
+                affiliateEventsBody.innerHTML = '<tr><td colspan="6" style="color:#991b1b;">Не удалось загрузить события</td></tr>';
+            });
+        }
+        if (role === 'affiliate') {
+            if (affiliateEventsSection) affiliateEventsSection.style.display = '';
+            var btn = document.getElementById('affiliateEventsSearchBtn');
+            var input = document.getElementById('affiliateExternalIdSearch');
+            var sf = document.getElementById('affiliateEventsStatusFilter');
+            if (btn) btn.addEventListener('click', loadAffiliateEvents);
+            if (input) input.addEventListener('keydown', function(e) { if (e.key === 'Enter') loadAffiliateEvents(); });
+            if (sf) sf.addEventListener('change', loadAffiliateEvents);
+            loadAffiliateEvents();
+        }
     })();
     </script>
 </body>

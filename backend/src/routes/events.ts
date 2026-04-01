@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { createNotification } from '../lib/notifications';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -8,16 +9,16 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const { token, tracking_link_id, event_type, amount, external_id } = req.body;
     const linkId = tracking_link_id || null;
-    let link: { id: string; offerId: string } | null = null;
+    let link: { id: string; offerId: string; affiliateId: string } | null = null;
     if (token) {
       link = await prisma.trackingLink.findUnique({
         where: { token: String(token) },
-        select: { id: true, offerId: true },
+        select: { id: true, offerId: true, affiliateId: true },
       });
     } else if (linkId) {
       link = await prisma.trackingLink.findUnique({
         where: { id: String(linkId) },
-        select: { id: true, offerId: true },
+        select: { id: true, offerId: true, affiliateId: true },
       });
     }
     if (!link) {
@@ -82,6 +83,13 @@ router.post('/', async (req: Request, res: Response) => {
         status: 'pending',
         externalId: external_id || null,
       },
+    });
+    await createNotification(prisma, {
+      userId: link.affiliateId,
+      type: 'system',
+      title: 'Событие получено',
+      body: 'Принято событие ' + eventType + (external_id ? ('. external_id: ' + String(external_id)) : '') + '. Статус: pending.',
+      link: '/analytics.html',
     });
     res.status(201).json(event);
   } catch (e) {

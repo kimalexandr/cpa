@@ -240,6 +240,14 @@
       balance: function () { return request('GET', '/api/affiliate/balance'); },
       requestPayout: function (amount) { return request('POST', '/api/affiliate/payouts', { amount: amount }); },
       getPayouts: function () { return request('GET', '/api/affiliate/payouts'); },
+      getEvents: function (params) {
+        var q = [];
+        if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        if (params && params.externalId) q.push('externalId=' + encodeURIComponent(params.externalId));
+        if (params && params.page != null) q.push('page=' + encodeURIComponent(params.page));
+        if (params && params.pageSize != null) q.push('pageSize=' + encodeURIComponent(params.pageSize));
+        return request('GET', '/api/affiliate/events' + (q.length ? '?' + q.join('&') : ''));
+      },
       analytics: function (params) {
         var q = [];
         if (params && params.from) q.push('from=' + encodeURIComponent(params.from));
