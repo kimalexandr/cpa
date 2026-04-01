@@ -12,6 +12,7 @@ export interface JwtPayload {
   userId: string;
   email: string;
   role: UserRole;
+  sid?: string;
   authType?: 'jwt' | 'api_key';
   scopes?: string[];
   iat?: number;
@@ -71,6 +72,24 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
   }
   const payload = verifyToken(token);
   if (payload) {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { status: true },
+    });
+    if (!user || user.status !== 'active') {
+      res.status(401).json({ error: 'Недействительный или истёкший токен' });
+      return;
+    }
+    if (payload.sid) {
+      const session = await prisma.userSession.findUnique({
+        where: { id: payload.sid },
+        select: { userId: true, revokedAt: true, expiresAt: true },
+      });
+      if (!session || session.userId !== payload.userId || session.revokedAt || session.expiresAt < new Date()) {
+        res.status(401).json({ error: 'Сессия недействительна. Войдите снова.' });
+        return;
+      }
+    }
     req.user = { ...payload, authType: 'jwt' };
     next();
     return;

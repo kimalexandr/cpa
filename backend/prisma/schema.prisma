@@ -101,8 +101,28 @@ model User {
   auditLogs          AuditLog[] @relation("AuditActor")
   disputes           Dispute[] @relation("DisputeAffiliate")
   kycRequests        KycRequest[]
+  sessions           UserSession[]
 
   @@index([email])
+}
+
+model UserSession {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  refreshTokenHash String    @map("refresh_token_hash")
+  userAgent        String?   @map("user_agent") @db.Text
+  ip               String?   @db.Text
+  deviceName       String?   @map("device_name")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  lastSeenAt       DateTime  @default(now()) @map("last_seen_at")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("user_sessions")
 }
 
 model ApiKey {

@@ -153,6 +153,10 @@
                         <span class="profile-field-label">Текущее устройство</span>
                         <span class="profile-field-value" id="profileCurrentDevice">Этот браузер</span>
                     </div>
+                    <div class="form-group">
+                        <label>Активные сеансы</label>
+                        <div id="profileSessionsList" class="connection-meta-value">Загрузка...</div>
+                    </div>
                     <button type="button" class="btn btn-secondary" id="logoutAllDevicesBtn">Выйти со всех устройств</button>
                 </div>
             </section>
@@ -509,15 +513,81 @@
             var el = document.getElementById(id);
             if (el) el.addEventListener('change', saveNotifyToProfile);
         });
+        function fmtSessionDate(iso) {
+            if (!iso) return '—';
+            try { return new Date(iso).toLocaleString('ru-RU'); } catch (e) { return String(iso); }
+        }
+        function esc(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        function loadSessions() {
+            var listEl = document.getElementById('profileSessionsList');
+            if (!listEl || !window.RealCPA.meSessions) return;
+            window.RealCPA.meSessions().then(function(resp) {
+                var items = (resp && resp.items) ? resp.items : [];
+                var currentSessionId = resp && resp.currentSessionId ? String(resp.currentSessionId) : '';
+                if (!items.length) {
+                    listEl.innerHTML = 'Нет активных сессий';
+                    return;
+                }
+                listEl.innerHTML = items.map(function(s) {
+                    var isCurrent = currentSessionId && String(s.id) === currentSessionId;
+                    var currentBadge = isCurrent ? ' <span class="offer-badge offer-badge-approved">Текущая</span>' : '';
+                    var action = isCurrent ? '' : (' <button type="button" class="btn btn-secondary btn-sm session-revoke-btn" data-id="' + s.id + '">Завершить</button>');
+                    return '' +
+                        '<div style="margin-bottom:10px;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:8px">' +
+                        '<div><b>' + esc(s.deviceName || 'Устройство') + '</b>' + currentBadge + action + '</div>' +
+                        '<div style="font-size:12px;opacity:.85">IP: ' + esc(s.ip || '—') + '</div>' +
+                        '<div style="font-size:12px;opacity:.85">Последняя активность: ' + fmtSessionDate(s.lastSeenAt) + '</div>' +
+                        '</div>';
+                }).join('');
+                listEl.querySelectorAll('.session-revoke-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var sid = this.getAttribute('data-id');
+                        window.RealCPA.revokeSession(sid).then(function() {
+                            loadSessions();
+                        }).catch(function(err) {
+                            alert(err.message || 'Не удалось завершить сессию');
+                        });
+                    });
+                });
+            }).catch(function() {
+                if (listEl) listEl.innerHTML = 'Ошибка загрузки сессий';
+            });
+        }
         var logoutAllBtn = document.getElementById('logoutAllDevicesBtn');
         if (logoutAllBtn) {
             logoutAllBtn.addEventListener('click', function() {
-                if (!confirm('Завершить все сеансы и войти заново?')) return;
-                if (window.RealCPA && window.RealCPA.clearAuth) window.RealCPA.clearAuth();
-                alert('Сеансы завершены. Войдите снова.');
-                window.location.href = 'login.html';
+                if (!confirm('Завершить все другие активные сеансы? Текущее устройство останется в системе.')) return;
+                if (!window.RealCPA.revokeAllSessions) return;
+                window.RealCPA.revokeAllSessions(false).then(function(resp) {
+                    loadSessions();
+                    alert('Завершено сессий: ' + (resp && resp.revoked != null ? resp.revoked : 0));
+                }).catch(function(err) {
+                    alert(err.message || 'Ошибка завершения сессий');
+                });
             });
         }
+        (function bindSessionsRealtime() {
+            var streamUrl = window.RealCPA.realtimeStreamUrl ? window.RealCPA.realtimeStreamUrl() : null;
+            if (!streamUrl || typeof EventSource === 'undefined') {
+                setInterval(loadSessions, 15000);
+                return;
+            }
+            try {
+                var es = new EventSource(streamUrl);
+                es.addEventListener('sessions_update', function() { loadSessions(); });
+                es.onerror = function() { setTimeout(loadSessions, 1000); };
+            } catch (e) {
+                setInterval(loadSessions, 15000);
+            }
+        })();
+        loadSessions();
         var genApiBtn = document.getElementById('generateApiKeyBtn');
         var apiOut = document.getElementById('profileApiKeyOutput');
         if (genApiBtn && apiOut) {
@@ -561,14 +631,10 @@
             });
         }
         var apiDocsLink = document.getElementById('profileApiDocsLink');
-        if (apiDocsLink && apiOut) {
+        if (apiDocsLink) {
             apiDocsLink.addEventListener('click', function(e) {
                 e.preventDefault();
-                window.RealCPA.apiDocs().then(function(resp) {
-                    apiOut.value = JSON.stringify(resp, null, 2);
-                }).catch(function(err) {
-                    alert(err.message || 'Ошибка загрузки docs');
-                });
+                window.location.href = 'api-docs.html';
             });
         }
         loadApiKeys();

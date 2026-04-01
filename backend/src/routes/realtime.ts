@@ -7,7 +7,10 @@ const prisma = new PrismaClient();
 
 router.get('/stream', async (req, res: Response) => {
   const tokenQ = typeof req.query.token === 'string' ? req.query.token : '';
-  const payload = tokenQ ? verifyToken(tokenQ) : null;
+  const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
+  const tokenH = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  const token = tokenH || tokenQ;
+  const payload = token ? verifyToken(token) : null;
   if (!payload) {
     res.status(401).json({ error: 'Требуется авторизация' });
     return;
@@ -19,6 +22,7 @@ router.get('/stream', async (req, res: Response) => {
   res.flushHeaders?.();
 
   let lastUnread = -1;
+  let lastSessions = -1;
   const send = (event: string, data: unknown) => {
     res.write(`event: ${event}\n`);
     res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -29,10 +33,22 @@ router.get('/stream', async (req, res: Response) => {
       const unreadCount = await prisma.notification.count({
         where: { userId: payload.userId, readAt: null },
       });
+      const activeSessions = await prisma.userSession.count({
+        where: {
+          userId: payload.userId,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+      });
       if (lastUnread !== unreadCount) {
         lastUnread = unreadCount;
         send('notifications_update', { unreadCount });
-      } else {
+      }
+      if (lastSessions !== activeSessions) {
+        lastSessions = activeSessions;
+        send('sessions_update', { activeSessions });
+      }
+      if (lastUnread === unreadCount && lastSessions === activeSessions) {
         send('heartbeat', { ts: Date.now() });
       }
     } catch {

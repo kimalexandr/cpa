@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Документация — RealCPA Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="fact-theme">
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <a href="index.html" class="logo-link">RealCPA Hub</a>
+                </div>
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Главная</a>
+                    <a href="profile.html" class="nav-link">Профиль</a>
+                    <a href="status-center.html" class="nav-link">Центр статусов</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="support-page">
+        <div class="container">
+            <section class="support-section">
+                <h1 class="support-page-title">API документация</h1>
+                <p class="support-section-desc">
+                    Базовый URL: <code>https://tovarkin.com/api</code><br>
+                    Авторизация: <code>Authorization: Bearer &lt;jwt_or_api_key&gt;</code>
+                </p>
+
+                <div class="faq-block">
+                    <h2 class="faq-block-title">Быстрый старт</h2>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Шаги интеграции</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <ol>
+                                <li>Создайте API ключ в профиле (раздел <b>API и Webhook</b>).</li>
+                                <li>Получите tracking token партнёра.</li>
+                                <li>Отправляйте postback в <code>/api/events</code> с <code>external_id</code>.</li>
+                                <li>Проверяйте статусы в <code>/api/status-center</code>.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-block">
+                    <h2 class="faq-block-title">Ключевые endpoints</h2>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Tracking</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer"><p><code>GET /t/:token</code> — фиксирует клик и делает redirect на целевую страницу.</p></div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Postback events</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer"><p><code>POST /api/events</code> — создаёт lead/sale событие (идемпотентно по token + external_id).</p></div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Status center</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer"><p><code>GET /api/status-center</code> — единый статус, причина, nextStep и retryAllowed.</p></div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Realtime</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer"><p><code>GET /api/realtime/stream</code> — SSE-уведомления в реальном времени.</p></div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>API keys</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <p><code>POST /api/me/api-key</code>, <code>GET /api/me/api-keys</code>, <code>PATCH /api/me/api-keys/:id/revoke</code></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-block">
+                    <h2 class="faq-block-title">Пример запроса</h2>
+                    <div class="postback-code-wrap">
+                        <pre><code>curl -X POST "https://tovarkin.com/api/events" \
+  -H "Content-Type: application/json" \
+  -d "{\"token\":\"tk-xxxx\",\"event_type\":\"lead\",\"external_id\":\"order-123\",\"amount\":1500}"</code></pre>
+                    </div>
+                </div>
+
+                <div class="faq-block">
+                    <h2 class="faq-block-title">Полная спецификация</h2>
+                    <p class="support-section-desc">
+                        Подробная версия доступна в файле проекта: <code>docs/API.md</code>.
+                    </p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+    <script src="footer-include.js"></script>
+    <script>
+        (function() {
+            document.querySelectorAll('.faq-question').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var item = btn.closest('.faq-item');
+                    if (item) item.classList.toggle('active');
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -10,6 +10,82 @@ const prisma = new PrismaClient();
 
 router.use(requireAuth);
 
+router.get('/sessions', async (req: AuthRequest, res: Response) => {
+  try {
+    const now = new Date();
+    const rows = await prisma.userSession.findMany({
+      where: {
+        userId: req.user!.userId,
+        revokedAt: null,
+        expiresAt: { gt: now },
+      },
+      orderBy: { lastSeenAt: 'desc' },
+      select: {
+        id: true,
+        deviceName: true,
+        userAgent: true,
+        ip: true,
+        createdAt: true,
+        lastSeenAt: true,
+        expiresAt: true,
+      },
+    });
+    res.json({
+      items: rows,
+      currentSessionId: req.user?.sid || null,
+    });
+  } catch (e) {
+    console.error('GET /api/me/sessions:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+router.post('/sessions/revoke-all', async (req: AuthRequest, res: Response) => {
+  try {
+    const includeCurrent = Boolean(req.body?.includeCurrent);
+    const where: Record<string, unknown> = {
+      userId: req.user!.userId,
+      revokedAt: null,
+    };
+    if (!includeCurrent && req.user?.sid) {
+      where.id = { not: req.user.sid };
+    }
+    const result = await prisma.userSession.updateMany({
+      where,
+      data: { revokedAt: new Date() },
+    });
+    res.json({ ok: true, revoked: result.count });
+  } catch (e) {
+    console.error('POST /api/me/sessions/revoke-all:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+router.delete('/sessions/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const session = await prisma.userSession.findFirst({
+      where: { id: req.params.id, userId: req.user!.userId },
+      select: { id: true, revokedAt: true },
+    });
+    if (!session) {
+      res.status(404).json({ error: 'Сессия не найдена' });
+      return;
+    }
+    if (session.revokedAt) {
+      res.json({ ok: true });
+      return;
+    }
+    await prisma.userSession.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date() },
+    });
+    res.json({ ok: true, revoked: session.id });
+  } catch (e) {
+    console.error('DELETE /api/me/sessions/:id:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({

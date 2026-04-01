@@ -124,7 +124,7 @@
         try { refresh = localStorage.getItem(REFRESH_KEY); } catch (e) {}
         if (!refresh) return Promise.reject(new Error('Нет refresh-токена'));
         return request('POST', '/api/auth/refresh', { refreshToken: refresh }).then(function (r) {
-          setTokens(r.accessToken, null);
+          setTokens(r.accessToken, r.refreshToken || null);
           return r.accessToken;
         });
       },
@@ -147,6 +147,15 @@
     },
     patchMe: function (data) {
       return request('PATCH', '/api/me', data);
+    },
+    meSessions: function () {
+      return request('GET', '/api/me/sessions');
+    },
+    revokeSession: function (sessionId) {
+      return request('DELETE', '/api/me/sessions/' + encodeURIComponent(sessionId));
+    },
+    revokeAllSessions: function (includeCurrent) {
+      return request('POST', '/api/me/sessions/revoke-all', { includeCurrent: !!includeCurrent });
     },
     createApiKey: function (days) {
       return request('POST', '/api/me/api-key', { days: days || 90 });

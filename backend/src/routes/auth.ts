@@ -9,6 +9,21 @@ import speakeasy from 'speakeasy';
 const router = Router();
 const prisma = new PrismaClient();
 
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function detectDeviceName(userAgentRaw: string | undefined): string {
+  const ua = String(userAgentRaw || '').toLowerCase();
+  if (!ua) return 'Неизвестное устройство';
+  if (ua.includes('android')) return 'Android';
+  if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ios')) return 'iOS';
+  if (ua.includes('windows')) return 'Windows';
+  if (ua.includes('mac os') || ua.includes('macintosh')) return 'macOS';
+  if (ua.includes('linux')) return 'Linux';
+  return 'Веб-браузер';
+}
+
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const { email, password, role, name, companyName, trafficSources, legalEntity, inn } = req.body;
@@ -114,9 +129,22 @@ router.post('/login', async (req: Request, res: Response) => {
         return;
       }
     }
-    const payload = { userId: user.id, email: user.email, role: user.role };
+    const sid = crypto.randomUUID();
+    const payload = { userId: user.id, email: user.email, role: user.role, sid };
     const accessToken = signAccessToken(payload);
     const refreshToken = signRefreshToken(payload);
+    const refreshTokenHash = hashToken(refreshToken);
+    await prisma.userSession.create({
+      data: {
+        id: sid,
+        userId: user.id,
+        refreshTokenHash,
+        userAgent: String(req.headers['user-agent'] || ''),
+        ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || ''),
+        deviceName: detectDeviceName(String(req.headers['user-agent'] || '')),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
     res.json({
       user: { id: user.id, email: user.email, role: user.role, name: user.name, companyName: user.companyName },
       accessToken,
@@ -197,11 +225,27 @@ router.post('/resend-confirmation', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/logout', (_req: Request, res: Response) => {
-  res.json({ ok: true });
+router.post('/logout', async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.body?.refreshToken ? String(req.body.refreshToken) : '';
+    if (!refreshToken) {
+      res.json({ ok: true });
+      return;
+    }
+    const payload = verifyToken(refreshToken);
+    if (payload?.sid) {
+      await prisma.userSession.updateMany({
+        where: { id: payload.sid, userId: payload.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    }
+    res.json({ ok: true });
+  } catch {
+    res.json({ ok: true });
+  }
 });
 
-router.post('/refresh', (req: Request, res: Response) => {
+router.post('/refresh', async (req: Request, res: Response) => {
   const refreshToken = req.body.refreshToken;
   if (!refreshToken) {
     res.status(401).json({ error: 'Нет refresh-токена' });
@@ -212,12 +256,45 @@ router.post('/refresh', (req: Request, res: Response) => {
     res.status(401).json({ error: 'Недействительный refresh-токен' });
     return;
   }
+  if (!payload.sid) {
+    res.status(401).json({ error: 'Недействительный refresh-токен' });
+    return;
+  }
+  const session = await prisma.userSession.findUnique({
+    where: { id: payload.sid },
+    select: { userId: true, revokedAt: true, expiresAt: true, refreshTokenHash: true },
+  });
+  if (!session || session.userId !== payload.userId || session.revokedAt || session.expiresAt < new Date()) {
+    res.status(401).json({ error: 'Сессия истекла. Войдите снова.' });
+    return;
+  }
+  if (hashToken(String(refreshToken)) !== session.refreshTokenHash) {
+    res.status(401).json({ error: 'Недействительный refresh-токен' });
+    return;
+  }
   const accessToken = signAccessToken({
     userId: payload.userId,
     email: payload.email,
     role: payload.role,
+    sid: payload.sid,
   });
-  res.json({ accessToken, expiresIn: 3600 });
+  const newRefreshToken = signRefreshToken({
+    userId: payload.userId,
+    email: payload.email,
+    role: payload.role,
+    sid: payload.sid,
+  });
+  await prisma.userSession.update({
+    where: { id: payload.sid },
+    data: {
+      refreshTokenHash: hashToken(newRefreshToken),
+      lastSeenAt: new Date(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      userAgent: String(req.headers['user-agent'] || ''),
+      ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || ''),
+    },
+  });
+  res.json({ accessToken, refreshToken: newRefreshToken, expiresIn: 3600 });
 });
 
 // Запрос на восстановление пароля: отправка ссылки на email (в проде — письмо, в dev — можно вернуть ссылку)
