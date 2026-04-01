@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Лента действий — RealCPA Hub</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard-page fact-theme">
+  <header class="header"><div class="container"><div class="header-content"><a href="index.html" class="logo-link">RealCPA Hub</a></div></div></header>
+  <main class="dashboard-main container" style="padding-top:24px;">
+    <div class="dashboard-header">
+      <h1>Лента действий</h1>
+      <div class="filters-section" style="max-width:420px;">
+        <label><input type="checkbox" id="feedImportantOnly"> Только важное</label>
+      </div>
+    </div>
+    <div id="feedList" class="connections-cards"><p class="loading-offers">Загрузка...</p></div>
+  </main>
+  <script src="api.js"></script>
+  <script>
+  (function() {
+    if (!window.RealCPA || !window.RealCPA.isLoggedIn()) { window.location.href = 'login.html?redirect=action-feed.html'; return; }
+    var listEl = document.getElementById('feedList');
+    var importantEl = document.getElementById('feedImportantOnly');
+    function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+    function mapStatusText(text) {
+      var t = String(text || '');
+      t = t.replace(/одобр(ен|ена|ено|ены)/ig, 'Одобрено');
+      t = t.replace(/отклон(ен|ена|ено|ены)/ig, 'Отклонено');
+      t = t.replace(/pending|на модерации/ig, 'На модерации');
+      return t;
+    }
+    function load() {
+      window.RealCPA.getNotifications({ limit: 50 }).then(function(r) {
+        var items = (r && r.items) ? r.items : [];
+        if (importantEl && importantEl.checked) items = items.filter(function(n){ return !n.readAt || /отклон|одобр|выплат|заявк/i.test((n.title||'') + ' ' + (n.body||'')); });
+        if (!items.length) {
+          listEl.innerHTML = '<div class="dashboard-empty-state"><i class="fas fa-stream"></i><p>Событий пока нет. Подключитесь к офферу или проверьте статус заявок.</p><a class="btn btn-primary" href="offers.html">Открыть каталог офферов</a></div>';
+          return;
+        }
+        listEl.innerHTML = items.map(function(n){
+          var link = n.link ? n.link : '#';
+          var btn = n.link ? '<a class="btn btn-sm btn-primary" href="' + esc(link) + '">Перейти</a>' : '';
+          return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(mapStatusText(n.title || 'Событие')) + '</h2></div><div class="connection-meta"><div class="connection-meta-row"><span class="connection-meta-label">Детали</span><span class="connection-meta-value">' + esc(mapStatusText(n.body || '')) + '</span></div></div>' + btn + '</div>';
+        }).join('');
+      }).catch(function(){
+        listEl.innerHTML = '<p class="offers-empty-msg">Не удалось загрузить ленту.</p>';
+      });
+    }
+    if (importantEl) importantEl.addEventListener('change', load);
+    load();
+  })();
+  </script>
+</body>
+</html>

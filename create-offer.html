@@ -80,6 +80,17 @@
             <div class="create-offer-header">
                 <h1>Создать новый оффер</h1>
                 <p class="create-offer-subtitle">Заполните шаги по порядку. Все поля с <span class="required-mark">*</span> обязательны.</p>
+                <div class="offer-checklist-block" id="offerChecklistBlock">
+                    <div class="offer-checklist-head">
+                        <strong id="offerChecklistTitle">Готово к модерации: 0/10</strong>
+                        <span class="offer-checklist-progress" id="offerChecklistProgress">0%</span>
+                    </div>
+                    <div class="offer-checklist-items" id="offerChecklistItems"></div>
+                    <div class="offer-checklist-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" id="offerDraftRestoreBtn">Восстановить черновик</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="offerDraftClearBtn">Очистить черновик</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Индикатор шагов -->
@@ -591,6 +602,81 @@
         var btnNext = document.getElementById('wizardNext');
         var btnSubmit = document.getElementById('wizardSubmit');
         var form = document.getElementById('createOfferForm');
+        var checklistTitle = document.getElementById('offerChecklistTitle');
+        var checklistProgress = document.getElementById('offerChecklistProgress');
+        var checklistItems = document.getElementById('offerChecklistItems');
+        var restoreDraftBtn = document.getElementById('offerDraftRestoreBtn');
+        var clearDraftBtn = document.getElementById('offerDraftClearBtn');
+        var userForDraft = (window.RealCPA && window.RealCPA.getUser) ? window.RealCPA.getUser() : null;
+        var draftKey = 'realcpa_offer_draft_v1_' + ((userForDraft && userForDraft.id) ? userForDraft.id : 'guest') + '_' + (window.__offerIdForEdit || 'new');
+
+        function getInputValue(id) {
+            var el = document.getElementById(id);
+            return el ? String(el.value || '').trim() : '';
+        }
+        function buildChecklist() {
+            var cpaRaw = getInputValue('offerCpa');
+            var cpaNum = Number(cpaRaw.replace(',', '.'));
+            var rulesData = (typeof window.__buildRulesPayloadForSave === 'function') ? window.__buildRulesPayloadForSave() : null;
+            var hasRules = !!(rulesData && (
+                (rulesData.trafficAgreementChecks && rulesData.trafficAgreementChecks.length) ||
+                (rulesData.trafficForbiddenChecks && rulesData.trafficForbiddenChecks.length) ||
+                rulesData.allowedSourcesText || rulesData.forbiddenSourcesText || rulesData.creativeRules || rulesData.leadCriteria
+            ));
+            var postback = getInputValue('offerPostback');
+            var items = [
+                { title: 'Название оффера', ok: !!getInputValue('offerName') },
+                { title: 'Категория', ok: !!getInputValue('offerCategory') },
+                { title: 'Лендинг URL', ok: /^https?:\/\/[\w.-]/i.test(getInputValue('offerLandingUrl')) },
+                { title: 'Краткое описание', ok: !!getInputValue('offerShortDesc') },
+                { title: 'География', ok: !!getInputValue('offerGeo') || ((window.__offerSelectedLocationIds || []).length > 0) },
+                { title: 'CPA ставка', ok: Number.isFinite(cpaNum) && cpaNum >= 1 },
+                { title: 'Холд (дни)', ok: getInputValue('offerHoldDays') !== '' },
+                { title: 'Правила трафика', ok: hasRules },
+                { title: 'Окно конверсии', ok: getInputValue('offerConversionWindow') !== '' },
+                { title: 'Postback URL', ok: !postback || /^https?:\/\/[\w.-]/i.test(postback) }
+            ];
+            return items;
+        }
+        function renderChecklist() {
+            var items = buildChecklist();
+            var done = items.filter(function(i) { return i.ok; }).length;
+            var total = items.length;
+            var pct = total ? Math.round(done * 100 / total) : 0;
+            if (checklistTitle) checklistTitle.textContent = 'Готово к модерации: ' + done + '/' + total;
+            if (checklistProgress) checklistProgress.textContent = pct + '%';
+            if (checklistItems) {
+                checklistItems.innerHTML = items.map(function(i) {
+                    return '<span class="offer-check-item ' + (i.ok ? 'ok' : 'todo') + '">' + (i.ok ? '✓ ' : '• ') + i.title + '</span>';
+                }).join('');
+            }
+        }
+        function collectDraftData() {
+            var ids = [
+                'offerName','offerLandingUrl','offerInn','offerCategory','offerActionType','offerShortDesc','offerFullDesc',
+                'offerAttentionImportant','offerAttentionProhibited','offerGeo','offerVolumeUnit','offerMinOrder','offerAvgCheck',
+                'offerCpa','offerConfirmPercent','offerConversion','offerPaymentTerm','offerCookieLifetime','offerConfirmDays',
+                'offerMobileTracking','offerBudget','offerCapDay','offerCapMonth','offerHoldDays','offerAllowedSources',
+                'offerForbiddenSources','offerCreativeRules','offerLeadCriteria','offerTrackingUrl','offerPostback',
+                'offerConversionWindow','offerIntegrationType'
+            ];
+            var data = { currentStep: currentStep, fields: {}, selectedLocationIds: window.__offerSelectedLocationIds || [] };
+            ids.forEach(function(id) { data.fields[id] = getInputValue(id); });
+            return data;
+        }
+        function saveDraft() {
+            try { localStorage.setItem(draftKey, JSON.stringify(collectDraftData())); } catch (e) {}
+        }
+        function applyDraft(data) {
+            if (!data || !data.fields) return;
+            Object.keys(data.fields).forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el && !el.value) el.value = data.fields[id];
+            });
+            if (Array.isArray(data.selectedLocationIds)) window.__offerSelectedLocationIds = data.selectedLocationIds;
+            if (data.currentStep) goToStep(Math.max(1, Math.min(totalSteps, Number(data.currentStep) || 1)));
+            renderChecklist();
+        }
 
         function goToStep(step) {
             currentStep = step;
@@ -604,6 +690,7 @@
             btnPrev.style.display = step === 1 ? 'none' : 'inline-block';
             btnNext.style.display = step === totalSteps ? 'none' : 'inline-block';
             btnSubmit.style.display = step === totalSteps ? 'inline-block' : 'none';
+            renderChecklist();
         }
 
         if (btnPrev) btnPrev.addEventListener('click', function() { goToStep(currentStep - 1); });
@@ -625,6 +712,8 @@
         });
 
         if (form) {
+            form.addEventListener('input', function() { renderChecklist(); saveDraft(); });
+            form.addEventListener('change', function() { renderChecklist(); saveDraft(); });
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 function clearInlineError(el) {
@@ -771,6 +860,7 @@
                             return window.RealCPA.supplier.setOfferLocations(editId, selectedLocationIds);
                         }
                     }).then(function() {
+                        try { localStorage.removeItem(draftKey); } catch (e) {}
                         alert('Изменения сохранены.');
                         window.location.href = 'dashboard-supplier-offers.html';
                     }).catch(function(err) {
@@ -782,6 +872,7 @@
                     return;
                 }
                 window.RealCPA.supplier.createOffer(payload).then(function(res) {
+                    try { localStorage.removeItem(draftKey); } catch (e) {}
                     var offerId = res && res.id;
                     if (offerId && selectedLocationIds && selectedLocationIds.length > 0 && window.RealCPA.supplier.setOfferLocations) {
                         return window.RealCPA.supplier.setOfferLocations(offerId, selectedLocationIds).then(function() {
@@ -800,8 +891,26 @@
                 });
             });
         }
+        if (restoreDraftBtn) {
+            restoreDraftBtn.addEventListener('click', function() {
+                try {
+                    var raw = localStorage.getItem(draftKey);
+                    if (!raw) { alert('Черновик не найден'); return; }
+                    applyDraft(JSON.parse(raw));
+                } catch (e) { alert('Не удалось восстановить черновик'); }
+            });
+        }
+        if (clearDraftBtn) {
+            clearDraftBtn.addEventListener('click', function() {
+                try { localStorage.removeItem(draftKey); } catch (e) {}
+                alert('Черновик удалён');
+            });
+        }
+        setInterval(saveDraft, 10000);
+        window.addEventListener('beforeunload', saveDraft);
 
         goToStep(1);
+        renderChecklist();
     })();
     </script>
     <script>

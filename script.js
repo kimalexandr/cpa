@@ -37,6 +37,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 else dd.appendChild(link);
             });
         }
+        // Пункт "Лента действий" в дропдауне для всех ролей
+        document.querySelectorAll('.user-dropdown').forEach(function(dd) {
+            if (!dd || dd.querySelector('.user-dropdown-action-feed')) return;
+            var divider = dd.querySelector('.user-dropdown-divider');
+            var link = document.createElement('a');
+            link.href = 'action-feed.html';
+            link.className = 'user-dropdown-item user-dropdown-action-feed';
+            link.textContent = 'Лента действий';
+            if (divider) dd.insertBefore(link, divider);
+            else dd.appendChild(link);
+        });
         if (role === 'admin') document.body.classList.add('role-admin');
         else document.body.classList.remove('role-admin');
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
