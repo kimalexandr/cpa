@@ -1,5 +1,34 @@
 // Навигация: гости — «Войти», «Регистрация»; авторизованные — блок пользователя с дропдауном (Профиль, Настройки, Выйти)
 document.addEventListener('DOMContentLoaded', function() {
+    if (!window.RealCPAUI) {
+        window.RealCPAUI = {
+            toast: function(message, type) {
+                var t = document.getElementById('globalToast');
+                if (!t) {
+                    t = document.createElement('div');
+                    t.id = 'globalToast';
+                    t.className = 'toast-copy';
+                    t.style.zIndex = '4000';
+                    document.body.appendChild(t);
+                }
+                t.textContent = message || '';
+                t.style.background = type === 'error' ? '#7f1d1d' : (type === 'success' ? '#14532d' : '');
+                t.classList.add('show');
+                clearTimeout(t._hideTimer);
+                t._hideTimer = setTimeout(function() { t.classList.remove('show'); }, 2600);
+            },
+            success: function(message) { this.toast(message, 'success'); },
+            error: function(message) { this.toast(message, 'error'); }
+        };
+    }
+    if (!window.__realcpaAlertPatched) {
+        window.__realcpaAlertPatched = true;
+        window.__nativeAlert = window.alert;
+        window.alert = function(message) {
+            if (window.RealCPAUI && window.RealCPAUI.toast) window.RealCPAUI.toast(message || '');
+            else if (window.__nativeAlert) window.__nativeAlert(message);
+        };
+    }
     var guestBlocks = document.querySelectorAll('.nav-auth-guest');
     var userBlocks = document.querySelectorAll('.nav-auth-user');
     var nameSpans = document.querySelectorAll('.nav-user-name');
@@ -8,9 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var logoutBtns = document.querySelectorAll('.nav-logout-btn');
     var isLoggedIn = typeof window.RealCPA !== 'undefined' && window.RealCPA.isLoggedIn();
 
-    if (isLoggedIn) {
-        var user = window.RealCPA.getUser();
-        var role = typeof window.RealCPA.getRole === 'function' ? window.RealCPA.getRole() : '';
+    function renderRoleUI(role, user) {
         var displayName = (user && (user.name || user.email)) || '';
         var profileHref = role === 'supplier' ? 'dashboard-supplier.html' : 'dashboard-affiliate.html';
         guestBlocks.forEach(function(el) { el.style.display = 'none'; });
@@ -21,9 +48,15 @@ document.addEventListener('DOMContentLoaded', function() {
             el.textContent = role === 'admin' ? 'Админ' : (role === 'supplier' ? 'Поставщик' : 'Аффилиат');
             el.className = 'user-role-badge nav-role-badge ' + (role || '');
         });
-        // Профиль и Настройки ведут в кабинет (дашборд) по роли
         document.querySelectorAll('.user-dropdown-profile, .user-dropdown-item[href="dashboard.html"]').forEach(function(a) { a.href = profileHref; a.classList.add('user-dropdown-profile'); });
         document.querySelectorAll('.user-dropdown-settings').forEach(function(a) { if (a.tagName === 'A') a.href = 'profile.html'; });
+        document.body.classList.toggle('role-admin', role === 'admin');
+        document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
+    }
+    if (isLoggedIn) {
+        var user = window.RealCPA.getUser();
+        var role = typeof window.RealCPA.getRole === 'function' ? window.RealCPA.getRole() : '';
+        renderRoleUI(role, user);
         // Пункт "Центр статусов" в дропдауне пользователя (для аффилиата)
         if (role === 'affiliate') {
             document.querySelectorAll('.user-dropdown').forEach(function(dd) {
@@ -401,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.RealCPA.auth.register(data)
                 .then(function(r) {
                     if (r && r.emailConfirmationSent) {
-                        alert('Регистрация завершена. Проверьте почту и подтвердите email по ссылке из письма.');
+                        window.RealCPAUI.success('Регистрация завершена. Проверьте почту и подтвердите email по ссылке из письма.');
                         window.location.href = 'login.html';
                         return;
                     }

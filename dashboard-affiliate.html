@@ -91,6 +91,11 @@
                     Найти офферы
                 </a>
             </div>
+            <div class="dashboard-block" id="affiliateNextActionBlock" style="display:none">
+                <div class="dashboard-block-header"><h2>Следующий шаг</h2></div>
+                <p id="affiliateNextActionText">Загрузка...</p>
+                <a id="affiliateNextActionBtn" class="btn btn-primary" href="offers.html">Продолжить</a>
+            </div>
 
             <div class="stats-grid">
                 <div class="stat-card">
@@ -189,6 +194,18 @@
                 if ((s.connectedOffers || 0) > 0 && (s.clicks || 0) > 0) localStorage.setItem('onboarding_affiliate_done', '1');
             } catch (e) {}
         }).catch(function() {});
+        if (window.RealCPA.onboardingProgress) {
+            window.RealCPA.onboardingProgress().then(function(p) {
+                var pending = (p.steps || []).find(function(x) { return !x.done; });
+                if (!pending) return;
+                var block = document.getElementById('affiliateNextActionBlock');
+                var text = document.getElementById('affiliateNextActionText');
+                var btn = document.getElementById('affiliateNextActionBtn');
+                if (block) block.style.display = '';
+                if (text) text.textContent = pending.title;
+                if (btn) btn.href = pending.actionLink || 'offers.html';
+            }).catch(function() {});
+        }
 
         var listEl = document.getElementById('affiliateDashboardOffersList');
         if (listEl) {

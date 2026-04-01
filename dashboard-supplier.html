@@ -99,6 +99,11 @@
                     Создать оффер
                 </a>
             </div>
+            <div class="dashboard-block" id="supplierNextActionBlock" style="display:none">
+                <div class="dashboard-block-header"><h2>Следующий шаг</h2></div>
+                <p id="supplierNextActionText">Загрузка...</p>
+                <a id="supplierNextActionBtn" class="btn btn-primary" href="create-offer.html">Продолжить</a>
+            </div>
 
             <div class="stats-grid">
                 <div class="stat-card">
@@ -197,6 +202,18 @@
                 }).catch(function() {});
             }
         });
+        if (window.RealCPA.onboardingProgress) {
+            window.RealCPA.onboardingProgress().then(function(p) {
+                var pending = (p.steps || []).find(function(x) { return !x.done; });
+                if (!pending) return;
+                var block = document.getElementById('supplierNextActionBlock');
+                var text = document.getElementById('supplierNextActionText');
+                var btn = document.getElementById('supplierNextActionBtn');
+                if (block) block.style.display = '';
+                if (text) text.textContent = pending.title;
+                if (btn) btn.href = pending.actionLink || 'create-offer.html';
+            }).catch(function() {});
+        }
     })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

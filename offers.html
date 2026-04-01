@@ -253,6 +253,8 @@
             if (o.categories && o.categories.length) return o.categories[0];
             return null;
         }
+        var offersCache = {};
+        function getCacheKey(params) { return JSON.stringify(params || {}); }
         function renderOffers(offers) {
             if (!listEl) return;
             if (listEl.getAttribute) listEl.setAttribute('aria-busy', 'false');
@@ -291,7 +293,9 @@
                 else if (ps === 'rejected' || ps === 'blocked') { badge = '<span class="offer-badge offer-badge-rejected">Отклонен</span>'; actionText = 'Подать повторно'; }
                 else if (role === 'affiliate') { badge = '<span class="offer-badge offer-badge-neutral">Не подключен</span>'; }
                 var sc = statusCenterByOffer[String(o.id)] || null;
-                if (sc && sc.nextStep) {
+                if (sc && sc.reason && (ps === 'rejected' || ps === 'blocked')) {
+                    hint = '<p class="offer-next-step"><strong>Причина:</strong> ' + escapeHtml(sc.reason) + '</p>';
+                } else if (sc && sc.nextStep) {
                     hint = '<p class="offer-next-step">' + escapeHtml(sc.nextStep) + '</p>';
                 } else if (ps === 'rejected') {
                     hint = '<p class="offer-next-step">Отклонено: исправьте условия и подайте снова</p>';
@@ -379,6 +383,11 @@
             if (!listEl) return;
             if (listEl.getAttribute) listEl.setAttribute('aria-busy', 'true');
             listEl.innerHTML = '<p class="loading-offers">Загрузка офферов…</p>';
+            var ck = getCacheKey(params);
+            if (offersCache[ck] && (Date.now() - offersCache[ck].at) < 30000) {
+                renderOffers(offersCache[ck].data || []);
+                return;
+            }
             var loadTimeout = setTimeout(function() {
                 if (listEl && listEl.getAttribute('aria-busy') === 'true') {
                     listEl.setAttribute('aria-busy', 'false');
@@ -390,6 +399,7 @@
             function onData(data) {
                 clearTimeout(loadTimeout);
                 var list = Array.isArray(data) ? data : (data && (data.offers || data.data)) ? (data.offers || data.data) : [];
+                offersCache[ck] = { at: Date.now(), data: list };
                 renderOffers(list);
             }
             function showOffersError(msg) {
@@ -437,8 +447,15 @@
         loadRegions();
         var searchBtn = document.getElementById('offerSearchBtn');
         var searchInput = document.getElementById('offerSearch');
+        var searchTimer = null;
         if (searchBtn) searchBtn.addEventListener('click', loadOffers);
-        if (searchInput) searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') loadOffers(); });
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') loadOffers(); });
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(loadOffers, 350);
+            });
+        }
         var categoryFilter = document.getElementById('categoryFilter');
         if (categoryFilter) categoryFilter.addEventListener('change', function() {
             if (categoryFilter.value === 'loading') return;

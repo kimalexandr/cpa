@@ -197,6 +197,7 @@
       updateOffer: function (id, data) { return request('PATCH', '/api/supplier/offers/' + id, data); },
       setOfferStatus: function (id, status) { return request('PATCH', '/api/supplier/offers/' + id + '/status', { status: status }); },
       getAffiliates: function (offerId) { return request('GET', '/api/supplier/offers/' + offerId + '/affiliates'); },
+      getOfferAudit: function (offerId) { return request('GET', '/api/supplier/offers/' + encodeURIComponent(offerId) + '/audit'); },
       getParticipations: function (params) {
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));

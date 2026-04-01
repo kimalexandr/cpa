@@ -26,6 +26,7 @@
     </div>
     <div class="dashboard-block">
       <button id="diagPostbackTest" class="btn btn-secondary" type="button">Проверить postback тестом</button>
+      <button id="diagRunE2E" class="btn btn-primary" type="button">Прогнать тест end-to-end</button>
     </div>
     <div class="dashboard-block">
       <h2>Последний ответ API</h2>
@@ -35,6 +36,10 @@
       <h2>История последних 10 postback</h2>
       <div id="diagHistory">—</div>
     </div>
+    <div class="dashboard-block">
+      <h2>Отчёт end-to-end</h2>
+      <pre id="diagE2EReport" style="white-space:pre-wrap;word-break:break-word;">—</pre>
+    </div>
   </main>
   <script src="api.js"></script>
   <script>
@@ -43,6 +48,7 @@
     var tokenSelect = document.getElementById('diagTokenSelect');
     var tokenInput = document.getElementById('diagToken');
     var postbackUrl = '';
+    var e2eOut = document.getElementById('diagE2EReport');
     function setOut(v) { out.textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
     function setLight(id, state) {
       var el = document.getElementById(id);
@@ -92,6 +98,35 @@
       var url = postbackUrl + ' (token=' + token + ')';
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url);
       setOut({ copied: url });
+    });
+    document.getElementById('diagRunE2E').addEventListener('click', function() {
+      var token = (tokenInput.value || '').trim();
+      if (!token) { setOut('Сначала выберите токен'); return; }
+      var report = { token: token, click: null, lead: null, supplier: null, admin: null, affiliate: null };
+      fetch('/t/' + encodeURIComponent(token), { method: 'GET', redirect: 'manual' })
+        .then(function(r) { report.click = { status: r.status, ok: r.ok }; return window.RealCPA.request('/api/events', { method: 'POST', body: { token: token, event_type: 'lead', amount: 1, external_id: 'e2e-' + Date.now() } }); })
+        .then(function(leadResp) {
+          report.lead = { ok: true, response: leadResp };
+          return Promise.all([
+            window.RealCPA.request('/api/affiliate/my-offers', { method: 'GET' }),
+            window.RealCPA.request('/api/supplier/events?status=pending&page=1&pageSize=5', { method: 'GET' }),
+            window.RealCPA.request('/api/admin/events?status=pending&page=1&pageSize=5', { method: 'GET' })
+          ]);
+        })
+        .then(function(all) {
+          report.affiliate = { count: (all[0] || []).length || ((all[0] && all[0].items && all[0].items.length) || 0) };
+          report.supplier = { count: (all[1] && all[1].items ? all[1].items.length : 0) };
+          report.admin = { count: (all[2] && all[2].items ? all[2].items.length : 0) };
+          e2eOut.textContent = JSON.stringify(report, null, 2);
+          setLight('diagTrackingState', 'OK');
+          setLight('diagPostbackState', 'OK');
+          setLight('diagLastState', 'OK');
+        })
+        .catch(function(e) {
+          report.error = e.message || 'Ошибка e2e';
+          e2eOut.textContent = JSON.stringify(report, null, 2);
+          setLight('diagPostbackState', 'FAIL');
+        });
     });
   })();
   </script>

@@ -146,6 +146,16 @@
                     </div>
                 </div>
             </section>
+            <section class="profile-card">
+                <h2 class="profile-card-title">Сеансы и устройства</h2>
+                <div class="profile-account-fields">
+                    <div class="profile-field">
+                        <span class="profile-field-label">Текущее устройство</span>
+                        <span class="profile-field-value" id="profileCurrentDevice">Этот браузер</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="logoutAllDevicesBtn">Выйти со всех устройств</button>
+                </div>
+            </section>
         </div>
 
         <!-- Модалка редактирования личных данных -->
@@ -476,6 +486,15 @@
             var el = document.getElementById(id);
             if (el) el.addEventListener('change', saveNotifyToProfile);
         });
+        var logoutAllBtn = document.getElementById('logoutAllDevicesBtn');
+        if (logoutAllBtn) {
+            logoutAllBtn.addEventListener('click', function() {
+                if (!confirm('Завершить все сеансы и войти заново?')) return;
+                if (window.RealCPA && window.RealCPA.clearAuth) window.RealCPA.clearAuth();
+                alert('Сеансы завершены. Войдите снова.');
+                window.location.href = 'login.html';
+            });
+        }
 
         loadProfile();
     })();

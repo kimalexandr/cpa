@@ -31,6 +31,10 @@
       t = t.replace(/pending|на модерации/ig, 'На модерации');
       return t;
     }
+    function extractReason(body) {
+      var m = String(body || '').match(/Причина:\s*([\s\S]+)/i);
+      return m && m[1] ? m[1].trim() : '';
+    }
     function load() {
       window.RealCPA.getNotifications({ limit: 50 }).then(function(r) {
         var items = (r && r.items) ? r.items : [];
@@ -42,7 +46,9 @@
         listEl.innerHTML = items.map(function(n){
           var link = n.link ? n.link : '#';
           var btn = n.link ? '<a class="btn btn-sm btn-primary" href="' + esc(link) + '">Перейти</a>' : '';
-          return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(mapStatusText(n.title || 'Событие')) + '</h2></div><div class="connection-meta"><div class="connection-meta-row"><span class="connection-meta-label">Детали</span><span class="connection-meta-value">' + esc(mapStatusText(n.body || '')) + '</span></div></div>' + btn + '</div>';
+          var reason = extractReason(n.body || '');
+          var reasonHtml = reason ? '<div class="connection-meta-row" style="padding:8px 10px;border-left:3px solid #ef4444;background:rgba(239,68,68,.08);margin-top:8px"><span class="connection-meta-label">Почему отклонено</span><span class="connection-meta-value">' + esc(reason) + '</span></div>' : '';
+          return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(mapStatusText(n.title || 'Событие')) + '</h2></div><div class="connection-meta"><div class="connection-meta-row"><span class="connection-meta-label">Детали</span><span class="connection-meta-value">' + esc(mapStatusText(n.body || '')) + '</span></div>' + reasonHtml + '</div>' + btn + '</div>';
         }).join('');
       }).catch(function(){
         listEl.innerHTML = '<p class="offers-empty-msg">Не удалось загрузить ленту.</p>';

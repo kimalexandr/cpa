@@ -525,6 +525,15 @@ router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
         supplier: { select: { id: true, email: true, name: true } },
       },
     });
+    if (offer.supplierId) {
+      await createNotification(prisma, {
+        userId: offer.supplierId,
+        type: 'system',
+        title: '[AUDIT] Модерация оффера',
+        body: 'Админ обновил оффер. Новый статус: ' + String((data.status as string) || offer.status),
+        link: '/create-offer.html?id=' + encodeURIComponent(offer.id),
+      });
+    }
     res.json(updated);
   } catch (e) {
     console.error('Admin PATCH offer error:', e);

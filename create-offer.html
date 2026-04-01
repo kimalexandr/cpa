@@ -87,9 +87,24 @@
                     </div>
                     <div class="offer-checklist-items" id="offerChecklistItems"></div>
                     <div class="offer-checklist-actions">
+                        <select id="offerTemplateSelect" class="filter-select" style="max-width:260px">
+                            <option value="">Создать из шаблона</option>
+                            <option value="products">Шаблон: Продукты</option>
+                            <option value="construction">Шаблон: Стройка</option>
+                            <option value="auto">Шаблон: Авто</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary btn-sm" id="offerTemplateApplyBtn">Применить шаблон</button>
                         <button type="button" class="btn btn-secondary btn-sm" id="offerDraftRestoreBtn">Восстановить черновик</button>
                         <button type="button" class="btn btn-secondary btn-sm" id="offerDraftClearBtn">Очистить черновик</button>
                     </div>
+                    <div class="offer-checklist-head" style="margin-top:8px">
+                        <strong id="offerQualityTitle">Качество оффера: 0/100</strong>
+                        <span class="offer-checklist-progress" id="offerQualityHint">Заполните ключевые поля</span>
+                    </div>
+                </div>
+                <div class="dashboard-block" id="offerAuditBlock" style="display:none;margin-top:12px">
+                    <h2>История изменений оффера</h2>
+                    <div id="offerAuditList" class="connections-cards"></div>
                 </div>
             </div>
 
@@ -562,6 +577,20 @@
                         window.__offerSelectedLocationIds = (locations || []).map(function(l) { return l.id; });
                         if (typeof updateGeoSummary === 'function') updateGeoSummary();
                     }).catch(function() {});
+                    if (window.RealCPA.supplier.getOfferAudit) {
+                        window.RealCPA.supplier.getOfferAudit(editOfferId).then(function(resp) {
+                            var items = resp && resp.items ? resp.items : [];
+                            if (!items.length) return;
+                            var wrap = document.getElementById('offerAuditBlock');
+                            var list = document.getElementById('offerAuditList');
+                            if (wrap) wrap.style.display = '';
+                            if (list) {
+                                list.innerHTML = items.map(function(x) {
+                                    return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + (x.title || '') + '</h2></div><div class="connection-meta"><div class="connection-meta-row"><span class="connection-meta-label">Когда</span><span class="connection-meta-value">' + new Date(x.createdAt).toLocaleString('ru-RU') + '</span></div><div class="connection-meta-row"><span class="connection-meta-label">Детали</span><span class="connection-meta-value">' + (x.body || '—') + '</span></div></div></div>';
+                                }).join('');
+                            }
+                        }).catch(function() {});
+                    }
                 }).catch(function() { alert('Не удалось загрузить данные оффера.'); });
             }
         }).catch(function() {
@@ -605,8 +634,12 @@
         var checklistTitle = document.getElementById('offerChecklistTitle');
         var checklistProgress = document.getElementById('offerChecklistProgress');
         var checklistItems = document.getElementById('offerChecklistItems');
+        var qualityTitle = document.getElementById('offerQualityTitle');
+        var qualityHint = document.getElementById('offerQualityHint');
         var restoreDraftBtn = document.getElementById('offerDraftRestoreBtn');
         var clearDraftBtn = document.getElementById('offerDraftClearBtn');
+        var templateSel = document.getElementById('offerTemplateSelect');
+        var templateApplyBtn = document.getElementById('offerTemplateApplyBtn');
         var userForDraft = (window.RealCPA && window.RealCPA.getUser) ? window.RealCPA.getUser() : null;
         var draftKey = 'realcpa_offer_draft_v1_' + ((userForDraft && userForDraft.id) ? userForDraft.id : 'guest') + '_' + (window.__offerIdForEdit || 'new');
 
@@ -650,6 +683,32 @@
                     return '<span class="offer-check-item ' + (i.ok ? 'ok' : 'todo') + '">' + (i.ok ? '✓ ' : '• ') + i.title + '</span>';
                 }).join('');
             }
+            var score = 0;
+            if (getInputValue('offerName').length >= 20) score += 15;
+            if (/^https?:\/\//i.test(getInputValue('offerLandingUrl'))) score += 15;
+            if (getInputValue('offerShortDesc').length >= 40) score += 12;
+            if (getInputValue('offerFullDesc').length >= 120) score += 12;
+            if ((window.__offerSelectedLocationIds || []).length > 0 || getInputValue('offerGeo')) score += 12;
+            if (Number(getInputValue('offerCpa')) >= 100) score += 10;
+            if ((getInputValue('offerAllowedSources') || getInputValue('offerForbiddenSources') || getInputValue('offerLeadCriteria'))) score += 12;
+            if (/^https?:\/\//i.test(getInputValue('offerPostback'))) score += 12;
+            if (qualityTitle) qualityTitle.textContent = 'Качество оффера: ' + score + '/100';
+            if (qualityHint) qualityHint.textContent = score >= 80 ? 'Отлично: можно отправлять' : (score >= 60 ? 'Хорошо: добавьте детали для роста конверсии' : 'Низко: заполните описание, гео, правила и postback');
+        }
+        function applyTemplate(key) {
+            var t = {
+                products: { offerName: 'Продукты оптом — CPA за подтверждённый заказ', offerShortDesc: 'Поставки продуктов питания для B2B, оптовые партии.', offerActionType: 'order', offerCpa: '500', offerAllowedSources: 'SEO, контекст, Telegram B2B', offerForbiddenSources: 'Брендовый контекст, спам' },
+                construction: { offerName: 'Стройматериалы B2B — CPA за заявку', offerShortDesc: 'Оптовые поставки стройматериалов по РФ для бизнеса.', offerActionType: 'lead', offerCpa: '700', offerAllowedSources: 'Контентные сайты, контекст, таргет', offerForbiddenSources: 'Мотивированный трафик, дорвеи' },
+                auto: { offerName: 'Автозапчасти оптом — CPA за продажу', offerShortDesc: 'Запчасти и расходники для СТО и магазинов.', offerActionType: 'payment', offerCpa: '650', offerAllowedSources: 'SEO, маркетплейсы, Telegram', offerForbiddenSources: 'Adult, clickunder/popunder' }
+            }[key];
+            if (!t) return;
+            Object.keys(t).forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el && !el.value) el.value = t[id];
+            });
+            renderChecklist();
+            saveDraft();
+            alert('Шаблон применён');
         }
         function collectDraftData() {
             var ids = [
@@ -906,6 +965,8 @@
                 alert('Черновик удалён');
             });
         }
+        if (templateApplyBtn) templateApplyBtn.addEventListener('click', function() { applyTemplate(templateSel && templateSel.value); });
+        if (templateSel) templateSel.addEventListener('change', function() { if (this.value) applyTemplate(this.value); });
         setInterval(saveDraft, 10000);
         window.addEventListener('beforeunload', saveDraft);
 

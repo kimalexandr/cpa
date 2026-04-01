@@ -7,6 +7,15 @@ import { createNotification } from '../lib/notifications';
 const router = Router();
 const prisma = new PrismaClient();
 const MAX_MONEY = 9999999999.99;
+async function logOfferAudit(userId: string, offerId: string, title: string, body: string) {
+  await createNotification(prisma, {
+    userId,
+    type: 'system',
+    title: '[AUDIT] ' + title,
+    body,
+    link: '/create-offer.html?id=' + encodeURIComponent(offerId),
+  });
+}
 
 function parseMoney(value: unknown): number | null {
   if (value == null || value === '') return null;
@@ -80,6 +89,7 @@ router.post('/offers', async (req: AuthRequest, res: Response) => {
         offerCategories: { select: { category: { select: { id: true, name: true, slug: true } } } },
       },
     });
+    await logOfferAudit(req.user!.userId, offer.id, 'Оффер создан', 'Оффер отправлен на модерацию (draft).');
     res.status(201).json(offer);
   } catch (e) {
     console.error('POST /offers error:', e);
@@ -142,6 +152,8 @@ router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
     data,
     include: { category: { select: { id: true, name: true, slug: true } } },
   });
+  var changedFields = Object.keys(data).join(', ');
+  await logOfferAudit(req.user!.userId, req.params.id, 'Оффер обновлён', changedFields ? ('Изменены поля: ' + changedFields) : 'Сохранение без изменений полей.');
   res.json(updated);
 });
 
@@ -163,7 +175,19 @@ router.patch('/offers/:id/status', async (req: AuthRequest, res: Response) => {
     data: { status },
     include: { category: { select: { id: true, name: true, slug: true } } },
   });
+  await logOfferAudit(req.user!.userId, req.params.id, 'Статус оффера изменён', 'Новый статус: ' + status);
   res.json(updated);
+});
+router.get('/offers/:id/audit', async (req: AuthRequest, res: Response) => {
+  const offer = await prisma.offer.findFirst({ where: { id: req.params.id, supplierId: req.user!.userId } });
+  if (!offer) return res.status(404).json({ error: 'Оффер не найден' });
+  const items = await prisma.notification.findMany({
+    where: { userId: req.user!.userId, title: { startsWith: '[AUDIT]' }, link: { contains: req.params.id } },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    select: { id: true, title: true, body: true, createdAt: true },
+  });
+  res.json({ items });
 });
 
 /** Сохранить выбранные локации оффера (только свой оффер) */
