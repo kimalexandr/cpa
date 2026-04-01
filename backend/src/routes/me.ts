@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuthRequest, requireAuth } from '../middleware/auth';
 import jwt from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -282,7 +283,12 @@ router.post('/api-key', async (req: AuthRequest, res: Response) => {
       select: { id: true, email: true, role: true },
     });
     if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: days + 'd' });
+    const expiresIn = (days + 'd') as StringValue;
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn }
+    );
     res.json({
       token,
       expiresInDays: days,
