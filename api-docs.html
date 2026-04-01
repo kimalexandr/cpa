@@ -85,9 +85,100 @@
 
                 <div class="faq-block">
                     <h2 class="faq-block-title">Полная спецификация</h2>
-                    <p class="support-section-desc">
-                        Подробная версия доступна в файле проекта: <code>docs/API.md</code>.
-                    </p>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Аутентификация</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <p>JWT или API ключ в заголовке:</p>
+                            <div class="postback-code-wrap"><pre><code>Authorization: Bearer &lt;token&gt;</code></pre></div>
+                        </div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Postback: структура payload</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <div class="postback-code-wrap">
+                                <pre><code>{
+  "token": "tk-xxxx",
+  "event_type": "lead",
+  "amount": 1200,
+  "currency": "RUB",
+  "external_id": "order-100500",
+  "source": "facebook",
+  "subid1": "campaignA",
+  "utm_source": "google",
+  "utm_campaign": "spring_sale"
+}</code></pre>
+                            </div>
+                            <p>Событие идемпотентно по паре <code>(trackingLinkId, external_id)</code>. Повторный postback не приводит к двойной оплате.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>API v1 (versioned)</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <ul>
+                                <li><code>GET /api/v1/affiliate/events</code> (scope: <code>affiliate:events.read</code>)</li>
+                                <li><code>GET /api/v1/supplier/events</code> (scope: <code>supplier:events.read</code>)</li>
+                                <li><code>POST /api/v1/events</code> (scope: <code>events.write</code>)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Affiliate endpoints</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <ul>
+                                <li><code>GET /api/affiliate/events</code></li>
+                                <li><code>GET /api/affiliate/analytics-sources</code></li>
+                                <li><code>POST /api/affiliate/events/:id/dispute</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Supplier endpoints</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <ul>
+                                <li><code>GET /api/supplier/analytics-sources</code></li>
+                                <li><code>GET /api/supplier/offers/:id/audit</code></li>
+                                <li><code>GET /api/supplier/affiliate-participations</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Admin endpoints</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <ul>
+                                <li><code>GET /api/admin/payouts/registry</code></li>
+                                <li><code>GET /api/admin/payouts/export.csv</code></li>
+                                <li><code>PATCH /api/admin/payouts/bulk-status</code></li>
+                                <li><code>GET /api/admin/moderation/sla-summary</code></li>
+                                <li><code>POST /api/admin/moderation/sla-ping</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Коды ответов</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <ul>
+                                <li><code>200</code> OK</li>
+                                <li><code>201</code> Created</li>
+                                <li><code>400</code> Validation error</li>
+                                <li><code>401</code> Unauthorized</li>
+                                <li><code>403</code> Forbidden</li>
+                                <li><code>404</code> Not found</li>
+                                <li><code>409</code> Conflict (idempotency/duplicate)</li>
+                                <li><code>500</code> Server error</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="faq-item active">
+                        <div class="faq-question"><span>Рекомендации по безопасности</span><i class="fas fa-chevron-down"></i></div>
+                        <div class="faq-answer">
+                            <ul>
+                                <li>Храните API ключи только в секретном хранилище.</li>
+                                <li>Ротируйте ключи каждые 60-90 дней.</li>
+                                <li>Сразу отзывайте ключ при подозрительной активности.</li>
+                                <li>Включите 2FA для admin-аккаунтов.</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
