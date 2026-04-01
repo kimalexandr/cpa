@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (navUser && !navUser.querySelector('.notifications-bell-wrap')) {
             var bellWrap = document.createElement('div');
             bellWrap.className = 'notifications-bell-wrap';
-            bellWrap.innerHTML = '<button type="button" class="notifications-bell" id="notificationsBellBtn" aria-label="Уведомления" aria-haspopup="true"><i class="fas fa-bell"></i><span class="notifications-badge empty" id="notificationsBadge">0</span></button><div class="notifications-dropdown" id="notificationsDropdown" aria-hidden="true"><div class="notifications-dropdown-header">Уведомления</div><div class="notifications-dropdown-body" id="notificationsDropdownBody"></div><div class="notifications-dropdown-footer"><button type="button" class="btn-link" id="notificationsMarkAllRead">Отметить все прочитанными</button></div></div>';
+            bellWrap.innerHTML = '<button type="button" class="notifications-bell" id="notificationsBellBtn" aria-label="Уведомления" aria-haspopup="true"><i class="fas fa-bell"></i><span class="notifications-badge empty" id="notificationsBadge">0</span></button><div class="notifications-dropdown" id="notificationsDropdown" aria-hidden="true"><div class="notifications-dropdown-header">Уведомления</div><div class="notifications-dropdown-body" id="notificationsDropdownBody"></div><div class="notifications-dropdown-footer"><button type="button" class="btn-link" id="notificationsMarkAllRead">Отметить все прочитанными</button><a href="status-center.html" class="btn-link" id="notificationsStatusCenterLink" style="display:none">Центр статусов</a></div></div>';
             navUser.insertBefore(bellWrap, navUser.firstChild);
 
             var bellBtn = document.getElementById('notificationsBellBtn');
@@ -115,6 +115,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var notifBody = document.getElementById('notificationsDropdownBody');
             var notifBadge = document.getElementById('notificationsBadge');
             var markAllReadBtn = document.getElementById('notificationsMarkAllRead');
+            var statusCenterLink = document.getElementById('notificationsStatusCenterLink');
+            if (statusCenterLink && window.RealCPA.getRole && window.RealCPA.getRole() === 'affiliate') {
+                statusCenterLink.style.display = 'inline-block';
+            }
 
             function formatNotificationTime(dateStr) {
                 var d = new Date(dateStr);

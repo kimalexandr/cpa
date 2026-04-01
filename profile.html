@@ -92,6 +92,10 @@
                         <span class="profile-field-value" id="profilePhone">—</span>
                         <a href="#" class="profile-link profile-link-inline" id="profilePhoneLink">Указать номер телефона</a>
                     </div>
+                    <div class="profile-field" id="profileStatusCenterWrap" style="display:none">
+                        <span class="profile-field-label">Статусы и модерация</span>
+                        <a href="status-center.html" class="profile-link profile-link-inline" id="profileStatusCenterLink">Открыть центр статусов</a>
+                    </div>
                     <a href="#" class="profile-link profile-link-danger" id="profileDeleteAccount">Удалить аккаунт</a>
                 </div>
             </section>
@@ -219,6 +223,10 @@
         if (typeof window.RealCPA === 'undefined' || !window.RealCPA.isLoggedIn()) {
             window.location.href = 'login.html?redirect=' + encodeURIComponent('profile.html');
             return;
+        }
+        if (window.RealCPA.getRole && window.RealCPA.getRole() === 'affiliate') {
+            var statusWrap = document.getElementById('profileStatusCenterWrap');
+            if (statusWrap) statusWrap.style.display = '';
         }
 
         var modal = document.getElementById('profileEditModal');
