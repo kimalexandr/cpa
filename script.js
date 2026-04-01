@@ -24,6 +24,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Профиль и Настройки ведут в кабинет (дашборд) по роли
         document.querySelectorAll('.user-dropdown-profile, .user-dropdown-item[href="dashboard.html"]').forEach(function(a) { a.href = profileHref; a.classList.add('user-dropdown-profile'); });
         document.querySelectorAll('.user-dropdown-settings').forEach(function(a) { if (a.tagName === 'A') a.href = 'profile.html'; });
+        // Пункт "Центр статусов" в дропдауне пользователя (для аффилиата)
+        if (role === 'affiliate') {
+            document.querySelectorAll('.user-dropdown').forEach(function(dd) {
+                if (!dd || dd.querySelector('.user-dropdown-status-center')) return;
+                var divider = dd.querySelector('.user-dropdown-divider');
+                var link = document.createElement('a');
+                link.href = 'status-center.html';
+                link.className = 'user-dropdown-item user-dropdown-status-center';
+                link.textContent = 'Центр статусов';
+                if (divider) dd.insertBefore(link, divider);
+                else dd.appendChild(link);
+            });
+        }
         if (role === 'admin') document.body.classList.add('role-admin');
         else document.body.classList.remove('role-admin');
         document.querySelectorAll('.sidebar-auth-only').forEach(function(s) { s.style.display = ''; });
@@ -38,14 +51,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         // Быстрые ссылки в шапке по роли
         var navRoot = document.querySelector('.header .nav');
-        if (navRoot && !document.getElementById('navStatusCenterLink') && role === 'affiliate') {
-            var statusLink = document.createElement('a');
-            statusLink.id = 'navStatusCenterLink';
-            statusLink.className = 'nav-link';
-            statusLink.href = 'status-center.html';
-            statusLink.textContent = 'Центр статусов';
-            navRoot.appendChild(statusLink);
-        }
         if (navRoot && !document.getElementById('navDiagnosticsLink') && role === 'supplier') {
             var diagLink = document.createElement('a');
             diagLink.id = 'navDiagnosticsLink';
@@ -107,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (navUser && !navUser.querySelector('.notifications-bell-wrap')) {
             var bellWrap = document.createElement('div');
             bellWrap.className = 'notifications-bell-wrap';
-            bellWrap.innerHTML = '<button type="button" class="notifications-bell" id="notificationsBellBtn" aria-label="Уведомления" aria-haspopup="true"><i class="fas fa-bell"></i><span class="notifications-badge empty" id="notificationsBadge">0</span></button><div class="notifications-dropdown" id="notificationsDropdown" aria-hidden="true"><div class="notifications-dropdown-header">Уведомления</div><div class="notifications-dropdown-body" id="notificationsDropdownBody"></div><div class="notifications-dropdown-footer"><button type="button" class="btn-link" id="notificationsMarkAllRead">Отметить все прочитанными</button><a href="status-center.html" class="btn-link" id="notificationsStatusCenterLink" style="display:none">Центр статусов</a></div></div>';
+            bellWrap.innerHTML = '<button type="button" class="notifications-bell" id="notificationsBellBtn" aria-label="Уведомления" aria-haspopup="true"><i class="fas fa-bell"></i><span class="notifications-badge empty" id="notificationsBadge">0</span></button><div class="notifications-dropdown" id="notificationsDropdown" aria-hidden="true"><div class="notifications-dropdown-header">Уведомления</div><div class="notifications-dropdown-body" id="notificationsDropdownBody"></div><div class="notifications-dropdown-footer"><button type="button" class="btn-link" id="notificationsMarkAllRead">Отметить все прочитанными</button></div></div>';
             navUser.insertBefore(bellWrap, navUser.firstChild);
 
             var bellBtn = document.getElementById('notificationsBellBtn');
@@ -115,11 +120,6 @@ document.addEventListener('DOMContentLoaded', function() {
             var notifBody = document.getElementById('notificationsDropdownBody');
             var notifBadge = document.getElementById('notificationsBadge');
             var markAllReadBtn = document.getElementById('notificationsMarkAllRead');
-            var statusCenterLink = document.getElementById('notificationsStatusCenterLink');
-            if (statusCenterLink && window.RealCPA.getRole && window.RealCPA.getRole() === 'affiliate') {
-                statusCenterLink.style.display = 'inline-block';
-            }
-
             function formatNotificationTime(dateStr) {
                 var d = new Date(dateStr);
                 var now = new Date();
