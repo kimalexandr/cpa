@@ -583,6 +583,152 @@ router.get('/payouts', async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.get('/payouts/registry', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = (req.query.status as string) || 'pending';
+    const where: { status?: 'pending' | 'processing' | 'paid' | 'canceled' } = {};
+    if (['pending', 'processing', 'paid', 'canceled'].includes(status)) where.status = status as 'pending' | 'processing' | 'paid' | 'canceled';
+    const payouts = await prisma.payout.findMany({
+      where,
+      include: { affiliate: { select: { id: true, email: true, name: true } } },
+      orderBy: [{ affiliateId: 'asc' }, { createdAt: 'asc' }],
+      take: 500,
+    });
+    const map: Record<string, { affiliateId: string; affiliateEmail: string; affiliateName: string; currency: string; totalAmount: number; payoutIds: string[]; count: number }> = {};
+    payouts.forEach((p) => {
+      const k = p.affiliateId + '|' + p.currency;
+      if (!map[k]) map[k] = {
+        affiliateId: p.affiliateId,
+        affiliateEmail: p.affiliate?.email || '',
+        affiliateName: p.affiliate?.name || '',
+        currency: p.currency,
+        totalAmount: 0,
+        payoutIds: [],
+        count: 0,
+      };
+      map[k].totalAmount += Number(p.amount || 0);
+      map[k].count += 1;
+      map[k].payoutIds.push(p.id);
+    });
+    res.json({ items: Object.values(map), total: payouts.length });
+  } catch (e) {
+    console.error('Admin payouts registry error:', e);
+    res.status(500).json({ error: 'Ошибка формирования реестра' });
+  }
+});
+
+router.get('/payouts/export.csv', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const where: Record<string, unknown> = {};
+    if (status && ['pending', 'processing', 'paid', 'canceled'].includes(status)) where.status = status;
+    const list = await prisma.payout.findMany({
+      where,
+      include: { affiliate: { select: { id: true, email: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 2000,
+    });
+    const rows = ['id,affiliate_id,affiliate_email,affiliate_name,amount,currency,status,created_at,paid_at'];
+    list.forEach((p) => {
+      rows.push([
+        p.id,
+        p.affiliateId,
+        (p.affiliate?.email || '').replace(/,/g, ' '),
+        (p.affiliate?.name || '').replace(/,/g, ' '),
+        Number(p.amount || 0).toFixed(2),
+        p.currency,
+        p.status,
+        new Date(p.createdAt).toISOString(),
+        p.paidAt ? new Date(p.paidAt).toISOString() : '',
+      ].join(','));
+    });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="payouts.csv"');
+    res.send(rows.join('\n'));
+  } catch (e) {
+    console.error('Admin payouts export error:', e);
+    res.status(500).json({ error: 'Ошибка экспорта выплат' });
+  }
+});
+
+router.patch('/payouts/bulk-status', async (req: AuthRequest, res: Response) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((x: unknown) => String(x)) : [];
+    const status = req.body?.status as string;
+    if (!ids.length) return res.status(400).json({ error: 'Передайте ids' });
+    if (!['pending', 'processing', 'paid', 'canceled'].includes(status)) {
+      return res.status(400).json({ error: 'Некорректный статус' });
+    }
+    const data: { status: 'pending' | 'processing' | 'paid' | 'canceled'; paidAt?: Date | null } = { status: status as 'pending' | 'processing' | 'paid' | 'canceled' };
+    if (status === 'paid') data.paidAt = new Date();
+    if (status !== 'paid') data.paidAt = null;
+    const updated = await prisma.payout.updateMany({
+      where: { id: { in: ids } },
+      data,
+    });
+    res.json({ updated: updated.count });
+  } catch (e) {
+    console.error('Admin payouts bulk status error:', e);
+    res.status(500).json({ error: 'Ошибка массового обновления выплат' });
+  }
+});
+
+router.get('/moderation/sla-summary', async (_req: AuthRequest, res: Response) => {
+  try {
+    const slaHours = Number(process.env.MODERATION_SLA_HOURS || 48);
+    const threshold = new Date(Date.now() - slaHours * 60 * 60 * 1000);
+    const [pendingEventsTotal, pendingEventsOverdue] = await Promise.all([
+      prisma.event.count({ where: { status: 'pending', eventType: { in: [EventType.lead, EventType.sale] } } }),
+      prisma.event.count({ where: { status: 'pending', eventType: { in: [EventType.lead, EventType.sale] }, createdAt: { lte: threshold } } }),
+    ]);
+    res.json({ slaHours, pendingEventsTotal, pendingEventsOverdue });
+  } catch (e) {
+    console.error('Admin moderation SLA summary error:', e);
+    res.status(500).json({ error: 'Ошибка SLA summary' });
+  }
+});
+
+router.post('/moderation/sla-ping', async (_req: AuthRequest, res: Response) => {
+  try {
+    const slaHours = Number(process.env.MODERATION_SLA_HOURS || 48);
+    const threshold = new Date(Date.now() - slaHours * 60 * 60 * 1000);
+    const overdue = await prisma.event.findMany({
+      where: {
+        status: 'pending',
+        eventType: { in: [EventType.lead, EventType.sale] },
+        createdAt: { lte: threshold },
+      },
+      include: {
+        trackingLink: {
+          select: {
+            affiliateId: true,
+            offer: { select: { id: true, title: true, supplierId: true } },
+          },
+        },
+      },
+      take: 300,
+      orderBy: { createdAt: 'asc' },
+    });
+    let notified = 0;
+    for (const e of overdue) {
+      if (e.trackingLink.offer.supplierId) {
+        await createNotification(prisma, {
+          userId: e.trackingLink.offer.supplierId,
+          type: 'system',
+          title: '[SLA] Зависшие события на модерации',
+          body: 'Проверьте событие ' + e.id + ' по офферу "' + e.trackingLink.offer.title + '" — pending дольше ' + slaHours + 'ч.',
+          link: '/dashboard-supplier-leads.html',
+        });
+        notified++;
+      }
+    }
+    res.json({ slaHours, overdue: overdue.length, notified });
+  } catch (e) {
+    console.error('Admin moderation SLA ping error:', e);
+    res.status(500).json({ error: 'Ошибка SLA ping' });
+  }
+});
+
 /** Смена статуса выплаты (paid → отправить email) */
 router.patch('/payouts/:id', async (req: AuthRequest, res: Response) => {
   try {

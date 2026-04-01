@@ -2,9 +2,11 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuthRequest, requireAuth } from '../middleware/auth';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'realcpa-dev-secret-change-in-production';
 
 router.use(requireAuth);
 
@@ -269,6 +271,71 @@ router.patch('/supplier-profile', async (req: AuthRequest, res: Response) => {
     console.error('PATCH /api/me/supplier-profile:', e);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
+});
+
+router.post('/api-key', async (req: AuthRequest, res: Response) => {
+  try {
+    const daysRaw = Number(req.body?.days);
+    const days = Number.isFinite(daysRaw) ? Math.max(1, Math.min(365, Math.floor(daysRaw))) : 90;
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { id: true, email: true, role: true },
+    });
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: days + 'd' });
+    res.json({
+      token,
+      expiresInDays: days,
+      note: 'Используйте как Bearer токен для API.',
+    });
+  } catch (e) {
+    console.error('POST /api/me/api-key:', e);
+    res.status(500).json({ error: 'Ошибка генерации API ключа' });
+  }
+});
+
+router.post('/webhook/test', async (req: AuthRequest, res: Response) => {
+  try {
+    const url = String(req.body?.url || '').trim();
+    if (!/^https?:\/\/[\w.-]/i.test(url)) return res.status(400).json({ error: 'Укажите корректный URL webhook' });
+    const payload = {
+      event: String(req.body?.event || 'test'),
+      sentAt: new Date().toISOString(),
+      userId: req.user!.userId,
+      role: req.user!.role,
+      payload: req.body?.payload || { ok: true },
+    };
+    const result = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const text = await result.text();
+    res.json({ ok: result.ok, status: result.status, response: text.slice(0, 1000) });
+  } catch (e) {
+    console.error('POST /api/me/webhook/test:', e);
+    res.status(500).json({ error: 'Ошибка теста webhook' });
+  }
+});
+
+router.get('/api-docs', (_req: AuthRequest, res: Response) => {
+  res.json({
+    title: 'RealCPA API docs',
+    auth: 'Bearer <token>',
+    endpoints: [
+      { method: 'GET', path: '/api/affiliate/events', desc: 'События аффилиата, фильтры status/externalId' },
+      { method: 'GET', path: '/api/affiliate/analytics', desc: 'Аналитика аффилиата по дням' },
+      { method: 'GET', path: '/api/affiliate/analytics-sources', desc: 'Аналитика по источникам (token)' },
+      { method: 'GET', path: '/api/supplier/events', desc: 'События поставщика (лиды/продажи)' },
+      { method: 'GET', path: '/api/supplier/analytics', desc: 'Аналитика поставщика по дням' },
+      { method: 'GET', path: '/api/supplier/analytics-sources', desc: 'Аналитика поставщика по источникам (token)' },
+      { method: 'POST', path: '/api/events', desc: 'Приём postback событий (token/external_id)' },
+      { method: 'GET', path: '/api/admin/payouts/registry', desc: 'Реестр выплат (админ)' },
+      { method: 'GET', path: '/api/admin/payouts/export.csv', desc: 'Экспорт выплат CSV (админ)' },
+      { method: 'POST', path: '/api/me/api-key', desc: 'Личный long-lived API ключ' },
+      { method: 'POST', path: '/api/me/webhook/test', desc: 'Тест webhook URL' },
+    ],
+  });
 });
 
 export default router;

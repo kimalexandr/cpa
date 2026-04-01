@@ -156,6 +156,25 @@
                     <button type="button" class="btn btn-secondary" id="logoutAllDevicesBtn">Выйти со всех устройств</button>
                 </div>
             </section>
+            <section class="profile-card">
+                <h2 class="profile-card-title">API и Webhook</h2>
+                <div class="profile-account-fields">
+                    <div class="profile-field">
+                        <span class="profile-field-label">Личный API ключ (Bearer)</span>
+                        <button type="button" class="btn btn-secondary" id="generateApiKeyBtn">Сгенерировать ключ (90 дней)</button>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileApiKeyOutput">Ключ</label>
+                        <textarea id="profileApiKeyOutput" rows="3" readonly placeholder="Нажмите «Сгенерировать ключ»"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileWebhookTestUrl">Тест webhook URL</label>
+                        <input type="url" id="profileWebhookTestUrl" class="form-control" placeholder="https://example.com/webhook">
+                        <button type="button" class="btn btn-secondary" id="testWebhookBtn" style="margin-top:8px">Отправить тест</button>
+                    </div>
+                    <a href="#" class="profile-link" id="profileApiDocsLink">Показать API docs</a>
+                </div>
+            </section>
         </div>
 
         <!-- Модалка редактирования личных данных -->
@@ -493,6 +512,39 @@
                 if (window.RealCPA && window.RealCPA.clearAuth) window.RealCPA.clearAuth();
                 alert('Сеансы завершены. Войдите снова.');
                 window.location.href = 'login.html';
+            });
+        }
+        var genApiBtn = document.getElementById('generateApiKeyBtn');
+        var apiOut = document.getElementById('profileApiKeyOutput');
+        if (genApiBtn && apiOut) {
+            genApiBtn.addEventListener('click', function() {
+                window.RealCPA.createApiKey(90).then(function(resp) {
+                    apiOut.value = resp.token || '';
+                }).catch(function(err) {
+                    alert(err.message || 'Ошибка генерации ключа');
+                });
+            });
+        }
+        var testWebhookBtn = document.getElementById('testWebhookBtn');
+        if (testWebhookBtn) {
+            testWebhookBtn.addEventListener('click', function() {
+                var url = (document.getElementById('profileWebhookTestUrl').value || '').trim();
+                window.RealCPA.testWebhook(url, 'manual_test', { source: 'profile' }).then(function(resp) {
+                    alert('Webhook: HTTP ' + resp.status);
+                }).catch(function(err) {
+                    alert(err.message || 'Ошибка webhook теста');
+                });
+            });
+        }
+        var apiDocsLink = document.getElementById('profileApiDocsLink');
+        if (apiDocsLink && apiOut) {
+            apiDocsLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.RealCPA.apiDocs().then(function(resp) {
+                    apiOut.value = JSON.stringify(resp, null, 2);
+                }).catch(function(err) {
+                    alert(err.message || 'Ошибка загрузки docs');
+                });
             });
         }
 

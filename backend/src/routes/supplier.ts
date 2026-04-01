@@ -481,6 +481,52 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.get('/analytics-sources', async (req: AuthRequest, res: Response) => {
+  try {
+    const fromQ = (req.query.from as string) || '';
+    const toQ = (req.query.to as string) || '';
+    const toDate = toQ ? new Date(toQ) : new Date();
+    const fromDate = fromQ ? new Date(fromQ) : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+    fromDate.setHours(0, 0, 0, 0);
+    toDate.setHours(23, 59, 59, 999);
+    const offers = await prisma.offer.findMany({
+      where: { supplierId: req.user!.userId },
+      select: { id: true, title: true },
+    });
+    const offerIds = offers.map((o) => o.id);
+    const links = await prisma.trackingLink.findMany({
+      where: { offerId: { in: offerIds } },
+      select: { id: true, token: true, offerId: true },
+    });
+    if (!links.length) return res.json({ items: [] });
+    const linkIds = links.map((l) => l.id);
+    const events = await prisma.event.findMany({
+      where: { trackingLinkId: { in: linkIds }, createdAt: { gte: fromDate, lte: toDate } },
+      select: { trackingLinkId: true, eventType: true, status: true, amount: true },
+    });
+    const offerById: Record<string, string> = {};
+    offers.forEach((o) => { offerById[o.id] = o.title; });
+    const linkMap: Record<string, { source: string; offerTitle: string }> = {};
+    links.forEach((l) => { linkMap[l.id] = { source: 'token:' + l.token, offerTitle: offerById[l.offerId] || '—' }; });
+    const agg: Record<string, { source: string; offerTitle: string; clicks: number; leads: number; sales: number; approved: number; rejected: number; payout: number }> = {};
+    events.forEach((e) => {
+      const src = linkMap[e.trackingLinkId]?.source || 'unknown';
+      const title = linkMap[e.trackingLinkId]?.offerTitle || '—';
+      const k = src + '|' + title;
+      if (!agg[k]) agg[k] = { source: src, offerTitle: title, clicks: 0, leads: 0, sales: 0, approved: 0, rejected: 0, payout: 0 };
+      if (e.eventType === 'click') agg[k].clicks++;
+      if (e.eventType === 'lead') agg[k].leads++;
+      if (e.eventType === 'sale') agg[k].sales++;
+      if (e.status === 'approved') { agg[k].approved++; agg[k].payout += Number(e.amount || 0); }
+      if (e.status === 'rejected') agg[k].rejected++;
+    });
+    res.json({ items: Object.values(agg).sort((a, b) => b.payout - a.payout) });
+  } catch (e) {
+    console.error('GET /api/supplier/analytics-sources:', e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 /** Список лидов/продаж по офферам поставщика (для модерации) */
 router.get('/events', async (req: AuthRequest, res: Response) => {
   try {

@@ -157,6 +157,17 @@
                     </table>
                 </div>
             </div>
+            <div class="table-section" id="analyticsSourcesSection" style="display:none">
+                <h2>Аналитика по источникам</h2>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Источник</th><th>Оффер</th><th>Клики</th><th>Лиды</th><th>Продажи</th><th>Одобрено</th><th>Отклонено</th><th>Сумма, ₽</th></tr>
+                        </thead>
+                        <tbody id="analyticsSourcesBody"><tr><td colspan="8" style="color:#64748b;">Загрузка...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -191,6 +202,8 @@
         var tbody = document.getElementById('analyticsTableBody');
         var affiliateEventsSection = document.getElementById('affiliateEventsSection');
         var affiliateEventsBody = document.getElementById('affiliateEventsTableBody');
+        var sourcesSection = document.getElementById('analyticsSourcesSection');
+        var sourcesBody = document.getElementById('analyticsSourcesBody');
 
         function getFromTo() {
             var days = periodSelect ? parseInt(periodSelect.value, 10) || 30 : 30;
@@ -257,6 +270,23 @@
                 }
             }).catch(function() {
                 if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="color:#991b1b;">Не удалось загрузить данные</td></tr>';
+            });
+            var srcApi = role === 'supplier' ? (window.RealCPA.supplier.analyticsSources ? window.RealCPA.supplier.analyticsSources(r) : Promise.resolve({ items: [] })) : (window.RealCPA.affiliate.analyticsSources ? window.RealCPA.affiliate.analyticsSources(r) : Promise.resolve({ items: [] }));
+            srcApi.then(function(resp) {
+                if (sourcesSection) sourcesSection.style.display = '';
+                var items = resp && resp.items ? resp.items : [];
+                if (!items.length) {
+                    if (sourcesBody) sourcesBody.innerHTML = '<tr><td colspan="8" style="color:#64748b;">Нет данных</td></tr>';
+                    return;
+                }
+                if (sourcesBody) {
+                    sourcesBody.innerHTML = items.map(function(s) {
+                        return '<tr><td>' + esc(s.source || '—') + '</td><td>' + esc(s.offerTitle || '—') + '</td><td>' + esc(s.clicks || 0) + '</td><td>' + esc(s.leads || 0) + '</td><td>' + esc(s.sales || 0) + '</td><td>' + esc(s.approved || 0) + '</td><td>' + esc(s.rejected || 0) + '</td><td>' + esc((s.revenue != null ? s.revenue : s.payout) || 0) + '</td></tr>';
+                    }).join('');
+                }
+            }).catch(function() {
+                if (sourcesSection) sourcesSection.style.display = '';
+                if (sourcesBody) sourcesBody.innerHTML = '<tr><td colspan="8" style="color:#991b1b;">Не удалось загрузить источники</td></tr>';
             });
         }
         if (periodSelect) periodSelect.addEventListener('change', loadAnalytics);

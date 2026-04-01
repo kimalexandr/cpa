@@ -148,6 +148,15 @@
     patchMe: function (data) {
       return request('PATCH', '/api/me', data);
     },
+    createApiKey: function (days) {
+      return request('POST', '/api/me/api-key', { days: days || 90 });
+    },
+    testWebhook: function (url, event, payload) {
+      return request('POST', '/api/me/webhook/test', { url: url, event: event, payload: payload || { ping: true } });
+    },
+    apiDocs: function () {
+      return request('GET', '/api/me/api-docs');
+    },
     changePassword: function (currentPassword, newPassword) {
       return request('PATCH', '/api/me/password', { currentPassword: currentPassword, newPassword: newPassword });
     },
@@ -231,6 +240,12 @@
         if (params && params.from) q.push('from=' + encodeURIComponent(params.from));
         if (params && params.to) q.push('to=' + encodeURIComponent(params.to));
         return request('GET', '/api/supplier/analytics' + (q.length ? '?' + q.join('&') : ''));
+      },
+      analyticsSources: function (params) {
+        var q = [];
+        if (params && params.from) q.push('from=' + encodeURIComponent(params.from));
+        if (params && params.to) q.push('to=' + encodeURIComponent(params.to));
+        return request('GET', '/api/supplier/analytics-sources' + (q.length ? '?' + q.join('&') : ''));
       }
     },
     affiliate: {
@@ -253,6 +268,12 @@
         if (params && params.from) q.push('from=' + encodeURIComponent(params.from));
         if (params && params.to) q.push('to=' + encodeURIComponent(params.to));
         return request('GET', '/api/affiliate/analytics' + (q.length ? '?' + q.join('&') : ''));
+      },
+      analyticsSources: function (params) {
+        var q = [];
+        if (params && params.from) q.push('from=' + encodeURIComponent(params.from));
+        if (params && params.to) q.push('to=' + encodeURIComponent(params.to));
+        return request('GET', '/api/affiliate/analytics-sources' + (q.length ? '?' + q.join('&') : ''));
       }
     },
 
@@ -313,6 +334,18 @@
         var q = [];
         if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
         return request('GET', '/api/admin/payouts' + (q.length ? '?' + q.join('&') : ''));
+      },
+      payoutsRegistry: function (params) {
+        var q = [];
+        if (params && params.status) q.push('status=' + encodeURIComponent(params.status));
+        return request('GET', '/api/admin/payouts/registry' + (q.length ? '?' + q.join('&') : ''));
+      },
+      payoutsExportCsvUrl: function (status) {
+        var q = status ? ('?status=' + encodeURIComponent(status)) : '';
+        return BASE + '/api/admin/payouts/export.csv' + q;
+      },
+      setPayoutsBulkStatus: function (ids, status) {
+        return request('PATCH', '/api/admin/payouts/bulk-status', { ids: ids || [], status: status });
       },
       setPayoutStatus: function (payoutId, status) {
         return request('PATCH', '/api/admin/payouts/' + encodeURIComponent(payoutId), { status: status });
