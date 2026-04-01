@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
+import * as crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'realcpa-dev-secret-change-in-production';
+const prisma = new PrismaClient();
 
 export type UserRole = 'affiliate' | 'supplier' | 'admin';
 
@@ -9,6 +12,8 @@ export interface JwtPayload {
   userId: string;
   email: string;
   role: UserRole;
+  authType?: 'jwt' | 'api_key';
+  scopes?: string[];
   iat?: number;
   exp?: number;
 }
@@ -57,7 +62,7 @@ export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
 
-export function requireAuth(req: AuthRequest, res: Response, next: NextFunction): void {
+export async function requireAuth(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) {
@@ -65,11 +70,31 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
     return;
   }
   const payload = verifyToken(token);
-  if (!payload) {
+  if (payload) {
+    req.user = { ...payload, authType: 'jwt' };
+    next();
+    return;
+  }
+  const keyHash = crypto.createHash('sha256').update(token).digest('hex');
+  const apiKey = await prisma.apiKey.findUnique({
+    where: { keyHash },
+    include: { user: { select: { id: true, email: true, role: true, status: true } } },
+  });
+  if (!apiKey || !apiKey.user || apiKey.user.status !== 'active' || apiKey.revokedAt || (apiKey.expiresAt && apiKey.expiresAt < new Date())) {
     res.status(401).json({ error: 'Недействительный или истёкший токен' });
     return;
   }
-  req.user = payload;
+  req.user = {
+    userId: apiKey.user.id,
+    email: apiKey.user.email,
+    role: apiKey.user.role,
+    authType: 'api_key',
+    scopes: apiKey.scopes || [],
+  };
+  await prisma.apiKey.update({
+    where: { id: apiKey.id },
+    data: { lastUsedAt: new Date() },
+  }).catch(() => {});
   next();
 }
 
@@ -95,4 +120,24 @@ export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction
     if (payload) req.user = payload;
   }
   next();
+}
+
+export function requireScope(...scopes: string[]) {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Требуется авторизация' });
+      return;
+    }
+    if (req.user.authType !== 'api_key') {
+      next();
+      return;
+    }
+    const userScopes = req.user.scopes || [];
+    const ok = scopes.some((s) => userScopes.includes(s) || userScopes.includes('*'));
+    if (!ok) {
+      res.status(403).json({ error: 'Недостаточно scope прав для API key' });
+      return;
+    }
+    next();
+  };
 }

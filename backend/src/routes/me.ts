@@ -2,12 +2,11 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuthRequest, requireAuth } from '../middleware/auth';
-import jwt from 'jsonwebtoken';
-import type { StringValue } from 'ms';
+import * as crypto from 'crypto';
+import speakeasy from 'speakeasy';
 
 const router = Router();
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'realcpa-dev-secret-change-in-production';
 
 router.use(requireAuth);
 
@@ -274,29 +273,153 @@ router.patch('/supplier-profile', async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.post('/2fa/setup', async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'admin') return res.status(403).json({ error: '2FA доступно только для админа' });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { email: true },
+    });
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+    const secret = speakeasy.generateSecret({ name: 'RealCPA Admin (' + user.email + ')' });
+    await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { twoFactorSecret: secret.base32, twoFactorEnabled: false },
+    });
+    res.json({ secret: secret.base32, otpauthUrl: secret.otpauth_url });
+  } catch (e) {
+    console.error('POST /api/me/2fa/setup:', e);
+    res.status(500).json({ error: 'Ошибка настройки 2FA' });
+  }
+});
+
+router.post('/2fa/enable', async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'admin') return res.status(403).json({ error: '2FA доступно только для админа' });
+    const otp = String(req.body?.otp || '').trim();
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { twoFactorSecret: true },
+    });
+    if (!user || !user.twoFactorSecret) return res.status(400).json({ error: 'Сначала выполните setup 2FA' });
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: otp,
+      window: 1,
+    });
+    if (!verified) return res.status(400).json({ error: 'Неверный OTP код' });
+    await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { twoFactorEnabled: true },
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('POST /api/me/2fa/enable:', e);
+    res.status(500).json({ error: 'Ошибка включения 2FA' });
+  }
+});
+
+router.post('/2fa/disable', async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'admin') return res.status(403).json({ error: '2FA доступно только для админа' });
+    await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { twoFactorEnabled: false, twoFactorSecret: null },
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('POST /api/me/2fa/disable:', e);
+    res.status(500).json({ error: 'Ошибка отключения 2FA' });
+  }
+});
+
 router.post('/api-key', async (req: AuthRequest, res: Response) => {
   try {
     const daysRaw = Number(req.body?.days);
     const days = Number.isFinite(daysRaw) ? Math.max(1, Math.min(365, Math.floor(daysRaw))) : 90;
+    const name = String(req.body?.name || 'Default key');
+    const scopesRaw = Array.isArray(req.body?.scopes) ? req.body.scopes : [];
+    const scopes = scopesRaw.map((s: unknown) => String(s)).filter(Boolean);
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId },
       select: { id: true, email: true, role: true },
     });
     if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
-    const expiresIn = (days + 'd') as StringValue;
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn }
-    );
+    const rawKey = 'rk_' + crypto.randomBytes(24).toString('hex');
+    const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    const row = await prisma.apiKey.create({
+      data: {
+        userId: user.id,
+        name,
+        keyHash,
+        scopes: scopes.length ? scopes : ['*'],
+        expiresAt,
+      },
+      select: { id: true, name: true, scopes: true, expiresAt: true, createdAt: true },
+    });
     res.json({
-      token,
+      token: rawKey,
+      key: row,
       expiresInDays: days,
-      note: 'Используйте как Bearer токен для API.',
+      note: 'Ключ показывается один раз. Сохраните его.',
     });
   } catch (e) {
     console.error('POST /api/me/api-key:', e);
     res.status(500).json({ error: 'Ошибка генерации API ключа' });
+  }
+});
+
+router.get('/api-keys', async (req: AuthRequest, res: Response) => {
+  try {
+    const keys = await prisma.apiKey.findMany({
+      where: { userId: req.user!.userId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, name: true, scopes: true, createdAt: true, expiresAt: true, revokedAt: true, lastUsedAt: true },
+    });
+    res.json({ items: keys });
+  } catch (e) {
+    console.error('GET /api/me/api-keys:', e);
+    res.status(500).json({ error: 'Ошибка списка API ключей' });
+  }
+});
+
+router.patch('/api-keys/:id/revoke', async (req: AuthRequest, res: Response) => {
+  try {
+    const row = await prisma.apiKey.findFirst({
+      where: { id: req.params.id, userId: req.user!.userId },
+      select: { id: true },
+    });
+    if (!row) return res.status(404).json({ error: 'Ключ не найден' });
+    await prisma.apiKey.update({
+      where: { id: row.id },
+      data: { revokedAt: new Date() },
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('PATCH /api/me/api-keys/:id/revoke:', e);
+    res.status(500).json({ error: 'Ошибка revoke API ключа' });
+  }
+});
+
+router.post('/kyc', async (req: AuthRequest, res: Response) => {
+  try {
+    const documentType = String(req.body?.documentType || '').trim();
+    const documentUrl = String(req.body?.documentUrl || '').trim();
+    if (!documentType || !documentUrl) return res.status(400).json({ error: 'Укажите documentType и documentUrl' });
+    const row = await prisma.kycRequest.create({
+      data: {
+        userId: req.user!.userId,
+        documentType,
+        documentUrl,
+        status: 'pending',
+      },
+    });
+    res.status(201).json(row);
+  } catch (e) {
+    console.error('POST /api/me/kyc:', e);
+    res.status(500).json({ error: 'Ошибка создания KYC заявки' });
   }
 });
 
@@ -339,6 +462,9 @@ router.get('/api-docs', (_req: AuthRequest, res: Response) => {
       { method: 'GET', path: '/api/admin/payouts/registry', desc: 'Реестр выплат (админ)' },
       { method: 'GET', path: '/api/admin/payouts/export.csv', desc: 'Экспорт выплат CSV (админ)' },
       { method: 'POST', path: '/api/me/api-key', desc: 'Личный long-lived API ключ' },
+      { method: 'GET', path: '/api/me/api-keys', desc: 'Список API ключей' },
+      { method: 'PATCH', path: '/api/me/api-keys/:id/revoke', desc: 'Отзыв API ключа' },
+      { method: 'GET', path: '/api/v1/affiliate/events', desc: 'Версионированный API v1 (через API key)' },
       { method: 'POST', path: '/api/me/webhook/test', desc: 'Тест webhook URL' },
     ],
   });

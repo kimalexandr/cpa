@@ -151,8 +151,17 @@
     createApiKey: function (days) {
       return request('POST', '/api/me/api-key', { days: days || 90 });
     },
+    apiKeys: function () {
+      return request('GET', '/api/me/api-keys');
+    },
+    revokeApiKey: function (id) {
+      return request('PATCH', '/api/me/api-keys/' + encodeURIComponent(id) + '/revoke', {});
+    },
     testWebhook: function (url, event, payload) {
       return request('POST', '/api/me/webhook/test', { url: url, event: event, payload: payload || { ping: true } });
+    },
+    createKycRequest: function (documentType, documentUrl) {
+      return request('POST', '/api/me/kyc', { documentType: documentType, documentUrl: documentUrl });
     },
     apiDocs: function () {
       return request('GET', '/api/me/api-docs');

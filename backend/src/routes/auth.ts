@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { signAccessToken, signRefreshToken, signPasswordResetToken, verifyPasswordResetToken, verifyToken } from '../middleware/auth';
 import { buildEmailConfirmLink, buildResetLink, sendEmailConfirmation, sendResetPassword, sendWelcome } from '../lib/email';
 import * as crypto from 'crypto';
+import speakeasy from 'speakeasy';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -95,6 +96,23 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!ok) {
       res.status(401).json({ error: 'Неверный email или пароль' });
       return;
+    }
+    if (user.role === 'admin' && user.twoFactorEnabled) {
+      const otp = req.body.otp ? String(req.body.otp).trim() : '';
+      if (!otp || !user.twoFactorSecret) {
+        res.status(401).json({ error: 'Требуется 2FA код' });
+        return;
+      }
+      const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: 'base32',
+        token: otp,
+        window: 1,
+      });
+      if (!verified) {
+        res.status(401).json({ error: 'Неверный 2FA код' });
+        return;
+      }
     }
     const payload = { userId: user.id, email: user.email, role: user.role };
     const accessToken = signAccessToken(payload);

@@ -168,6 +168,10 @@
                         <textarea id="profileApiKeyOutput" rows="3" readonly placeholder="Нажмите «Сгенерировать ключ»"></textarea>
                     </div>
                     <div class="form-group">
+                        <label>Активные API ключи</label>
+                        <div id="profileApiKeysList" class="connection-meta-value">—</div>
+                    </div>
+                    <div class="form-group">
                         <label for="profileWebhookTestUrl">Тест webhook URL</label>
                         <input type="url" id="profileWebhookTestUrl" class="form-control" placeholder="https://example.com/webhook">
                         <button type="button" class="btn btn-secondary" id="testWebhookBtn" style="margin-top:8px">Отправить тест</button>
@@ -520,10 +524,30 @@
             genApiBtn.addEventListener('click', function() {
                 window.RealCPA.createApiKey(90).then(function(resp) {
                     apiOut.value = resp.token || '';
+                    loadApiKeys();
                 }).catch(function(err) {
                     alert(err.message || 'Ошибка генерации ключа');
                 });
             });
+        }
+        function loadApiKeys() {
+            var listEl = document.getElementById('profileApiKeysList');
+            if (!listEl || !window.RealCPA.apiKeys) return;
+            window.RealCPA.apiKeys().then(function(resp) {
+                var items = resp && resp.items ? resp.items : [];
+                if (!items.length) { listEl.innerHTML = 'Нет ключей'; return; }
+                listEl.innerHTML = items.map(function(k) {
+                    var st = k.revokedAt ? 'revoked' : 'active';
+                    var revokeBtn = k.revokedAt ? '' : (' <button type="button" class="btn btn-secondary btn-sm api-key-revoke-btn" data-id="' + k.id + '">Отозвать</button>');
+                    return '<div><code>' + k.id + '</code> [' + st + '] ' + (k.name || '') + revokeBtn + '</div>';
+                }).join('');
+                listEl.querySelectorAll('.api-key-revoke-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var id = this.getAttribute('data-id');
+                        window.RealCPA.revokeApiKey(id).then(function() { loadApiKeys(); }).catch(function(err) { alert(err.message || 'Ошибка revoke'); });
+                    });
+                });
+            }).catch(function() {});
         }
         var testWebhookBtn = document.getElementById('testWebhookBtn');
         if (testWebhookBtn) {
@@ -547,6 +571,7 @@
                 });
             });
         }
+        loadApiKeys();
 
         loadProfile();
     })();

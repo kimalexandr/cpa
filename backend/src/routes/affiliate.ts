@@ -501,4 +501,44 @@ router.get('/events', async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.post('/events/:id/dispute', async (req: AuthRequest, res: Response) => {
+  try {
+    const event = await prisma.event.findFirst({
+      where: {
+        id: req.params.id,
+        trackingLink: { affiliateId: req.user!.userId },
+      },
+      select: { id: true },
+    });
+    if (!event) return res.status(404).json({ error: 'Событие не найдено' });
+    const reason = String(req.body?.reason || '').trim();
+    if (!reason) return res.status(400).json({ error: 'Укажите причину спора' });
+    const dispute = await prisma.dispute.create({
+      data: {
+        eventId: event.id,
+        affiliateId: req.user!.userId,
+        reason,
+        status: 'open',
+      },
+    });
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin', status: 'active' },
+      select: { id: true },
+    });
+    await Promise.all(admins.map((a) => prisma.notification.create({
+      data: {
+        userId: a.id,
+        type: 'system',
+        title: '[DISPUTE] Новый спор по событию',
+        body: 'eventId: ' + event.id + '. affiliateId: ' + req.user!.userId + '. Причина: ' + reason,
+        link: '/admin/moderation.html',
+      },
+    })));
+    res.status(201).json(dispute);
+  } catch (e) {
+    console.error('POST /api/affiliate/events/:id/dispute:', e);
+    res.status(500).json({ error: 'Ошибка создания спора' });
+  }
+});
+
 export default router;

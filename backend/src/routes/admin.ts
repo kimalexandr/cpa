@@ -1105,4 +1105,70 @@ router.patch('/moderation/participations/:id', async (req: AuthRequest, res: Res
   }
 });
 
+router.get('/disputes', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = (req.query.status as string) || '';
+    const where: { status?: string } = {};
+    if (status) where.status = status;
+    const items = await prisma.dispute.findMany({
+      where,
+      include: {
+        affiliate: { select: { id: true, email: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    res.json({ items });
+  } catch (e) {
+    console.error('GET /api/admin/disputes:', e);
+    res.status(500).json({ error: 'Ошибка загрузки споров' });
+  }
+});
+
+router.patch('/disputes/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = String(req.body?.status || '').trim();
+    const comment = req.body?.comment != null ? String(req.body.comment) : null;
+    if (!status) return res.status(400).json({ error: 'Укажите status' });
+    const updated = await prisma.dispute.update({
+      where: { id: req.params.id },
+      data: { status, reason: comment != null ? String(comment) : undefined },
+    });
+    res.json(updated);
+  } catch (e) {
+    console.error('PATCH /api/admin/disputes/:id:', e);
+    res.status(500).json({ error: 'Ошибка обновления спора' });
+  }
+});
+
+router.get('/kyc', async (_req: AuthRequest, res: Response) => {
+  try {
+    const items = await prisma.kycRequest.findMany({
+      include: { user: { select: { id: true, email: true, name: true, role: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    res.json({ items });
+  } catch (e) {
+    console.error('GET /api/admin/kyc:', e);
+    res.status(500).json({ error: 'Ошибка загрузки KYC' });
+  }
+});
+
+router.patch('/kyc/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = String(req.body?.status || '').trim();
+    const comment = req.body?.comment != null ? String(req.body.comment) : null;
+    if (!status) return res.status(400).json({ error: 'Укажите status' });
+    const updated = await prisma.kycRequest.update({
+      where: { id: req.params.id },
+      data: { status, comment },
+    });
+    res.json(updated);
+  } catch (e) {
+    console.error('PATCH /api/admin/kyc/:id:', e);
+    res.status(500).json({ error: 'Ошибка обновления KYC' });
+  }
+});
+
 export default router;
