@@ -549,7 +549,7 @@
   <h2>10 ниш реального сектора</h2>
   <p class="section-sub">Офферы из самых прибыльных сегментов оптовой B2B торговли.</p>
 
-  <div class="niches-grid">
+  <div class="niches-grid" id="nichesGrid">
     <div class="niche-card">
       <div class="niche-icon">🏗️</div>
       <div class="niche-name">Стройматериалы</div>
@@ -701,6 +701,72 @@
 </div>
 
 <script src="api.js"></script>
+<script>
+(function () {
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function iconByName(name) {
+    var n = String(name || '').toLowerCase();
+    if (n.indexOf('строй') !== -1) return '🏗️';
+    if (n.indexOf('продукт') !== -1 || n.indexOf('питан') !== -1) return '🍎';
+    if (n.indexOf('авто') !== -1 || n.indexOf('запчаст') !== -1) return '🔧';
+    if (n.indexOf('оборуд') !== -1) return '⚙️';
+    if (n.indexOf('хим') !== -1 || n.indexOf('клини') !== -1) return '🧴';
+    if (n.indexOf('текст') !== -1) return '👕';
+    if (n.indexOf('упаков') !== -1) return '📦';
+    if (n.indexOf('электрон') !== -1 || n.indexOf('it') !== -1) return '💻';
+    if (n.indexOf('мебел') !== -1) return '🪑';
+    return '📌';
+  }
+  function pluralOffers(count) {
+    var n = Math.abs(Number(count) || 0) % 100;
+    var n1 = n % 10;
+    if (n > 10 && n < 20) return 'офферов';
+    if (n1 > 1 && n1 < 5) return 'оффера';
+    if (n1 === 1) return 'оффер';
+    return 'офферов';
+  }
+  function renderNiches(categories, offers) {
+    var grid = document.getElementById('nichesGrid');
+    if (!grid) return;
+    var counts = {};
+    (offers || []).forEach(function (o) {
+      var cats = Array.isArray(o.categories) ? o.categories : [];
+      if (!cats.length && o.category && o.category.slug) cats = [o.category];
+      cats.forEach(function (c) {
+        if (!c || !c.slug) return;
+        counts[c.slug] = (counts[c.slug] || 0) + 1;
+      });
+    });
+    var list = (categories || [])
+      .filter(function (c) { return c && c.slug; })
+      .map(function (c) {
+        return { id: c.id, name: c.name || c.slug, slug: c.slug, count: counts[c.slug] || 0 };
+      })
+      .sort(function (a, b) { return b.count - a.count; })
+      .slice(0, 10);
+    grid.innerHTML = list.map(function (c) {
+      return '<a class="niche-card" href="offers.html?category=' + encodeURIComponent(c.slug) + '" style="text-decoration:none;color:inherit;display:block">' +
+        '<div class="niche-icon">' + iconByName(c.name) + '</div>' +
+        '<div class="niche-name">' + esc(c.name) + '</div>' +
+        '<div class="niche-count">' + c.count + ' ' + pluralOffers(c.count) + '</div>' +
+      '</a>';
+    }).join('');
+  }
+  Promise.all([
+    window.RealCPA && window.RealCPA.categories ? window.RealCPA.categories() : Promise.resolve([]),
+    window.RealCPA && window.RealCPA.offers ? window.RealCPA.offers({ status: 'active' }) : Promise.resolve([])
+  ]).then(function (res) {
+    renderNiches(res[0] || [], res[1] || []);
+  }).catch(function () {});
+})();
+</script>
 <script src="script.js"></script>
 </body>
 </html>

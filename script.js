@@ -1,3 +1,52 @@
+// Единый рендер статусов для всех страниц
+(function() {
+    if (window.RealCPAStatusUI) return;
+    function esc(v) {
+        var d = document.createElement('div');
+        d.textContent = v == null ? '' : String(v);
+        return d.innerHTML;
+    }
+    function normalizeStatus(s) {
+        var v = String(s || '').toLowerCase();
+        return v;
+    }
+    function statusMeta(s) {
+        var v = normalizeStatus(s);
+        if (v === 'approved') return { label: 'Одобрено', cls: 'offer-badge-approved' };
+        if (v === 'active') return { label: 'Активен', cls: 'offer-badge-approved' };
+        if (v === 'paid') return { label: 'Оплачено', cls: 'offer-badge-approved' };
+        if (v === 'pending') return { label: 'На модерации', cls: 'offer-badge-pending' };
+        if (v === 'draft') return { label: 'На модерации', cls: 'offer-badge-pending' };
+        if (v === 'processing') return { label: 'В обработке', cls: 'offer-badge-pending' };
+        if (v === 'rejected') return { label: 'Отклонено', cls: 'offer-badge-rejected' };
+        if (v === 'blocked') return { label: 'Заблокировано', cls: 'offer-badge-rejected' };
+        if (v === 'canceled') return { label: 'Отменено', cls: 'offer-badge-rejected' };
+        if (v === 'closed') return { label: 'Закрыт', cls: 'offer-badge-rejected' };
+        if (v === 'paused') return { label: 'Приостановлен', cls: 'offer-badge-rejected' };
+        return { label: s || '—', cls: 'offer-badge-neutral' };
+    }
+    function actionTextByStatus(s) {
+        var v = normalizeStatus(s);
+        if (v === 'approved' || v === 'active' || v === 'paid') return 'Открыть';
+        if (v === 'pending' || v === 'draft' || v === 'processing') return 'Открыть';
+        if (v === 'rejected' || v === 'blocked' || v === 'canceled' || v === 'closed' || v === 'paused') return 'Исправить и подать снова';
+        return 'Открыть';
+    }
+    window.RealCPAStatusUI = {
+        esc: esc,
+        statusMeta: statusMeta,
+        renderBadge: function(s) {
+            var m = statusMeta(s);
+            return '<span class="offer-badge ' + m.cls + '">' + esc(m.label) + '</span>';
+        },
+        renderTableStatus: function(s) {
+            var m = statusMeta(s);
+            return '<span class="offer-status ' + m.cls + '">' + esc(m.label) + '</span>';
+        },
+        actionTextByStatus: actionTextByStatus
+    };
+})();
+
 // Навигация: гости — «Войти», «Регистрация»; авторизованные — блок пользователя с дропдауном (Профиль, Настройки, Выйти)
 document.addEventListener('DOMContentLoaded', function() {
     if (!window.RealCPAUI) {

@@ -38,6 +38,11 @@ enum OfferStatus {
   closed
 }
 
+enum LandingType {
+  external
+  internal
+}
+
 enum ParticipationStatus {
   pending
   approved
@@ -102,6 +107,8 @@ model User {
   disputes           Dispute[] @relation("DisputeAffiliate")
   kycRequests        KycRequest[]
   sessions           UserSession[]
+  ledgerAsAffiliate  LedgerEntry[] @relation("LedgerAffiliate")
+  ledgerAsSupplier   LedgerEntry[] @relation("LedgerSupplier")
 
   @@index([email])
 }
@@ -254,6 +261,7 @@ model Offer {
   payoutAmount    Decimal     @map("payout_amount") @db.Decimal(12, 2)
   currency        String      @default("RUB")
   landingUrl      String      @map("landing_url")
+  landingType     LandingType @default(external) @map("landing_type")
   status          OfferStatus @default(draft)
   holdDays        Int?        @map("hold_days")
   rules           String?     @db.Text
@@ -261,6 +269,7 @@ model Offer {
   capConversions  Int?        @map("cap_conversions")
   rating          Decimal?   @map("rating") @db.Decimal(3, 2)
   reviewsCount    Int?       @map("reviews_count")
+  postbackSecret  String?    @map("postback_secret") @db.Text
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
@@ -270,11 +279,35 @@ model Offer {
   offerLocations   OfferLocation[]
   participations   AffiliateOfferParticipation[]
   trackingLinks    TrackingLink[]
+  ledgerEntries    LedgerEntry[]
 
   @@index([categoryId])
   @@index([status])
   @@index([supplierId])
   @@map("offers")
+}
+
+model LedgerEntry {
+  id            String   @id @default(uuid())
+  eventId       String   @unique @map("event_id")
+  offerId       String   @map("offer_id")
+  affiliateId   String   @map("affiliate_id")
+  supplierId    String   @map("supplier_id")
+  amount        Decimal  @db.Decimal(12, 2)
+  currency      String   @default("RUB")
+  status        String   @default("accrued")
+  reason        String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  offer     Offer @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  affiliate User  @relation("LedgerAffiliate", fields: [affiliateId], references: [id], onDelete: Restrict)
+  supplier  User  @relation("LedgerSupplier", fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@index([affiliateId, status])
+  @@index([supplierId, status])
+  @@index([offerId])
+  @@map("ledger_entries")
 }
 
 model AffiliateOfferParticipation {
@@ -337,6 +370,7 @@ model Event {
   createdAt       DateTime    @default(now()) @map("created_at")
 
   trackingLink TrackingLink @relation(fields: [trackingLinkId], references: [id], onDelete: Restrict)
+  ledgerEntry  LedgerEntry?
 
   @@index([trackingLinkId])
   @@index([eventType])

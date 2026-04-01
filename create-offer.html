@@ -141,6 +141,14 @@
                         <input type="text" id="offerName" required placeholder="Например: Стройматериалы оптом — CPA 500 ₽ за заказ">
                     </div>
                     <div class="form-group">
+                        <label for="offerLandingType">Тип лендинга</label>
+                        <select id="offerLandingType">
+                            <option value="external">Внешняя ссылка</option>
+                            <option value="internal">Внутренняя форма (lead-form.html)</option>
+                        </select>
+                        <p class="form-hint">Для внутренней формы трафик будет идти на встроенный lead-form внутри портала.</p>
+                    </div>
+                    <div class="form-group">
                         <label for="offerLandingUrl">Ссылка на лендинг (URL для партнёров)</label>
                         <input type="url" id="offerLandingUrl" placeholder="https://...">
                     </div>
@@ -531,6 +539,8 @@
                     if (nameEl) nameEl.value = o.title || '';
                     var landingEl = document.getElementById('offerLandingUrl');
                     if (landingEl) landingEl.value = o.landingUrl || '';
+                    var landingTypeEl = document.getElementById('offerLandingType');
+                    if (landingTypeEl) landingTypeEl.value = o.landingType || 'external';
                     var catSel = document.getElementById('offerCategory');
                     if (catSel) catSel.value = o.categoryId || (o.category && o.category.id) || '';
                     var shortEl = document.getElementById('offerShortDesc');
@@ -640,6 +650,13 @@
         var clearDraftBtn = document.getElementById('offerDraftClearBtn');
         var templateSel = document.getElementById('offerTemplateSelect');
         var templateApplyBtn = document.getElementById('offerTemplateApplyBtn');
+        var landingTypeEl = document.getElementById('offerLandingType');
+        var landingUrlEl = document.getElementById('offerLandingUrl');
+        var landingUrlGroup = landingUrlEl ? landingUrlEl.closest('.form-group') : null;
+        function updateLandingModeUi() {
+            var mode = landingTypeEl ? String(landingTypeEl.value || 'external') : 'external';
+            if (landingUrlGroup) landingUrlGroup.style.display = mode === 'internal' ? 'none' : '';
+        }
         var userForDraft = (window.RealCPA && window.RealCPA.getUser) ? window.RealCPA.getUser() : null;
         var draftKey = 'realcpa_offer_draft_v1_' + ((userForDraft && userForDraft.id) ? userForDraft.id : 'guest') + '_' + (window.__offerIdForEdit || 'new');
 
@@ -648,6 +665,7 @@
             return el ? String(el.value || '').trim() : '';
         }
         function buildChecklist() {
+            var landingType = getInputValue('offerLandingType') || 'external';
             var cpaRaw = getInputValue('offerCpa');
             var cpaNum = Number(cpaRaw.replace(',', '.'));
             var rulesData = (typeof window.__buildRulesPayloadForSave === 'function') ? window.__buildRulesPayloadForSave() : null;
@@ -660,7 +678,7 @@
             var items = [
                 { title: 'Название оффера', ok: !!getInputValue('offerName') },
                 { title: 'Категория', ok: !!getInputValue('offerCategory') },
-                { title: 'Лендинг URL', ok: /^https?:\/\/[\w.-]/i.test(getInputValue('offerLandingUrl')) },
+                { title: 'Лендинг', ok: landingType === 'internal' || /^https?:\/\/[\w.-]/i.test(getInputValue('offerLandingUrl')) },
                 { title: 'Краткое описание', ok: !!getInputValue('offerShortDesc') },
                 { title: 'География', ok: !!getInputValue('offerGeo') || ((window.__offerSelectedLocationIds || []).length > 0) },
                 { title: 'CPA ставка', ok: Number.isFinite(cpaNum) && cpaNum >= 1 },
@@ -685,7 +703,7 @@
             }
             var score = 0;
             if (getInputValue('offerName').length >= 20) score += 15;
-            if (/^https?:\/\//i.test(getInputValue('offerLandingUrl'))) score += 15;
+            if (landingType === 'internal' || /^https?:\/\//i.test(getInputValue('offerLandingUrl'))) score += 15;
             if (getInputValue('offerShortDesc').length >= 40) score += 12;
             if (getInputValue('offerFullDesc').length >= 120) score += 12;
             if ((window.__offerSelectedLocationIds || []).length > 0 || getInputValue('offerGeo')) score += 12;
@@ -712,7 +730,7 @@
         }
         function collectDraftData() {
             var ids = [
-                'offerName','offerLandingUrl','offerInn','offerCategory','offerActionType','offerShortDesc','offerFullDesc',
+                'offerName','offerLandingType','offerLandingUrl','offerInn','offerCategory','offerActionType','offerShortDesc','offerFullDesc',
                 'offerAttentionImportant','offerAttentionProhibited','offerGeo','offerVolumeUnit','offerMinOrder','offerAvgCheck',
                 'offerCpa','offerConfirmPercent','offerConversion','offerPaymentTerm','offerCookieLifetime','offerConfirmDays',
                 'offerMobileTracking','offerBudget','offerCapDay','offerCapMonth','offerHoldDays','offerAllowedSources',
@@ -818,6 +836,7 @@
                 var categoryId = document.getElementById('offerCategory') && document.getElementById('offerCategory').value;
                 var title = (document.getElementById('offerName') || {}).value;
                 var landingUrl = (document.getElementById('offerLandingUrl') || {}).value;
+                var landingType = (document.getElementById('offerLandingType') || {}).value || 'external';
                 var description = (document.getElementById('offerFullDesc') || {}).value || (document.getElementById('offerShortDesc') || {}).value || '';
                 var geoSelect = document.getElementById('offerGeo');
                 var targetGeo = geoSelect ? geoSelect.options[geoSelect.selectedIndex].text : '';
@@ -833,12 +852,12 @@
                 var shortDescEl = document.getElementById('offerShortDesc');
                 [categoryEl, titleEl, landingEl, shortDescEl, geoSelect, cpaInput].forEach(clearInlineError);
                 var hasError = false;
-                if (!categoryId || !title || !landingUrl) {
+                if (!categoryId || !title || (landingType === 'external' && !landingUrl)) {
                     if (!categoryId) showInlineError(categoryEl, 'Выберите категорию');
                     if (!title || !title.trim()) showInlineError(titleEl, 'Введите название оффера');
-                    if (!landingUrl || !landingUrl.trim()) showInlineError(landingEl, 'Укажите ссылку на лендинг');
+                    if (landingType === 'external' && (!landingUrl || !landingUrl.trim())) showInlineError(landingEl, 'Укажите ссылку на лендинг');
                     hasError = true;
-                } else if (!/^https?:\/\/[\w.-]/i.test(String(landingUrl).trim())) {
+                } else if (landingType === 'external' && !/^https?:\/\/[\w.-]/i.test(String(landingUrl).trim())) {
                     showInlineError(landingEl, 'URL должен начинаться с http:// или https://');
                     hasError = true;
                 }
@@ -901,7 +920,8 @@
                     categoryId: categoryId,
                     title: title,
                     description: description,
-                    landingUrl: landingUrl,
+                    landingUrl: landingType === 'internal' ? '#' : landingUrl,
+                    landingType: landingType,
                     targetGeo: targetGeo || undefined,
                     payoutModel: 'CPA',
                     payoutAmount: payoutAmount,
@@ -967,9 +987,11 @@
         }
         if (templateApplyBtn) templateApplyBtn.addEventListener('click', function() { applyTemplate(templateSel && templateSel.value); });
         if (templateSel) templateSel.addEventListener('change', function() { if (this.value) applyTemplate(this.value); });
+        if (landingTypeEl) landingTypeEl.addEventListener('change', function() { updateLandingModeUi(); renderChecklist(); saveDraft(); });
         setInterval(saveDraft, 10000);
         window.addEventListener('beforeunload', saveDraft);
 
+        updateLandingModeUi();
         goToStep(1);
         renderChecklist();
     })();

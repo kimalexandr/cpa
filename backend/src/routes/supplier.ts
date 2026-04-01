@@ -3,6 +3,8 @@ import { PrismaClient, EventType, EventStatus } from '@prisma/client';
 import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
 import { sendParticipationApproved, sendParticipationRejected } from '../lib/email';
 import { createNotification } from '../lib/notifications';
+import * as crypto from 'crypto';
+import { ensureTrackingLink } from '../lib/tracking-link';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -24,6 +26,10 @@ function parseMoney(value: unknown): number | null {
   return n;
 }
 
+function generatePostbackSecret(): string {
+  return 'pb_' + crypto.randomBytes(24).toString('base64url');
+}
+
 router.use(requireAuth);
 router.use(requireRole('supplier'));
 
@@ -42,8 +48,13 @@ router.post('/offers', async (req: AuthRequest, res: Response) => {
     const payoutAmount = parseMoney(b.payoutAmount);
     const capAmount = parseMoney(b.capAmount);
     const categoryIds: string[] = Array.isArray(b.categoryIds) ? b.categoryIds.map((id: unknown) => String(id)) : b.categoryId != null ? [String(b.categoryId)] : [];
-    if (!categoryIds.length || !b.title || !b.landingUrl) {
-      res.status(400).json({ error: 'Укажите хотя бы одну категорию, название и ссылку на лендинг' });
+    const landingType = b.landingType === 'internal' ? 'internal' : 'external';
+    if (!categoryIds.length || !b.title) {
+      res.status(400).json({ error: 'Укажите хотя бы одну категорию и название' });
+      return;
+    }
+    if (landingType === 'external' && !b.landingUrl) {
+      res.status(400).json({ error: 'Для внешнего лендинга укажите ссылку' });
       return;
     }
     if (payoutAmount == null || payoutAmount < 0 || payoutAmount > MAX_MONEY) {
@@ -72,7 +83,8 @@ router.post('/offers', async (req: AuthRequest, res: Response) => {
         payoutModel: (b.payoutModel as 'CPA' | 'CPL' | 'RevShare') || 'CPA',
         payoutAmount,
         currency: String(b.currency || 'RUB'),
-        landingUrl: String(b.landingUrl),
+        landingUrl: String(b.landingUrl || '#'),
+        landingType,
         status: 'draft',
         holdDays: b.holdDays != null ? Number(b.holdDays) : null,
         rules: b.rules != null ? String(b.rules) : null,
@@ -80,6 +92,7 @@ router.post('/offers', async (req: AuthRequest, res: Response) => {
         capConversions: b.capConversions != null ? Number(b.capConversions) : null,
         rating: b.rating != null ? Number(b.rating) : null,
         reviewsCount: b.reviewsCount != null ? Number(b.reviewsCount) : null,
+        postbackSecret: generatePostbackSecret(),
         offerCategories: {
           create: [...new Set(categoryIds)].map((categoryId) => ({ categoryId })),
         },
@@ -131,6 +144,7 @@ router.patch('/offers/:id', async (req: AuthRequest, res: Response) => {
   }
   if (b.currency != null) data.currency = b.currency;
   if (b.landingUrl != null) data.landingUrl = b.landingUrl;
+  if (b.landingType != null) data.landingType = b.landingType === 'internal' ? 'internal' : 'external';
   if (b.holdDays !== undefined) data.holdDays = b.holdDays == null ? null : Number(b.holdDays);
   if (b.rules !== undefined) data.rules = b.rules == null ? null : String(b.rules);
   if (b.capAmount !== undefined) {
@@ -362,19 +376,14 @@ router.patch('/affiliate-participation/:id', async (req: AuthRequest, res: Respo
     data: { status },
   });
   if (status === 'approved') {
-    const token = 'tk-' + p.affiliateId.slice(0, 8) + '-' + p.offerId.slice(0, 8);
-    await prisma.trackingLink.upsert({
-      where: { token },
-      update: {},
-      create: { offerId: p.offerId, affiliateId: p.affiliateId, token },
-    });
+    await ensureTrackingLink(prisma, p.offerId, p.affiliateId);
   }
   const sendParticipationEmail = (p.affiliate as { affiliateProfile?: { notifyParticipation: boolean | null } } | null)?.affiliateProfile?.notifyParticipation !== false;
   if (p.affiliate?.email && sendParticipationEmail) {
     if (status === 'approved') {
       const baseApi = process.env.API_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
-      const token = 'tk-' + p.affiliateId.slice(0, 8) + '-' + p.offerId.slice(0, 8);
-      const trackingUrl = baseApi.replace(/\/api\/?$/, '') + '/t/' + token;
+      const link = await ensureTrackingLink(prisma, p.offerId, p.affiliateId);
+      const trackingUrl = baseApi.replace(/\/api\/?$/, '') + '/t/' + link.token;
       await sendParticipationApproved(p.affiliate.email, p.offer.title, trackingUrl);
     } else {
       await sendParticipationRejected(p.affiliate.email, p.offer.title);
@@ -392,6 +401,30 @@ router.patch('/affiliate-participation/:id', async (req: AuthRequest, res: Respo
       : ('/offer.html?id=' + encodeURIComponent(p.offerId)),
   });
   res.json(updated);
+});
+
+router.post('/offers/:id/postback-secret/rotate', async (req: AuthRequest, res: Response) => {
+  try {
+    const offer = await prisma.offer.findFirst({
+      where: { id: req.params.id, supplierId: req.user!.userId },
+      select: { id: true },
+    });
+    if (!offer) return res.status(404).json({ error: 'Оффер не найден' });
+    const rawSecret = generatePostbackSecret();
+    await prisma.offer.update({
+      where: { id: offer.id },
+      data: { postbackSecret: rawSecret },
+    });
+    return res.json({
+      ok: true,
+      offerId: offer.id,
+      secret: rawSecret,
+      hint: 'Сохраните секрет. Он нужен для HMAC подписи postback.',
+    });
+  } catch (e) {
+    console.error('POST /api/supplier/offers/:id/postback-secret/rotate:', e);
+    return res.status(500).json({ error: 'Ошибка ротации postback секрета' });
+  }
 });
 
 router.get('/stats', async (req: AuthRequest, res: Response) => {

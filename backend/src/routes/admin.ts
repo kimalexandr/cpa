@@ -5,6 +5,7 @@ import { sendAdminPasswordReset, sendPayoutPaid, sendParticipationApproved, send
 import { createNotification } from '../lib/notifications';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { ensureTrackingLink } from '../lib/tracking-link';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -866,6 +867,28 @@ router.patch('/events/:id', async (req: AuthRequest, res: Response) => {
       where: { id },
       data: updateData,
     });
+    if (status === 'approved') {
+      await prisma.ledgerEntry.upsert({
+        where: { eventId: event.id },
+        update: {
+          amount: updateData.amount != null ? Number(updateData.amount) : Number(updated.amount || 0),
+          status: 'accrued',
+          reason: null,
+        },
+        create: {
+          eventId: event.id,
+          offerId: event.trackingLink.offerId,
+          affiliateId: event.trackingLink.affiliateId,
+          supplierId: event.trackingLink.offer.supplierId,
+          amount: updateData.amount != null ? Number(updateData.amount) : Number(updated.amount || 0),
+          currency: String(updated.currency || 'RUB'),
+          status: 'accrued',
+          reason: null,
+        },
+      });
+    } else {
+      await prisma.ledgerEntry.deleteMany({ where: { eventId: event.id } });
+    }
     await createNotification(prisma, {
       userId: event.trackingLink.affiliateId,
       type: 'system',
@@ -1073,17 +1096,14 @@ router.patch('/moderation/participations/:id', async (req: AuthRequest, res: Res
       data: { status },
     });
     if (status === 'approved') {
-      const token = 'tk-' + p.affiliateId.slice(0, 8) + '-' + p.offerId.slice(0, 8);
-      await prisma.trackingLink.upsert({
-        where: { token },
-        update: {},
-        create: { offerId: p.offerId, affiliateId: p.affiliateId, token },
-      });
+      await ensureTrackingLink(prisma, p.offerId, p.affiliateId);
     }
     const sendEmail = (p.affiliate as { affiliateProfile?: { notifyParticipation: boolean | null } } | null)?.affiliateProfile?.notifyParticipation !== false;
     if (p.affiliate?.email && sendEmail) {
       const baseApi = process.env.API_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
-      const trackingUrl = baseApi.replace(/\/api\/?$/, '') + '/t/' + (status === 'approved' ? 'tk-' + p.affiliateId.slice(0, 8) + '-' + p.offerId.slice(0, 8) : '');
+      const trackingUrl = status === 'approved'
+        ? (baseApi.replace(/\/api\/?$/, '') + '/t/' + (await ensureTrackingLink(prisma, p.offerId, p.affiliateId)).token)
+        : '';
       if (status === 'approved') await sendParticipationApproved(p.affiliate.email, p.offer.title, trackingUrl);
       else await sendParticipationRejected(p.affiliate.email, p.offer.title);
     }

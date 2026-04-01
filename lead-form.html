@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оставить заявку — RealCPA Hub</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="fact-theme">
+  <main class="container" style="max-width:640px;padding:48px 16px;">
+    <div class="dashboard-block">
+      <h1 style="margin-top:0">Оставить заявку</h1>
+      <p class="muted" id="leadFormSubtitle">Заполните форму, менеджер свяжется с вами.</p>
+      <form id="leadForm" novalidate>
+        <div class="form-group">
+          <label for="leadName">Ваше имя</label>
+          <input id="leadName" type="text" required placeholder="Иван Иванов">
+        </div>
+        <div class="form-group">
+          <label for="leadPhone">Телефон</label>
+          <input id="leadPhone" type="tel" required placeholder="+7 (999) 123-45-67">
+        </div>
+        <div class="form-group">
+          <label for="leadComment">Комментарий</label>
+          <textarea id="leadComment" rows="3" placeholder="Что вас интересует"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" id="leadSubmitBtn">Отправить заявку</button>
+      </form>
+      <div id="leadFormMessage" class="form-hint" style="margin-top:12px"></div>
+    </div>
+  </main>
+  <script src="api.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || '');
+      var token = params.get('token') || '';
+      var offerId = params.get('offerId') || '';
+      var form = document.getElementById('leadForm');
+      var btn = document.getElementById('leadSubmitBtn');
+      var msg = document.getElementById('leadFormMessage');
+      if (!token || !offerId) {
+        if (form) form.style.display = 'none';
+        if (msg) msg.textContent = 'Некорректная ссылка. Откройте форму заново из партнёрской ссылки.';
+        return;
+      }
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var name = (document.getElementById('leadName').value || '').trim();
+        var phoneRaw = (document.getElementById('leadPhone').value || '').trim();
+        var phone = phoneRaw.replace(/[^\d+]/g, '');
+        var comment = (document.getElementById('leadComment').value || '').trim();
+        if (!name || !phone) {
+          if (msg) msg.textContent = 'Заполните имя и телефон.';
+          return;
+        }
+        if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
+        fetch('/api/internal-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: token,
+            offerId: offerId,
+            name: name,
+            phone: phone,
+            comment: comment,
+            source: params.get('source') || 'internal_form',
+            subid1: params.get('subid1') || '',
+            subid2: params.get('subid2') || '',
+            subid3: params.get('subid3') || '',
+            subid4: params.get('subid4') || '',
+            subid5: params.get('subid5') || '',
+            utm_source: params.get('utm_source') || '',
+            utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign') || '',
+            utm_term: params.get('utm_term') || '',
+            utm_content: params.get('utm_content') || ''
+          })
+        }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (res) {
+            if (!res.ok) throw new Error((res.data && res.data.error) || 'Ошибка отправки');
+            if (msg) msg.textContent = 'Спасибо! Заявка отправлена.';
+            form.reset();
+          })
+          .catch(function (err) {
+            if (msg) msg.textContent = err && err.message ? err.message : 'Ошибка отправки';
+          })
+          .finally(function () {
+            if (btn) { btn.disabled = false; btn.textContent = 'Отправить заявку'; }
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

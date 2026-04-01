@@ -35,6 +35,24 @@ router.get('/:token', async (req: Request, res: Response) => {
         deviceFingerprint: req.query.df ? String(req.query.df) : null,
       },
     });
+    if ((link.offer as { landingType?: string }).landingType === 'internal') {
+      var qs = new URLSearchParams();
+      qs.set('token', req.params.token);
+      qs.set('offerId', link.offerId);
+      if (req.query.source) qs.set('source', String(req.query.source));
+      if (req.query.subid1) qs.set('subid1', String(req.query.subid1));
+      if (req.query.subid2) qs.set('subid2', String(req.query.subid2));
+      if (req.query.subid3) qs.set('subid3', String(req.query.subid3));
+      if (req.query.subid4) qs.set('subid4', String(req.query.subid4));
+      if (req.query.subid5) qs.set('subid5', String(req.query.subid5));
+      if (req.query.utm_source) qs.set('utm_source', String(req.query.utm_source));
+      if (req.query.utm_medium) qs.set('utm_medium', String(req.query.utm_medium));
+      if (req.query.utm_campaign) qs.set('utm_campaign', String(req.query.utm_campaign));
+      if (req.query.utm_term) qs.set('utm_term', String(req.query.utm_term));
+      if (req.query.utm_content) qs.set('utm_content', String(req.query.utm_content));
+      res.redirect(302, '/lead-form.html?' + qs.toString());
+      return;
+    }
     res.redirect(302, link.offer.landingUrl);
   } catch (e) {
     console.error('GET /t/:token:', e);

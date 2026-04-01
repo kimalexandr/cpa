@@ -156,12 +156,13 @@
                     }
                     emptyEl.style.display = 'none';
                     listEl.style.display = 'block';
-                    var statusLabels = { draft: 'На модерации', active: 'Активен', paused: 'Приостановлен', closed: 'Закрыт' };
                     tbody.innerHTML = offers.map(function(o) {
                         var cat = o.category ? o.category.name : '—';
                         var rate = o.payoutAmount != null ? o.payoutAmount + ' ' + (o.currency || 'RUB') : '—';
                         var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleDateString('ru') : '—';
-                        var statusCl = o.status === 'active' ? 'status-active' : (o.status === 'draft' ? 'status-draft' : '');
+                        var statusHtml = (window.RealCPAStatusUI && window.RealCPAStatusUI.renderTableStatus)
+                            ? window.RealCPAStatusUI.renderTableStatus(o.status)
+                            : ('<span class="offer-status">' + (o.status || '—') + '</span>');
                         var statusBtn = '';
                         if (o.status === 'active') {
                             statusBtn = '<button type="button" class="btn btn-sm btn-outline-warning btn-offer-status" data-id="' + encodeURIComponent(o.id) + '" data-status="paused" title="Снять с публикации">Снять с публикации</button>';
@@ -169,7 +170,7 @@
                             statusBtn = '<button type="button" class="btn btn-sm btn-outline-success btn-offer-status" data-id="' + encodeURIComponent(o.id) + '" data-status="active" title="Сделать активным">В активные</button>';
                         }
                         var title = normalizeIpUrlText(o.title || '—');
-                        return '<tr><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + title + '</a></td><td>' + cat + '</td><td><span class="offer-status ' + statusCl + '">' + (statusLabels[o.status] || o.status) + '</span>' + (statusBtn ? ' ' + statusBtn : '') + '</td><td>' + rate + '</td><td>' + updated + '</td><td><button type="button" class="btn btn-sm btn-secondary btn-offer-geo" data-id="' + encodeURIComponent(o.id) + '" title="Выбор региона">Гео</button></td><td><a href="create-offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Редактировать</a> <a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
+                        return '<tr><td><a href="offer.html?id=' + encodeURIComponent(o.id) + '">' + title + '</a></td><td>' + cat + '</td><td>' + statusHtml + (statusBtn ? ' ' + statusBtn : '') + '</td><td>' + rate + '</td><td>' + updated + '</td><td><button type="button" class="btn btn-sm btn-secondary btn-offer-geo" data-id="' + encodeURIComponent(o.id) + '" title="Выбор региона">Гео</button></td><td><a href="create-offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Редактировать</a> <a href="offer.html?id=' + encodeURIComponent(o.id) + '" class="btn btn-sm btn-secondary">Открыть</a></td></tr>';
                     }).join('');
                     tbody.querySelectorAll('.btn-offer-status').forEach(function(btn) {
                         btn.addEventListener('click', function() {

@@ -35,21 +35,17 @@
         }
         var wrap = document.getElementById('statusCenterList');
         function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
-        function statusLabel(s) {
-            if (s === 'approved') return 'Одобрено';
-            if (s === 'pending') return 'На модерации';
-            if (s === 'rejected') return 'Отклонено';
-            if (s === 'blocked') return 'Заблокировано';
-            return s || '—';
-        }
         window.RealCPA.statusCenter().then(function(resp) {
             var list = resp && Array.isArray(resp.items) ? resp.items : [];
             if (!list.length) { wrap.innerHTML = '<p class="offers-empty-msg">Пока нет статусов подключений.</p>'; return; }
             wrap.innerHTML = list.map(function(p) {
+                var badge = window.RealCPAStatusUI && window.RealCPAStatusUI.renderBadge
+                    ? window.RealCPAStatusUI.renderBadge(p.status)
+                    : ('<span class="offer-badge offer-badge-neutral">' + esc(p.status || '—') + '</span>');
                 var reason = p.reason ? '<div class="connection-meta-row"><span class="connection-meta-label">Причина</span><span class="connection-meta-value">' + esc(p.reason) + '</span></div>' : '';
                 var nextStep = p.nextStep ? '<div class="connection-meta-row"><span class="connection-meta-label">Что делать дальше</span><span class="connection-meta-value">' + esc(p.nextStep) + '</span></div>' : '';
                 var action = p.retryAllowed ? '<a class="btn btn-sm btn-primary" href="' + esc(p.actionLink || ('offer.html?id=' + p.offerId)) + '">Исправить и подать снова</a>' : '';
-                return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(p.offerTitle || p.offerId || '—') + '</h2><span class="connection-status-badge">' + esc(statusLabel(p.status)) + '</span></div><div class="connection-meta">' + reason + nextStep + '</div>' + action + '</div>';
+                return '<div class="connection-card"><div class="connection-card-header"><h2 class="connection-card-title">' + esc(p.offerTitle || p.offerId || '—') + '</h2>' + badge + '</div><div class="connection-meta">' + reason + nextStep + '</div>' + action + '</div>';
             }).join('');
         }).catch(function() {
             wrap.innerHTML = '<p class="offers-empty-msg">Не удалось загрузить центр статусов.</p>';

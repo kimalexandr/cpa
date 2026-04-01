@@ -288,7 +288,10 @@
                 var badge = '';
                 var actionText = 'Подключиться';
                 var hint = '';
-                if (ps === 'approved') { badge = '<span class="offer-badge offer-badge-approved">Подключен</span>'; actionText = 'Открыть'; }
+                if (window.RealCPAStatusUI && ps) {
+                    badge = window.RealCPAStatusUI.renderBadge(ps);
+                    actionText = window.RealCPAStatusUI.actionTextByStatus(ps);
+                } else if (ps === 'approved') { badge = '<span class="offer-badge offer-badge-approved">Подключен</span>'; actionText = 'Открыть'; }
                 else if (ps === 'pending') { badge = '<span class="offer-badge offer-badge-pending">На модерации</span>'; actionText = 'Открыть'; }
                 else if (ps === 'rejected' || ps === 'blocked') { badge = '<span class="offer-badge offer-badge-rejected">Отклонен</span>'; actionText = 'Подать повторно'; }
                 else if (role === 'affiliate') { badge = '<span class="offer-badge offer-badge-neutral">Не подключен</span>'; }

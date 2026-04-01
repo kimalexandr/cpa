@@ -167,11 +167,14 @@
                     var offerTitle = p.offer && p.offer.title ? p.offer.title : (p.offerTitle || '—');
                     var affiliateName = p.affiliate && p.affiliate.name ? p.affiliate.name : (p.affiliateName || '—');
                     var affiliateEmail = p.affiliate && p.affiliate.email ? p.affiliate.email : (p.affiliateEmail || '—');
+                    var statusHtml = (window.RealCPAStatusUI && window.RealCPAStatusUI.renderTableStatus)
+                        ? window.RealCPAStatusUI.renderTableStatus(p.status || 'pending')
+                        : '<span class="offer-status status-draft">На модерации</span>';
                     return '<tr data-id="' + escapeHtml(p.id) + '">' +
                         '<td>' + escapeHtml(offerTitle) + '</td>' +
                         '<td>' + escapeHtml(affiliateName) + '</td>' +
                         '<td>' + escapeHtml(affiliateEmail) + '</td>' +
-                        '<td>' + escapeHtml(date) + '</td>' +
+                        '<td>' + escapeHtml(date) + '<div style="margin-top:4px">' + statusHtml + '</div></td>' +
                         '<td><button type="button" class="btn btn-sm btn-primary request-approve" data-id="' + escapeHtml(p.id) + '">Одобрить</button> ' +
                         '<button type="button" class="btn btn-sm btn-secondary request-reject" data-id="' + escapeHtml(p.id) + '">Отклонить</button></td></tr>';
                 }).join('');

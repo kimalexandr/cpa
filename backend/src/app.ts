@@ -23,6 +23,7 @@ import onboardingRoutes from './routes/onboarding';
 import integrationsRoutes from './routes/integrations';
 import v1Routes from './routes/v1';
 import opsRoutes from './routes/ops';
+import internalLeadRoutes from './routes/internal-lead';
 import { logger } from './lib/logger';
 import { httpRequestDuration, metricsText } from './lib/metrics';
 
@@ -93,6 +94,7 @@ app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/v1', v1Routes);
 app.use('/api/ops', opsRoutes);
+app.use('/api/internal-lead', internalLeadRoutes);
 app.use('/t', trackingRoutes);
 
 app.get('/metrics', async (_req, res) => {
