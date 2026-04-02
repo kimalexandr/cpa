@@ -49,6 +49,39 @@
 
 // Навигация: гости — «Войти», «Регистрация»; авторизованные — блок пользователя с дропдауном (Профиль, Настройки, Выйти)
 document.addEventListener('DOMContentLoaded', function() {
+    (function applyUnifiedBrandLogo() {
+        var brandHtml =
+            '<svg class="logo-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+            '<rect class="logo-mark" width="38" height="38" rx="10" fill="#f0a500"/>' +
+            '<rect x="0" y="0" width="38" height="18" rx="10" fill="rgba(255,255,255,0.12)"/>' +
+            '<rect x="10" y="9" width="3.5" height="20" rx="1.5" fill="#0b0f1a"/>' +
+            '<rect x="10" y="9" width="14" height="3.5" rx="1.5" fill="#0b0f1a"/>' +
+            '<path d="M13 19.5 L17.5 24 L26 14" stroke="#0b0f1a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+            '</svg>Fact<span>pay</span>';
+
+        document.querySelectorAll('.header .logo').forEach(function(logoWrap) {
+            var link = logoWrap.querySelector('a');
+            if (!link) {
+                link = document.createElement('a');
+                link.href = 'index.html';
+                logoWrap.appendChild(link);
+            }
+            link.classList.add('logo-link');
+            link.innerHTML = brandHtml;
+            var oldIcon = logoWrap.querySelector('i.fas.fa-link');
+            if (oldIcon) oldIcon.remove();
+        });
+
+        document.querySelectorAll('.header a.logo-link').forEach(function(link) {
+            if (link.closest('.logo')) return;
+            link.innerHTML = brandHtml;
+        });
+
+        document.querySelectorAll('.admin-logo').forEach(function(link) {
+            link.innerHTML = brandHtml;
+        });
+    })();
+
     if (!window.RealCPAUI) {
         window.RealCPAUI = {
             toast: function(message, type) {

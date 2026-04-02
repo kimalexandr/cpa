@@ -194,6 +194,22 @@ body.fact-theme .btn-nav-register {
     text-decoration: none;
 }
 
+.logo-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+}
+
+.logo-mark {
+    transform-origin: center;
+    transition: transform 0.25s ease;
+}
+
+.logo:hover .logo-mark,
+.admin-logo:hover .logo-mark {
+    transform: scale(1.08);
+}
+
 .nav {
     display: flex;
     gap: 2rem;
