@@ -119,37 +119,47 @@ document.addEventListener('DOMContentLoaded', function() {
     var logoutBtns = document.querySelectorAll('.nav-logout-btn');
     var isLoggedIn = typeof window.RealCPA !== 'undefined' && window.RealCPA.isLoggedIn();
     (function unifyTopNav() {
-        var nav = document.querySelector('.header .nav');
-        if (!nav) return;
-        if (document.body.classList.contains('dashboard-page') || document.body.classList.contains('admin-page')) return;
-
         var file = (window.location.pathname || '').split('/').pop() || 'index.html';
+        var externalPages = {
+            'index.html': true, 'factpay_1.html': true, 'offers.html': true, 'offer.html': true,
+            'about.html': true, 'support.html': true, 'contacts.html': true, 'demo.html': true,
+            'login.html': true, 'register.html': true, 'forgot-password.html': true, 'reset-password.html': true, 'confirm-email.html': true,
+            'terms.html': true, 'policy.html': true, 'oferta.html': true, 'personal-data.html': true
+        };
+        if (!externalPages[file]) return;
+
         var menu = [
-            { id: 'home', label: 'Главная', href: 'index.html' },
             { id: 'offers', label: 'Офферы', href: 'offers.html' },
-            { id: 'suppliers', label: 'Для поставщиков', href: 'index.html#suppliers' },
-            { id: 'affiliates', label: 'Для affiliates', href: 'index.html#affiliates' },
-            { id: 'demo', label: 'Демо', href: 'demo.html' },
-            { id: 'support', label: 'Поддержка', href: 'support.html' },
-            { id: 'about', label: 'О компании', href: 'about.html' }
+            { id: 'suppliers', label: 'Поставщикам', href: 'index.html#suppliers' },
+            { id: 'affiliates', label: 'Аффилиатам', href: 'index.html#affiliates' },
+            { id: 'about', label: 'О нас', href: 'about.html' },
+            { id: 'support', label: 'Поддержка', href: 'support.html' }
         ];
         var activeByFile = {
-            'index.html': 'home',
-            'factpay_1.html': 'home',
             'offers.html': 'offers',
             'offer.html': 'offers',
-            'demo.html': 'demo',
-            'support.html': 'support',
-            'contacts.html': 'support',
             'about.html': 'about',
             'terms.html': 'about',
             'policy.html': 'about',
             'oferta.html': 'about',
-            'personal-data.html': 'about'
+            'personal-data.html': 'about',
+            'support.html': 'support',
+            'contacts.html': 'support'
         };
         var activeId = activeByFile[file] || '';
-        Array.prototype.slice.call(nav.querySelectorAll(':scope > a.nav-link')).forEach(function(a) { a.remove(); });
 
+        var landingNavList = document.querySelector('body > nav .nav-links');
+        if (landingNavList) {
+            landingNavList.innerHTML = menu.map(function(item) {
+                var cls = item.id === activeId ? ' class="active"' : '';
+                return '<li><a href="' + item.href + '"' + cls + '>' + item.label + '</a></li>';
+            }).join('');
+            return;
+        }
+
+        var nav = document.querySelector('.header .nav');
+        if (!nav) return;
+        Array.prototype.slice.call(nav.querySelectorAll(':scope > a.nav-link')).forEach(function(a) { a.remove(); });
         var insertBeforeEl = nav.querySelector('.nav-auth') || null;
         menu.forEach(function(item) {
             var a = document.createElement('a');
