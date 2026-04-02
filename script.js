@@ -49,6 +49,46 @@
 
 // Навигация: гости — «Войти», «Регистрация»; авторизованные — блок пользователя с дропдауном (Профиль, Настройки, Выйти)
 document.addEventListener('DOMContentLoaded', function() {
+    (function mountSharedPublicHeader() {
+        var file = (window.location.pathname || '').split('/').pop() || 'index.html';
+        var externalPages = {
+            'offers.html': true, 'offer.html': true, 'about.html': true, 'support.html': true, 'contacts.html': true, 'demo.html': true,
+            'login.html': true, 'register.html': true, 'forgot-password.html': true, 'reset-password.html': true, 'confirm-email.html': true,
+            'terms.html': true, 'policy.html': true, 'oferta.html': true, 'personal-data.html': true
+        };
+        if (!externalPages[file]) return;
+        var currentHeader = document.querySelector('header.header');
+        if (!currentHeader) return;
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'partials/header-public.html', false);
+            xhr.send(null);
+            if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
+                var wrap = document.createElement('div');
+                wrap.innerHTML = xhr.responseText.trim();
+                var newHeader = wrap.firstElementChild;
+                if (newHeader) currentHeader.replaceWith(newHeader);
+            }
+        } catch (e) {}
+
+        var activeByFile = {
+            'offers.html': 'offers',
+            'offer.html': 'offers',
+            'about.html': 'about',
+            'terms.html': 'about',
+            'policy.html': 'about',
+            'oferta.html': 'about',
+            'personal-data.html': 'about',
+            'support.html': 'support',
+            'contacts.html': 'support'
+        };
+        var activeId = activeByFile[file] || '';
+        document.querySelectorAll('.header .external-top-links .nav-link').forEach(function(a) {
+            var id = a.getAttribute('data-nav-id');
+            a.classList.toggle('active', !!activeId && id === activeId);
+        });
+    })();
+
     (function applyUnifiedBrandLogo() {
         var brandHtml =
             '<svg class="logo-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">' +
