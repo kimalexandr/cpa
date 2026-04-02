@@ -21,6 +21,6 @@
             placeholder.remove();
         })
         .catch(function() {
-            placeholder.innerHTML = '<footer class="footer"><div class="container"><p>&copy; 2026 RealCPA Hub.</p></div></footer>';
+            placeholder.innerHTML = '<footer class="footer"><div class="container"><p>&copy; 2026 FactPay.</p></div></footer>';
         });
 })();
