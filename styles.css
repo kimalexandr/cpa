@@ -104,6 +104,28 @@ body.public-wide-nav .header {
     padding-bottom: 0.85rem;
 }
 
+body.public-wide-nav .header .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+body.public-wide-nav .header .nav {
+    flex: 1;
+    margin-left: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+}
+
+body.public-wide-nav .header .external-top-links {
+    display: inline-flex;
+    align-items: center;
+    gap: 2rem;
+    margin: 0 auto;
+}
+
 body.fact-theme .logo {
     color: var(--fact-text);
 }
@@ -255,6 +277,9 @@ body.fact-theme .btn-nav-register {
     body.public-wide-nav .header .container {
         padding-left: 30px;
         padding-right: 30px;
+    }
+    body.public-wide-nav .header .external-top-links {
+        gap: 1.25rem;
     }
 }
 

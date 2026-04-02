@@ -159,15 +159,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var nav = document.querySelector('.header .nav');
         if (!nav) return;
+        var oldGroup = nav.querySelector('.external-top-links');
+        if (oldGroup) oldGroup.remove();
         Array.prototype.slice.call(nav.querySelectorAll(':scope > a.nav-link')).forEach(function(a) { a.remove(); });
+        var linksGroup = document.createElement('span');
+        linksGroup.className = 'external-top-links';
         var insertBeforeEl = nav.querySelector('.nav-auth') || null;
         menu.forEach(function(item) {
             var a = document.createElement('a');
             a.className = 'nav-link' + (item.id === activeId ? ' active' : '');
             a.href = item.href;
             a.textContent = item.label;
-            nav.insertBefore(a, insertBeforeEl);
+            linksGroup.appendChild(a);
         });
+        nav.insertBefore(linksGroup, insertBeforeEl);
     })();
 
     function renderRoleUI(role, user) {
