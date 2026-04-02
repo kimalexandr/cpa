@@ -6,7 +6,16 @@
     <title>Обработка персональных данных (152-ФЗ) — RealCPA Hub</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>.legal-page { max-width: 800px; margin: 0 auto; padding: 2rem 20px; } .legal-page h1 { margin-bottom: 1rem; } .legal-page h2 { margin: 2rem 0 0.75rem; font-size: 1.2rem; } .legal-page p, .legal-page ul { margin-bottom: 1rem; color: #374151; line-height: 1.7; } .legal-page ul { padding-left: 1.5rem; } .legal-page .updated { color: #6b7280; font-size: 0.9rem; margin-bottom: 2rem; } .legal-page table { width: 100%; border-collapse: collapse; margin: 1rem 0; } .legal-page th, .legal-page td { border: 1px solid #e5e7eb; padding: 0.75rem; text-align: left; } .legal-page th { background: #f3f4f6; }</style>
+    <style>
+        .legal-wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
+        .legal-card { background:#0e152d; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; box-shadow:0 10px 28px rgba(0,0,0,.25); }
+        .legal-card h1 { margin: 0 0 8px; color:#f8fafc; }
+        .legal-card h2 { margin: 20px 0 10px; color:#f8fafc; font-size:1.1rem; }
+        .legal-card p, .legal-card li { color:#cbd5e1; line-height:1.65; }
+        .legal-card ul { padding-left: 18px; margin: 8px 0 12px; }
+        .legal-card a { color:#93c5fd; }
+        .updated { color:#94a3b8; font-size:.9rem; margin:0 0 16px; }
+    </style>
 </head>
 <body class="fact-theme public-wide-nav">
     <header class="header">
@@ -25,7 +34,8 @@
         </div>
     </header>
 
-    <main class="legal-page">
+    <main class="legal-wrap">
+      <section class="legal-card">
         <h1>Положение об обработке персональных данных</h1>
         <p class="updated">В соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных». Дата размещения: 26.01.2026</p>
 
@@ -69,9 +79,12 @@
         <p>Подробности о сборе и использовании данных изложены в <a href="policy.html">Политике конфиденциальности</a>.</p>
 
         <p><a href="index.html">← Вернуться на главную</a></p>
+      </section>
     </main>
 
     <div id="footer-placeholder"></div>
     <script src="footer-include.js"></script>
+    <script src="api.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

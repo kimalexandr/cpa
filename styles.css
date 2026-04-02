@@ -115,7 +115,7 @@ body.public-wide-nav .header .nav {
     margin-left: 28px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 0;
 }
 
@@ -123,7 +123,13 @@ body.public-wide-nav .header .external-top-links {
     display: inline-flex;
     align-items: center;
     gap: 2rem;
-    margin: 0 auto;
+    margin: 0 auto 0 0;
+}
+
+body.public-wide-nav .header .nav-auth-guest,
+body.public-wide-nav .header .nav-auth-user {
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 body.fact-theme .logo {
@@ -1017,20 +1023,21 @@ body.role-admin #navAdminLink { display: block !important; }
 .footer {
     background-color: var(--fact-surface);
     color: var(--fact-text);
-    padding: 3rem 0 1rem;
+    padding: 2rem 0 0.65rem;
     margin-top: 4rem;
     border-top: 1px solid var(--fact-border);
 }
 
 .footer-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1rem;
 }
 
 .footer-section h4 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.95rem;
 }
 
 .footer-section ul {
@@ -1038,7 +1045,7 @@ body.role-admin #navAdminLink { display: block !important; }
 }
 
 .footer-section ul li {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
 }
 
 .footer-section a {
@@ -1046,6 +1053,7 @@ body.role-admin #navAdminLink { display: block !important; }
     text-decoration: none;
     opacity: 1;
     transition: opacity 0.3s;
+    font-size: 0.95rem;
 }
 
 .footer-section a:hover {
@@ -1072,7 +1080,7 @@ body.role-admin #navAdminLink { display: block !important; }
 
 .footer-bottom {
     text-align: center;
-    padding-top: 2rem;
+    padding-top: 0.85rem;
     border-top: 1px solid var(--fact-border);
     color: var(--fact-text-muted);
     opacity: 1;
