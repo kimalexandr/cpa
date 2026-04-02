@@ -118,6 +118,47 @@ document.addEventListener('DOMContentLoaded', function() {
     var roleBadges = document.querySelectorAll('.nav-role-badge, #navRoleBadge');
     var logoutBtns = document.querySelectorAll('.nav-logout-btn');
     var isLoggedIn = typeof window.RealCPA !== 'undefined' && window.RealCPA.isLoggedIn();
+    (function unifyTopNav() {
+        var nav = document.querySelector('.header .nav');
+        if (!nav) return;
+        if (document.body.classList.contains('dashboard-page') || document.body.classList.contains('admin-page')) return;
+
+        var file = (window.location.pathname || '').split('/').pop() || 'index.html';
+        var menu = [
+            { id: 'home', label: 'Главная', href: 'index.html' },
+            { id: 'offers', label: 'Офферы', href: 'offers.html' },
+            { id: 'suppliers', label: 'Для поставщиков', href: 'index.html#suppliers' },
+            { id: 'affiliates', label: 'Для affiliates', href: 'index.html#affiliates' },
+            { id: 'demo', label: 'Демо', href: 'demo.html' },
+            { id: 'support', label: 'Поддержка', href: 'support.html' },
+            { id: 'about', label: 'О компании', href: 'about.html' }
+        ];
+        var activeByFile = {
+            'index.html': 'home',
+            'factpay_1.html': 'home',
+            'offers.html': 'offers',
+            'offer.html': 'offers',
+            'demo.html': 'demo',
+            'support.html': 'support',
+            'contacts.html': 'support',
+            'about.html': 'about',
+            'terms.html': 'about',
+            'policy.html': 'about',
+            'oferta.html': 'about',
+            'personal-data.html': 'about'
+        };
+        var activeId = activeByFile[file] || '';
+        Array.prototype.slice.call(nav.querySelectorAll(':scope > a.nav-link')).forEach(function(a) { a.remove(); });
+
+        var insertBeforeEl = nav.querySelector('.nav-auth') || null;
+        menu.forEach(function(item) {
+            var a = document.createElement('a');
+            a.className = 'nav-link' + (item.id === activeId ? ' active' : '');
+            a.href = item.href;
+            a.textContent = item.label;
+            nav.insertBefore(a, insertBeforeEl);
+        });
+    })();
 
     function renderRoleUI(role, user) {
         var displayName = (user && (user.name || user.email)) || '';
