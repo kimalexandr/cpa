@@ -92,6 +92,18 @@ body.fact-theme .header {
     box-shadow: none;
 }
 
+/* Внешние страницы: шапка по ширине как на главной */
+body.public-wide-nav .header .container {
+    max-width: 100%;
+    padding-left: 60px;
+    padding-right: 60px;
+}
+
+body.public-wide-nav .header {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+}
+
 body.fact-theme .logo {
     color: var(--fact-text);
 }
@@ -237,6 +249,20 @@ body.fact-theme .btn-nav-register {
     font-size: 1.5rem;
     cursor: pointer;
     color: var(--text-color);
+}
+
+@media (max-width: 1024px) {
+    body.public-wide-nav .header .container {
+        padding-left: 30px;
+        padding-right: 30px;
+    }
+}
+
+@media (max-width: 640px) {
+    body.public-wide-nav .header .container {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
 }
 
 /* Кабинет аффилиата: верхнее меню — только Главная и Каталог офферов, остальное внизу */
