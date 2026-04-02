@@ -46,38 +46,38 @@ export async function sendMail(to: string, subject: string, html: string, text?:
 }
 
 export async function sendResetPassword(to: string, resetLink: string): Promise<boolean> {
-  const subject = 'Сброс пароля — RealCPA Hub';
+  const subject = 'Сброс пароля — FactPay';
   const html = `
     <p>Здравствуйте.</p>
     <p>Вы запросили сброс пароля. Перейдите по ссылке для установки нового пароля:</p>
     <p><a href="${resetLink}">${resetLink}</a></p>
     <p>Ссылка действительна 1 час. Если вы не запрашивали сброс, проигнорируйте это письмо.</p>
-    <p>— RealCPA Hub</p>
+    <p>— FactPay</p>
   `;
   return sendMail(to, subject, html);
 }
 
 export async function sendWelcome(to: string, name?: string): Promise<boolean> {
-  const subject = 'Добро пожаловать в RealCPA Hub';
+  const subject = 'Добро пожаловать в FactPay';
   const greeting = name ? `, ${name}` : '';
   const html = `
     <p>Здравствуйте${greeting}.</p>
-    <p>Вы зарегистрировались в RealCPA Hub.</p>
+    <p>Вы зарегистрировались в FactPay.</p>
     <p>Если вы ещё не подтвердили email, пожалуйста, перейдите по ссылке из письма для подтверждения.</p>
     <p><a href="${baseUrl}/login.html">Войти</a></p>
-    <p>— RealCPA Hub</p>
+    <p>— FactPay</p>
   `;
   return sendMail(to, subject, html);
 }
 
 export async function sendEmailConfirmation(to: string, confirmLink: string): Promise<boolean> {
-  const subject = 'Подтверждение email — RealCPA Hub';
+  const subject = 'Подтверждение email — FactPay';
   const html = `
     <p>Здравствуйте.</p>
-    <p>Вы зарегистрировались в RealCPA Hub. Подтвердите email, перейдя по ссылке:</p>
+    <p>Вы зарегистрировались в FactPay. Подтвердите email, перейдя по ссылке:</p>
     <p><a href="${confirmLink}">${confirmLink}</a></p>
     <p>Ссылка действует ограниченное время. Если вы не создавали аккаунт, просто проигнорируйте это письмо.</p>
-    <p>— RealCPA Hub</p>
+    <p>— FactPay</p>
   `;
   return sendMail(to, subject, html);
 }
@@ -89,7 +89,7 @@ export async function sendParticipationApproved(to: string, offerTitle: string, 
     <p>Ваша заявка на подключение к офферу «${offerTitle}» одобрена.</p>
     <p>Трекинг-ссылка: <a href="${trackingUrl}">${trackingUrl}</a></p>
     <p>Используйте её в рекламе для учёта переходов и конверсий.</p>
-    <p>— RealCPA Hub</p>
+    <p>— FactPay</p>
   `;
   return sendMail(to, subject, html);
 }
@@ -100,23 +100,23 @@ export async function sendParticipationRejected(to: string, offerTitle: string):
     <p>Здравствуйте.</p>
     <p>К сожалению, ваша заявка на подключение к офферу «${offerTitle}» отклонена.</p>
     <p>Вы можете выбрать другой оффер в каталоге или связаться с поддержкой.</p>
-    <p>— RealCPA Hub</p>
+    <p>— FactPay</p>
   `;
   return sendMail(to, subject, html);
 }
 
 export async function sendPayoutPaid(to: string, amount: number, currency: string): Promise<boolean> {
-  const subject = `Выплата ${amount} ${currency} выполнена — RealCPA Hub`;
+  const subject = `Выплата ${amount} ${currency} выполнена — FactPay`;
   const html = `
     <p>Здравствуйте.</p>
     <p>Ваша заявка на вывод средств выполнена. Сумма: ${amount} ${currency}.</p>
-    <p>— RealCPA Hub</p>
+    <p>— FactPay</p>
   `;
   return sendMail(to, subject, html);
 }
 
 export async function sendAdminPasswordReset(to: string, tempPassword: string): Promise<boolean> {
-  const subject = 'Временный пароль — RealCPA Hub';
+  const subject = 'Временный пароль — FactPay';
   const html = `
     <p>Здравствуйте.</p>
     <p>Администратор сбросил пароль вашей учётной записи.</p>
@@ -124,7 +124,7 @@ export async function sendAdminPasswordReset(to: string, tempPassword: string): 
     <p>Войдите в систему и сразу смените пароль в профиле:</p>
     <p><a href="${baseUrl}/login.html">${baseUrl}/login.html</a></p>
     <p>Если вы не запрашивали смену пароля, обратитесь в поддержку.</p>
-    <p>— RealCPA Hub</p>
+    <p>— FactPay</p>
   `;
   return sendMail(to, subject, html);
 }

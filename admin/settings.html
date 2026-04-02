@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Настройки — Админ — RealCPA Hub</title>
+    <title>Настройки — Админ — FactPay</title>
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11,7 +11,7 @@
 <body class="admin-page">
     <header class="admin-header">
         <div class="admin-header-inner">
-            <a href="../index.html" class="admin-logo"><i class="fas fa-link"></i> RealCPA Hub</a>
+            <a href="../index.html" class="admin-logo"><i class="fas fa-link"></i> FactPay</a>
             <span class="admin-title">Админ-панель</span>
             <div class="admin-header-user">
                 <span class="admin-user-name" id="adminUserName"></span>
@@ -39,7 +39,7 @@
                 <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Общие</h2>
                 <div class="form-group">
                     <label for="settingsPlatformName">Название платформы</label>
-                    <input type="text" id="settingsPlatformName" class="form-input" value="RealCPA Hub" placeholder="RealCPA Hub">
+                    <input type="text" id="settingsPlatformName" class="form-input" value="FactPay" placeholder="FactPay">
                 </div>
                 <div class="form-group">
                     <label for="settingsSupportEmail">Email поддержки</label>
@@ -105,5 +105,7 @@
         document.getElementById('adminLogout').onclick = function(e) { e.preventDefault(); window.RealCPA.clearAuth(); window.location.href = '../index.html'; };
     })();
     </script>
+  <div id="footer-placeholder"></div>
+  <script src="../footer-include.js"></script>
 </body>
 </html>

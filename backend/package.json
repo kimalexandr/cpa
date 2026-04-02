@@ -1,7 +1,7 @@
 {
   "name": "realcpa-hub-backend",
   "version": "1.0.0",
-  "description": "Backend and API for RealCPA Hub",
+  "description": "Backend and API for FactPay",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

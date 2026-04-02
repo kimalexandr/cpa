@@ -1,5 +1,5 @@
 /**
- * Клиент API RealCPA Hub.
+ * Клиент API FactPay.
  * Базовый URL: window.REALCPA_API_URL или относительный (текущий хост) или http://localhost:3000 для локальной разработки
  */
 (function () {
