@@ -411,6 +411,12 @@
       },
       setOfferLocations: function (offerId, locationIds) {
         return request('POST', '/api/admin/offers/' + encodeURIComponent(offerId) + '/locations', { locationIds: locationIds || [] });
+      },
+      listingsImportStatus: function () {
+        return request('GET', '/api/admin/listings-import');
+      },
+      listingsImport: function (data) {
+        return request('POST', '/api/admin/listings-import', data || {});
       }
     }
   };

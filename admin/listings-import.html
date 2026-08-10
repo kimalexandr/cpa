@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Импорт объявлений — Админ — FactPay</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-page">
+    <header class="admin-header">
+        <div class="admin-header-inner">
+            <a href="../index.html" class="admin-logo"><i class="fas fa-link"></i> FactPay</a>
+            <span class="admin-title">Админ-панель</span>
+            <div class="admin-header-user">
+                <span class="admin-user-name" id="adminUserName"></span>
+                <a href="../index.html" class="admin-logout" id="adminLogout">Выход</a>
+            </div>
+        </div>
+    </header>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="index.html" class="admin-nav-link"><i class="fas fa-tachometer-alt"></i> Главная</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Пользователи</a>
+                <a href="offers.html" class="admin-nav-link"><i class="fas fa-briefcase"></i> Офферы</a>
+                <a href="categories.html" class="admin-nav-link"><i class="fas fa-folder"></i> Категории</a>
+                <a href="geography.html" class="admin-nav-link"><i class="fas fa-globe"></i> География</a>
+                <a href="moderation.html" class="admin-nav-link"><i class="fas fa-clipboard-check"></i> Модерация</a>
+                <a href="finance.html" class="admin-nav-link"><i class="fas fa-wallet"></i> Финансы</a>
+                <a href="listings-import.html" class="admin-nav-link active"><i class="fas fa-cloud-download-alt"></i> Импорт объявлений</a>
+                <a href="settings.html" class="admin-nav-link"><i class="fas fa-cog"></i> Настройки</a>
+                <a href="logs.html" class="admin-nav-link"><i class="fas fa-history"></i> Логи</a>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <div class="admin-toolbar">
+                <h1 class="admin-page-title">Импорт объявлений</h1>
+                <a href="offers.html" class="btn btn-secondary">К офферам</a>
+            </div>
+
+            <div class="admin-cards" style="margin-bottom:1.25rem">
+                <div class="admin-card admin-card-metric">
+                    <span class="admin-card-label">Импортировано (agro-*)</span>
+                    <span class="admin-card-value" id="metricImported">—</span>
+                </div>
+                <div class="admin-card admin-card-metric">
+                    <span class="admin-card-label">Суточный job</span>
+                    <span class="admin-card-value" id="metricEnabled" style="font-size:1.1rem">—</span>
+                </div>
+                <div class="admin-card admin-card-metric">
+                    <span class="admin-card-label">Cron</span>
+                    <span class="admin-card-value" id="metricCron" style="font-size:1.1rem">—</span>
+                </div>
+                <div class="admin-card admin-card-metric">
+                    <span class="admin-card-label">FEED / Redis / Secret</span>
+                    <span class="admin-card-value" id="metricFlags" style="font-size:0.95rem">—</span>
+                </div>
+            </div>
+
+            <div class="admin-card" style="margin-bottom:1.25rem">
+                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Что добавить в <code>backend/.env</code></h2>
+                <p class="admin-card-label" style="margin-bottom:0.75rem; color:var(--text-light)">
+                    Скопируйте блок в <code>backend/.env</code>, замените секрет и при необходимости URL ленты. После правок перезапустите API.
+                </p>
+                <pre id="envSnippet" style="background:var(--bg-secondary,#f4f4f5); padding:1rem; border-radius:8px; overflow:auto; font-size:0.8rem; line-height:1.45; white-space:pre-wrap"></pre>
+                <button type="button" class="btn btn-secondary" id="copyEnvBtn" style="margin-top:0.75rem"><i class="fas fa-copy"></i> Копировать .env</button>
+                <ul id="envHints" style="margin:1rem 0 0; padding-left:1.25rem; color:var(--text-light); font-size:0.875rem"></ul>
+            </div>
+
+            <div class="admin-card" style="margin-bottom:1.25rem; max-width:900px">
+                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Ручной импорт JSON</h2>
+                <p class="admin-card-label" style="margin-bottom:0.75rem; color:var(--text-light)">
+                    Вставьте массив объявлений или <code>{"items":[...]}</code>. Поля: <code>externalId</code>, <code>url</code>, <code>title</code>, опционально <code>description</code>, <code>geo</code>, <code>price</code>, <code>seller</code>.
+                </p>
+                <div class="form-group">
+                    <label for="importJson">JSON</label>
+                    <textarea id="importJson" class="form-input" rows="12" style="font-family:ui-monospace,monospace; font-size:0.85rem" placeholder='[{"externalId":"1664629","url":"https://agroserver.ru/b/...","title":"...","geo":"г. Москва"}]'></textarea>
+                </div>
+                <div class="form-group" style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end">
+                    <div>
+                        <label for="importStatus">Статус офферов</label>
+                        <select id="importStatus" class="form-input">
+                            <option value="active" selected>active</option>
+                            <option value="draft">draft</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="importCategory">Category slug</label>
+                        <input type="text" id="importCategory" class="form-input" value="agrochemistry">
+                    </div>
+                </div>
+                <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.5rem">
+                    <button type="button" class="btn btn-primary" id="importJsonBtn"><i class="fas fa-upload"></i> Импортировать JSON</button>
+                    <button type="button" class="btn btn-secondary" id="importFeedBtn"><i class="fas fa-sync"></i> Тянуть LISTINGS_FEED_URL</button>
+                    <button type="button" class="btn btn-secondary" id="importQueueBtn"><i class="fas fa-clock"></i> В очередь (async)</button>
+                </div>
+                <p id="importResult" class="admin-card-label" style="margin-top:1rem; white-space:pre-wrap"></p>
+            </div>
+
+            <div class="admin-card">
+                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Последние импортированные</h2>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Название</th>
+                                <th>Гео</th>
+                                <th>Статус</th>
+                                <th>Обновлён</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentRows">
+                            <tr><td colspan="5">Загрузка…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../api.js"></script>
+    <script>
+    (function() {
+        if (!window.RealCPA || !window.RealCPA.isLoggedIn() || window.RealCPA.getRole() !== 'admin') {
+            window.location.href = '../login.html?redirect=' + encodeURIComponent('admin/listings-import.html');
+            return;
+        }
+        var u = window.RealCPA.getUser();
+        document.getElementById('adminUserName').textContent = (u && (u.name || u.email)) || 'Админ';
+        document.getElementById('adminLogout').onclick = function(e) {
+            e.preventDefault();
+            window.RealCPA.clearAuth();
+            window.location.href = '../index.html';
+        };
+
+        function flag(ok) { return ok ? '✓' : '—'; }
+
+        function renderStatus(data) {
+            document.getElementById('metricImported').textContent = data.importedOffersCount != null ? data.importedOffersCount : '—';
+            document.getElementById('metricEnabled').textContent = data.enabled ? 'вкл' : 'выкл';
+            document.getElementById('metricCron').textContent = data.cron || '—';
+            document.getElementById('metricFlags').textContent =
+                'FEED ' + flag(data.hasFeedUrl) + ' · Redis ' + flag(data.hasRedisUrl) + ' · Secret ' + flag(data.hasSecret);
+            document.getElementById('envSnippet').textContent = data.envSnippet || '';
+            document.getElementById('importCategory').value = data.defaultCategorySlug || 'agrochemistry';
+            document.getElementById('importStatus').value = data.defaultStatus === 'draft' ? 'draft' : 'active';
+
+            var hints = document.getElementById('envHints');
+            hints.innerHTML = '';
+            (data.envRequired || []).forEach(function(row) {
+                var li = document.createElement('li');
+                li.innerHTML = '<code>' + row.key + '</code>' +
+                    (row.required ? ' <strong>(обязательно для расписания)</strong>' : '') +
+                    ' — ' + (row.hint || '');
+                hints.appendChild(li);
+            });
+
+            var tbody = document.getElementById('recentRows');
+            tbody.innerHTML = '';
+            if (!data.recent || !data.recent.length) {
+                tbody.innerHTML = '<tr><td colspan="5">Пока нет офферов с id agro-*</td></tr>';
+                return;
+            }
+            data.recent.forEach(function(o) {
+                var tr = document.createElement('tr');
+                var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleString('ru-RU') : '—';
+                tr.innerHTML =
+                    '<td><code>' + o.id + '</code></td>' +
+                    '<td>' + (o.landingUrl ? '<a href="' + o.landingUrl + '" target="_blank" rel="noopener">' : '') +
+                    (o.title || '—') + (o.landingUrl ? '</a>' : '') + '</td>' +
+                    '<td>' + (o.targetGeo || '—') + '</td>' +
+                    '<td>' + (o.status || '—') + '</td>' +
+                    '<td>' + updated + '</td>';
+                tbody.appendChild(tr);
+            });
+        }
+
+        function loadStatus() {
+            return window.RealCPA.admin.listingsImportStatus().then(renderStatus).catch(function(err) {
+                document.getElementById('recentRows').innerHTML =
+                    '<tr><td colspan="5">Ошибка: ' + (err.message || 'не удалось загрузить') + '</td></tr>';
+            });
+        }
+
+        function showResult(res) {
+            var el = document.getElementById('importResult');
+            if (res.queued) {
+                el.textContent = 'В очереди, jobId=' + res.jobId + (res.count != null ? ', items≈' + res.count : '');
+            } else {
+                el.textContent = 'Готово: upserted=' + (res.upserted || 0) +
+                    ', skipped=' + (res.skipped || 0) +
+                    (res.errors && res.errors.length ? ', errors=' + JSON.stringify(res.errors) : '');
+            }
+        }
+
+        document.getElementById('copyEnvBtn').onclick = function() {
+            var text = document.getElementById('envSnippet').textContent || '';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    document.getElementById('copyEnvBtn').textContent = 'Скопировано';
+                    setTimeout(function() {
+                        document.getElementById('copyEnvBtn').innerHTML = '<i class="fas fa-copy"></i> Копировать .env';
+                    }, 1500);
+                });
+            } else {
+                alert(text);
+            }
+        };
+
+        document.getElementById('importJsonBtn').onclick = function() {
+            var raw = document.getElementById('importJson').value.trim();
+            if (!raw) { alert('Вставьте JSON'); return; }
+            var parsed;
+            try { parsed = JSON.parse(raw); } catch (e) { alert('Невалидный JSON'); return; }
+            var payload = Array.isArray(parsed) ? { items: parsed } : parsed;
+            payload.status = document.getElementById('importStatus').value;
+            payload.categorySlug = document.getElementById('importCategory').value.trim() || 'agrochemistry';
+            document.getElementById('importResult').textContent = 'Импорт…';
+            window.RealCPA.admin.listingsImport(payload)
+                .then(function(res) { showResult(res); return loadStatus(); })
+                .catch(function(err) { document.getElementById('importResult').textContent = 'Ошибка: ' + (err.message || ''); });
+        };
+
+        document.getElementById('importFeedBtn').onclick = function() {
+            document.getElementById('importResult').textContent = 'Тянем LISTINGS_FEED_URL…';
+            window.RealCPA.admin.listingsImport({
+                status: document.getElementById('importStatus').value,
+                categorySlug: document.getElementById('importCategory').value.trim() || 'agrochemistry'
+            })
+                .then(function(res) { showResult(res); return loadStatus(); })
+                .catch(function(err) { document.getElementById('importResult').textContent = 'Ошибка: ' + (err.message || ''); });
+        };
+
+        document.getElementById('importQueueBtn').onclick = function() {
+            var raw = document.getElementById('importJson').value.trim();
+            var payload = { async: true, status: document.getElementById('importStatus').value, categorySlug: document.getElementById('importCategory').value.trim() || 'agrochemistry' };
+            if (raw) {
+                try {
+                    var parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) payload.items = parsed;
+                    else Object.assign(payload, parsed, { async: true });
+                } catch (e) { alert('Невалидный JSON'); return; }
+            }
+            document.getElementById('importResult').textContent = 'Ставим в очередь…';
+            window.RealCPA.admin.listingsImport(payload)
+                .then(function(res) { showResult(res); })
+                .catch(function(err) { document.getElementById('importResult').textContent = 'Ошибка: ' + (err.message || ''); });
+        };
+
+        loadStatus();
+    })();
+    </script>
+  <div id="footer-placeholder"></div>
+  <script src="../footer-include.js"></script>
+</body>
+</html>

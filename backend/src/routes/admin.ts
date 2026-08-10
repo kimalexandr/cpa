@@ -1,11 +1,18 @@
 import { Router, Response } from 'express';
-import { PrismaClient, EventType, EventStatus } from '@prisma/client';
+import { PrismaClient, EventType, EventStatus, OfferStatus } from '@prisma/client';
 import { AuthRequest, requireAuth, requireRole } from '../middleware/auth';
 import { sendAdminPasswordReset, sendPayoutPaid, sendParticipationApproved, sendParticipationRejected } from '../lib/email';
 import { createNotification } from '../lib/notifications';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { ensureTrackingLink } from '../lib/tracking-link';
+import {
+  extractListingItems,
+  fetchApifyDatasetItems,
+  fetchListingsFeed,
+  upsertExternalListings,
+} from '../lib/listings-import';
+import { enqueueListingsImport } from '../lib/listings-import-queue';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -1188,6 +1195,134 @@ router.patch('/kyc/:id', async (req: AuthRequest, res: Response) => {
   } catch (e) {
     console.error('PATCH /api/admin/kyc/:id:', e);
     res.status(500).json({ error: 'Ошибка обновления KYC' });
+  }
+});
+
+/** Статус импорта внешних объявлений (Agroserver / Apify / Crawlee) */
+router.get('/listings-import', async (_req: AuthRequest, res: Response) => {
+  try {
+    const enabled = ['1', 'true', 'yes'].includes((process.env.LISTINGS_IMPORT_ENABLED || '').toLowerCase());
+    const importedOffersCount = await prisma.offer.count({
+      where: { id: { startsWith: 'agro-' } },
+    });
+    const recent = await prisma.offer.findMany({
+      where: { id: { startsWith: 'agro-' } },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+      select: { id: true, title: true, status: true, landingUrl: true, targetGeo: true, updatedAt: true },
+    });
+
+    res.json({
+      enabled,
+      cron: process.env.LISTINGS_IMPORT_CRON || '0 3 * * *',
+      hasFeedUrl: Boolean(process.env.LISTINGS_FEED_URL),
+      hasSecret: Boolean(process.env.LISTINGS_IMPORT_SECRET),
+      hasApifyToken: Boolean(process.env.APIFY_TOKEN),
+      hasRedisUrl: Boolean(process.env.REDIS_URL),
+      source: process.env.LISTINGS_SOURCE || 'agroserver.ru',
+      defaultCategorySlug: process.env.LISTINGS_DEFAULT_CATEGORY_SLUG || 'agrochemistry',
+      defaultStatus: process.env.LISTINGS_DEFAULT_STATUS || 'active',
+      defaultPayout: Number(process.env.LISTINGS_DEFAULT_PAYOUT || 300),
+      supplierEmail: process.env.LISTINGS_SUPPLIER_EMAIL || 'supplier@example.com',
+      importedOffersCount,
+      recent,
+      envRequired: [
+        { key: 'LISTINGS_IMPORT_SECRET', required: true, hint: 'Секрет для внешнего webhook (Apify/Crawlee)' },
+        { key: 'LISTINGS_IMPORT_ENABLED', required: true, hint: 'true — включить суточный BullMQ job' },
+        { key: 'REDIS_URL', required: true, hint: 'redis://127.0.0.1:6379 (для очереди)' },
+        { key: 'LISTINGS_IMPORT_CRON', required: false, hint: 'По умолчанию 0 3 * * * (03:00 UTC)' },
+        { key: 'LISTINGS_FEED_URL', required: false, hint: 'URL JSON-ленты / Apify dataset items' },
+        { key: 'APIFY_TOKEN', required: false, hint: 'Если webhook шлёт только datasetId' },
+        { key: 'LISTINGS_SOURCE', required: false, hint: 'agroserver.ru' },
+        { key: 'LISTINGS_DEFAULT_CATEGORY_SLUG', required: false, hint: 'agrochemistry' },
+        { key: 'LISTINGS_DEFAULT_STATUS', required: false, hint: 'active' },
+        { key: 'LISTINGS_DEFAULT_PAYOUT', required: false, hint: '300' },
+        { key: 'LISTINGS_SUPPLIER_EMAIL', required: false, hint: 'supplier@example.com' },
+      ],
+      envSnippet:
+        'REDIS_URL=redis://127.0.0.1:6379\n' +
+        'LISTINGS_IMPORT_SECRET=замените-на-длинный-секрет\n' +
+        'LISTINGS_IMPORT_ENABLED=true\n' +
+        'LISTINGS_IMPORT_CRON=0 3 * * *\n' +
+        'LISTINGS_FEED_URL=\n' +
+        'LISTINGS_SOURCE=agroserver.ru\n' +
+        'LISTINGS_DEFAULT_CATEGORY_SLUG=agrochemistry\n' +
+        'LISTINGS_DEFAULT_STATUS=active\n' +
+        'LISTINGS_DEFAULT_PAYOUT=300\n' +
+        'LISTINGS_SUPPLIER_EMAIL=supplier@example.com\n' +
+        'APIFY_TOKEN=\n',
+    });
+  } catch (e) {
+    console.error('GET /api/admin/listings-import:', e);
+    res.status(500).json({ error: 'Ошибка статуса импорта' });
+  }
+});
+
+/** Ручной импорт из админки: JSON items / feedUrl / async queue */
+router.post('/listings-import', async (req: AuthRequest, res: Response) => {
+  try {
+    let items = extractListingItems(req.body);
+    const datasetId = req.body?.datasetId ? String(req.body.datasetId) : '';
+    const feedUrl = req.body?.feedUrl ? String(req.body.feedUrl) : (process.env.LISTINGS_FEED_URL || '');
+    const asyncMode = req.body?.async === true || String(req.query.async || '') === '1';
+
+    if (items.length === 0 && datasetId) {
+      const token = process.env.APIFY_TOKEN || '';
+      if (!token) {
+        res.status(400).json({ error: 'Для datasetId задайте APIFY_TOKEN в .env' });
+        return;
+      }
+      items = await fetchApifyDatasetItems(datasetId, token);
+    }
+
+    if (items.length === 0 && feedUrl) {
+      items = await fetchListingsFeed(feedUrl);
+    }
+
+    if (asyncMode) {
+      const jobId = await enqueueListingsImport({
+        reason: 'manual',
+        items: items.length ? items : undefined,
+        feedUrl: feedUrl || undefined,
+        datasetId: datasetId || undefined,
+        source: req.body?.source,
+        categorySlug: req.body?.categorySlug,
+        status: req.body?.status,
+      });
+      if (!jobId) {
+        res.status(503).json({
+          error: 'Очередь выключена. Задайте LISTINGS_IMPORT_ENABLED=true и REDIS_URL, либо импортируйте без async.',
+        });
+        return;
+      }
+      res.status(202).json({ ok: true, queued: true, jobId, count: items.length || null });
+      return;
+    }
+
+    if (items.length === 0) {
+      res.status(400).json({
+        error: 'Нет данных: передайте items (JSON), feedUrl или datasetId, либо задайте LISTINGS_FEED_URL',
+      });
+      return;
+    }
+
+    const statusRaw = req.body?.status ? String(req.body.status) : undefined;
+    const status =
+      statusRaw && Object.values(OfferStatus).includes(statusRaw as OfferStatus)
+        ? (statusRaw as OfferStatus)
+        : undefined;
+
+    const result = await upsertExternalListings(prisma, items, {
+      source: req.body?.source || process.env.LISTINGS_SOURCE || 'agroserver.ru',
+      categorySlug: req.body?.categorySlug || process.env.LISTINGS_DEFAULT_CATEGORY_SLUG || 'agrochemistry',
+      status,
+      payoutAmount: req.body?.payoutAmount != null ? Number(req.body.payoutAmount) : undefined,
+    });
+
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    console.error('POST /api/admin/listings-import:', e);
+    res.status(500).json({ error: e instanceof Error ? e.message : 'Ошибка импорта' });
   }
 });
 
