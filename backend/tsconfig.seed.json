@@ -9,5 +9,5 @@
     "resolveJsonModule": true,
     "moduleResolution": "node"
   },
-  "include": ["prisma/**/*"]
+  "include": ["prisma/**/*", "src/lib/listings-import.ts"]
 }

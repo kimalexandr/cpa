@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import app from './app';
 import { startWebhookRetryWorker } from './lib/postback-queue';
 import { startSlaWorker } from './lib/sla-worker';
+import { startListingsImportWorker } from './lib/listings-import-queue';
 import { logger } from './lib/logger';
 
 dotenv.config();
@@ -13,3 +14,4 @@ app.listen(PORT, () => {
 });
 startWebhookRetryWorker();
 startSlaWorker();
+startListingsImportWorker();

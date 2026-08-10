@@ -14,6 +14,7 @@
     "restore-admin": "ts-node -P tsconfig.seed.json prisma/restore-admin.ts",
     "db:seed-supl": "ts-node -P tsconfig.seed.json prisma/seed-supl-categories.ts",
     "db:seed-locations": "ts-node -P tsconfig.seed.json prisma/seed-locations.ts",
+    "db:import-agro": "ts-node -P tsconfig.seed.json prisma/import-agroserver-organo.ts",
     "start": "node dist/index.js",
     "dev": "ts-node --compiler-options {\"module\":\"CommonJS\"} src/index.ts"
   },

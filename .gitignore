@@ -17,6 +17,7 @@ build/
 .venv/
 venv/
 node_modules/
+.tools/
 .mypy_cache/
 .pytest_cache/
 target/
