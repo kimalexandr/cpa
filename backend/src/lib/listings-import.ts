@@ -279,3 +279,45 @@ export async function fetchApifyDatasetItems(datasetId: string, token: string): 
   const url = `https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?token=${encodeURIComponent(token)}`;
   return fetchListingsFeed(url);
 }
+
+/** Собирает LISTINGS_FEED_URL из env, либо из APIFY_TOKEN + LISTINGS_APIFY_DATASET_ID. */
+export function resolveListingsFeedUrl(): string {
+  const explicit = (process.env.LISTINGS_FEED_URL || '').trim();
+  if (explicit) return explicit;
+  const datasetId = (process.env.LISTINGS_APIFY_DATASET_ID || '').trim();
+  const token = (process.env.APIFY_TOKEN || '').trim();
+  if (datasetId && token) {
+    return `https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?token=${encodeURIComponent(token)}`;
+  }
+  return '';
+}
+
+/**
+ * Запускает Apify Actor, ждёт завершения, возвращает defaultDatasetId.
+ * LISTINGS_APIFY_ACTOR_ID: username~actor-name
+ */
+export async function runApifyActorAndGetDatasetId(
+  actorId: string,
+  token: string,
+  input: Record<string, unknown> = {},
+  waitSec = 180,
+): Promise<string> {
+  const url =
+    `https://api.apify.com/v2/acts/${encodeURIComponent(actorId)}/runs` +
+    `?token=${encodeURIComponent(token)}&waitForFinish=${Math.max(1, waitSec)}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`Apify actor run HTTP ${resp.status}: ${text.slice(0, 300)}`);
+  }
+  const json = (await resp.json()) as { data?: { defaultDatasetId?: string; status?: string } };
+  const datasetId = json?.data?.defaultDatasetId;
+  if (!datasetId) {
+    throw new Error(`Apify run без defaultDatasetId (status=${json?.data?.status || '?'})`);
+  }
+  return datasetId;
+}

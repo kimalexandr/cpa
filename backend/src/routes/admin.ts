@@ -1215,42 +1215,45 @@ router.get('/listings-import', async (_req: AuthRequest, res: Response) => {
     res.json({
       enabled,
       cron: process.env.LISTINGS_IMPORT_CRON || '0 3 * * *',
-      hasFeedUrl: Boolean(process.env.LISTINGS_FEED_URL),
+      hasFeedUrl: Boolean(process.env.LISTINGS_FEED_URL || process.env.LISTINGS_APIFY_DATASET_ID),
       hasSecret: Boolean(process.env.LISTINGS_IMPORT_SECRET),
       hasApifyToken: Boolean(process.env.APIFY_TOKEN),
+      hasApifyActor: Boolean(process.env.LISTINGS_APIFY_ACTOR_ID),
       hasRedisUrl: Boolean(process.env.REDIS_URL),
       source: process.env.LISTINGS_SOURCE || 'agroserver.ru',
       defaultCategorySlug: process.env.LISTINGS_DEFAULT_CATEGORY_SLUG || 'agrochemistry',
       defaultStatus: process.env.LISTINGS_DEFAULT_STATUS || 'active',
       defaultPayout: Number(process.env.LISTINGS_DEFAULT_PAYOUT || 300),
       supplierEmail: process.env.LISTINGS_SUPPLIER_EMAIL || 'supplier@example.com',
+      categoryUrl: process.env.LISTINGS_CATEGORY_URL || 'https://agroserver.ru/organo-mineralnye-udobreniya/',
       importedOffersCount,
       recent,
       envRequired: [
-        { key: 'LISTINGS_IMPORT_SECRET', required: true, hint: 'Секрет для внешнего webhook (Apify/Crawlee)' },
-        { key: 'LISTINGS_IMPORT_ENABLED', required: true, hint: 'true — включить суточный BullMQ job' },
-        { key: 'REDIS_URL', required: true, hint: 'redis://127.0.0.1:6379 (для очереди)' },
-        { key: 'LISTINGS_IMPORT_CRON', required: false, hint: 'По умолчанию 0 3 * * * (03:00 UTC)' },
-        { key: 'LISTINGS_FEED_URL', required: false, hint: 'URL JSON-ленты / Apify dataset items' },
-        { key: 'APIFY_TOKEN', required: false, hint: 'Если webhook шлёт только datasetId' },
-        { key: 'LISTINGS_SOURCE', required: false, hint: 'agroserver.ru' },
-        { key: 'LISTINGS_DEFAULT_CATEGORY_SLUG', required: false, hint: 'agrochemistry' },
-        { key: 'LISTINGS_DEFAULT_STATUS', required: false, hint: 'active' },
-        { key: 'LISTINGS_DEFAULT_PAYOUT', required: false, hint: '300' },
-        { key: 'LISTINGS_SUPPLIER_EMAIL', required: false, hint: 'supplier@example.com' },
+        { key: 'LISTINGS_IMPORT_SECRET', required: true, hint: 'Секрет webhook Apify → /api/integrations/listings/import' },
+        { key: 'LISTINGS_IMPORT_ENABLED', required: true, hint: 'true — суточный job в Redis/BullMQ' },
+        { key: 'REDIS_URL', required: true, hint: 'На Docker: redis://redis:6379' },
+        { key: 'APIFY_TOKEN', required: true, hint: 'Apify → Settings → API tokens (для авто)' },
+        { key: 'LISTINGS_APIFY_ACTOR_ID', required: false, hint: 'username~actor — наш cron сам запускает парсер' },
+        { key: 'LISTINGS_APIFY_DATASET_ID', required: false, hint: 'Или готовый dataset без запуска Actor' },
+        { key: 'LISTINGS_FEED_URL', required: false, hint: 'Или прямой URL JSON (альтернатива dataset)' },
+        { key: 'LISTINGS_CATEGORY_URL', required: false, hint: 'Категория для Actor' },
+        { key: 'LISTINGS_MAX_ITEMS', required: false, hint: 'Сколько объявлений за прогон (10)' },
+        { key: 'LISTINGS_IMPORT_CRON', required: false, hint: '0 3 * * *' },
       ],
       envSnippet:
-        'REDIS_URL=redis://127.0.0.1:6379\n' +
+        'REDIS_URL=redis://redis:6379\n' +
         'LISTINGS_IMPORT_SECRET=замените-на-длинный-секрет\n' +
         'LISTINGS_IMPORT_ENABLED=true\n' +
         'LISTINGS_IMPORT_CRON=0 3 * * *\n' +
-        'LISTINGS_FEED_URL=\n' +
+        'APIFY_TOKEN=apify_api_...\n' +
+        'LISTINGS_APIFY_ACTOR_ID=username~agroserver-listings\n' +
+        'LISTINGS_CATEGORY_URL=https://agroserver.ru/organo-mineralnye-udobreniya/\n' +
+        'LISTINGS_MAX_ITEMS=10\n' +
         'LISTINGS_SOURCE=agroserver.ru\n' +
         'LISTINGS_DEFAULT_CATEGORY_SLUG=agrochemistry\n' +
         'LISTINGS_DEFAULT_STATUS=active\n' +
         'LISTINGS_DEFAULT_PAYOUT=300\n' +
-        'LISTINGS_SUPPLIER_EMAIL=supplier@example.com\n' +
-        'APIFY_TOKEN=\n',
+        'LISTINGS_SUPPLIER_EMAIL=supplier@example.com\n',
     });
   } catch (e) {
     console.error('GET /api/admin/listings-import:', e);

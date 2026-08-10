@@ -6,6 +6,8 @@ import {
   ExternalListingItem,
   fetchApifyDatasetItems,
   fetchListingsFeed,
+  resolveListingsFeedUrl,
+  runApifyActorAndGetDatasetId,
   upsertExternalListings,
 } from './listings-import';
 
@@ -20,6 +22,8 @@ export type ListingsImportJobData = {
   source?: string;
   categorySlug?: string;
   status?: OfferStatus;
+  /** Запустить Apify Actor перед импортом (иначе берём готовый dataset/feed). */
+  runActor?: boolean;
 };
 
 let connection: IORedis | null = null;
@@ -61,23 +65,61 @@ export function getListingsImportQueue(): Queue<ListingsImportJobData> {
   return queue;
 }
 
+async function resolveItems(data: ListingsImportJobData): Promise<ExternalListingItem[]> {
+  if (Array.isArray(data.items) && data.items.length > 0) return data.items;
+
+  const token = (process.env.APIFY_TOKEN || '').trim();
+  const actorId = (process.env.LISTINGS_APIFY_ACTOR_ID || '').trim();
+  const shouldRunActor =
+    data.runActor === true ||
+    (data.reason === 'schedule' && Boolean(actorId) && Boolean(token));
+
+  let datasetId = data.datasetId || '';
+
+  if (shouldRunActor) {
+    if (!actorId || !token) {
+      throw new Error('Для запуска Actor нужны LISTINGS_APIFY_ACTOR_ID и APIFY_TOKEN');
+    }
+    const input = {
+      categoryUrl:
+        process.env.LISTINGS_CATEGORY_URL ||
+        'https://agroserver.ru/organo-mineralnye-udobreniya/',
+      maxItems: Number(process.env.LISTINGS_MAX_ITEMS || 10),
+    };
+    logger.info({ actorId, input }, 'starting Apify actor for listings import');
+    datasetId = await runApifyActorAndGetDatasetId(
+      actorId,
+      token,
+      input,
+      Number(process.env.LISTINGS_APIFY_WAIT_SEC || 180),
+    );
+  }
+
+  if (datasetId) {
+    if (!token) throw new Error('APIFY_TOKEN не задан для datasetId');
+    return fetchApifyDatasetItems(datasetId, token);
+  }
+
+  const envDatasetId = (process.env.LISTINGS_APIFY_DATASET_ID || '').trim();
+  if (envDatasetId) {
+    if (!token) throw new Error('APIFY_TOKEN не задан для LISTINGS_APIFY_DATASET_ID');
+    return fetchApifyDatasetItems(envDatasetId, token);
+  }
+
+  const feedUrl = data.feedUrl || resolveListingsFeedUrl();
+  if (!feedUrl) {
+    throw new Error(
+      'Нет источника: задайте LISTINGS_APIFY_ACTOR_ID+APIFY_TOKEN (автозапуск), ' +
+        'или LISTINGS_APIFY_DATASET_ID+APIFY_TOKEN, или LISTINGS_FEED_URL, ' +
+        'либо настройте Apify webhook на /api/integrations/listings/import',
+    );
+  }
+  return fetchListingsFeed(feedUrl);
+}
+
 async function runImportJob(job: Job<ListingsImportJobData>) {
   const data = job.data || {};
-  let items: ExternalListingItem[] = Array.isArray(data.items) ? data.items : [];
-
-  if (items.length === 0 && data.datasetId) {
-    const token = process.env.APIFY_TOKEN || '';
-    if (!token) throw new Error('APIFY_TOKEN не задан для datasetId');
-    items = await fetchApifyDatasetItems(data.datasetId, token);
-  }
-
-  if (items.length === 0) {
-    const feedUrl = data.feedUrl || process.env.LISTINGS_FEED_URL || '';
-    if (!feedUrl) {
-      throw new Error('Нет items / datasetId / LISTINGS_FEED_URL для импорта');
-    }
-    items = await fetchListingsFeed(feedUrl);
-  }
+  const items = await resolveItems(data);
 
   const result = await upsertExternalListings(prisma, items, {
     source: data.source || process.env.LISTINGS_SOURCE || 'agroserver.ru',
