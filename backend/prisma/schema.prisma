@@ -516,3 +516,48 @@ model OfferLocation {
   @@index([locationId])
   @@map("offer_locations")
 }
+
+/// Источник парсинга объявлений (управляется из админки)
+model ListingsSource {
+  id             String    @id @default(uuid())
+  name           String
+  categoryUrl    String    @map("category_url") @db.Text
+  sourceKey      String    @default("agroserver.ru") @map("source_key")
+  idPrefix       String    @default("agro") @map("id_prefix")
+  categorySlug   String    @default("agrochemistry") @map("category_slug")
+  maxItems       Int       @default(10) @map("max_items")
+  enabled        Boolean   @default(true)
+  offerStatus    String    @default("active") @map("offer_status")
+  lastRunAt      DateTime? @map("last_run_at")
+  lastStatus     String?   @map("last_status")
+  lastError      String?   @map("last_error") @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  runs ListingsImportLog[]
+
+  @@index([enabled])
+  @@map("listings_sources")
+}
+
+/// Лог прогона парсера / импорта
+model ListingsImportLog {
+  id          String    @id @default(uuid())
+  sourceId    String?   @map("source_id")
+  trigger     String    @default("manual")
+  status      String    @default("running")
+  message     String?   @db.Text
+  detail      String?   @db.Text
+  itemsFound  Int       @default(0) @map("items_found")
+  upserted    Int       @default(0)
+  skipped     Int       @default(0)
+  startedAt   DateTime  @default(now()) @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+
+  source ListingsSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@index([sourceId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("listings_import_logs")
+}

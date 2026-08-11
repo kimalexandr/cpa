@@ -10,6 +10,7 @@ import {
   runApifyActorAndGetDatasetId,
   upsertExternalListings,
 } from './listings-import';
+import { runAllEnabledListingsSources } from './listings-scrape';
 
 const QUEUE_NAME = 'listings-import';
 const prisma = new PrismaClient();
@@ -119,6 +120,20 @@ async function resolveItems(data: ListingsImportJobData): Promise<ExternalListin
 
 async function runImportJob(job: Job<ListingsImportJobData>) {
   const data = job.data || {};
+
+  // Суточный cron: сначала все источники из админки (БД)
+  if (data.reason === 'schedule') {
+    await runAllEnabledListingsSources(prisma);
+    const hasLegacyFeed =
+      Boolean(process.env.LISTINGS_FEED_URL) ||
+      Boolean(process.env.LISTINGS_APIFY_DATASET_ID) ||
+      Boolean(process.env.LISTINGS_APIFY_ACTOR_ID);
+    if (!hasLegacyFeed) {
+      logger.info({ jobId: job.id }, 'listings schedule: DB sources done (no legacy feed)');
+      return { upserted: 0, skipped: 0, offerIds: [], errors: [], mode: 'db-sources' };
+    }
+  }
+
   const items = await resolveItems(data);
 
   const result = await upsertExternalListings(prisma, items, {

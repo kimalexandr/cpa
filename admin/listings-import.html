@@ -7,6 +7,16 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      .li-error { color: #b42318; white-space: pre-wrap; word-break: break-word; }
+      .li-ok { color: #027a48; }
+      .li-partial { color: #b54708; }
+      .li-status { font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
+      .li-detail { font-size: 0.8rem; color: var(--text-light); max-width: 480px; white-space: pre-wrap; word-break: break-word; }
+      .li-form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0.75rem; }
+      .li-form-row .form-group { margin: 0; min-width: 180px; flex: 1; }
+      .li-form-row .form-group.url { flex: 2; min-width: 280px; }
+    </style>
 </head>
 <body class="admin-page">
     <header class="admin-header">
@@ -37,86 +47,106 @@
         <main class="admin-main">
             <div class="admin-toolbar">
                 <h1 class="admin-page-title">Импорт объявлений</h1>
-                <a href="offers.html" class="btn btn-secondary">К офферам</a>
+                <button type="button" class="btn btn-secondary" id="reloadBtn"><i class="fas fa-sync"></i> Обновить</button>
             </div>
+
+            <div id="pageAlert" class="admin-card li-error" style="display:none; margin-bottom:1rem"></div>
 
             <div class="admin-cards" style="margin-bottom:1.25rem">
                 <div class="admin-card admin-card-metric">
-                    <span class="admin-card-label">Импортировано (agro-*)</span>
+                    <span class="admin-card-label">Офферы agro-*</span>
                     <span class="admin-card-value" id="metricImported">—</span>
+                </div>
+                <div class="admin-card admin-card-metric">
+                    <span class="admin-card-label">Источников</span>
+                    <span class="admin-card-value" id="metricSources">—</span>
                 </div>
                 <div class="admin-card admin-card-metric">
                     <span class="admin-card-label">Суточный job</span>
                     <span class="admin-card-value" id="metricEnabled" style="font-size:1.1rem">—</span>
                 </div>
                 <div class="admin-card admin-card-metric">
-                    <span class="admin-card-label">Cron</span>
-                    <span class="admin-card-value" id="metricCron" style="font-size:1.1rem">—</span>
-                </div>
-                <div class="admin-card admin-card-metric">
-                    <span class="admin-card-label">FEED / Redis / Secret</span>
-                    <span class="admin-card-value" id="metricFlags" style="font-size:0.95rem">—</span>
+                    <span class="admin-card-label">Redis</span>
+                    <span class="admin-card-value" id="metricRedis" style="font-size:1.1rem">—</span>
                 </div>
             </div>
 
             <div class="admin-card" style="margin-bottom:1.25rem">
-                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Что добавить в <code>backend/.env</code></h2>
+                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.5rem">Добавить сайт / категорию</h2>
                 <p class="admin-card-label" style="margin-bottom:0.75rem; color:var(--text-light)">
-                    Скопируйте блок в <code>backend/.env</code>, замените секрет и при необходимости URL ленты. После правок перезапустите API.
+                    Вставьте URL списка объявлений (например Agroserver). Парсинг и ошибки — кнопкой «Парсить», без Apify-токена тоже можно: при капче увидите точную причину в логе.
                 </p>
-                <pre id="envSnippet" style="background:var(--bg-secondary,#f4f4f5); padding:1rem; border-radius:8px; overflow:auto; font-size:0.8rem; line-height:1.45; white-space:pre-wrap"></pre>
-                <button type="button" class="btn btn-secondary" id="copyEnvBtn" style="margin-top:0.75rem"><i class="fas fa-copy"></i> Копировать .env</button>
-                <ul id="envHints" style="margin:1rem 0 0; padding-left:1.25rem; color:var(--text-light); font-size:0.875rem"></ul>
-            </div>
-
-            <div class="admin-card" style="margin-bottom:1.25rem; max-width:900px">
-                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Ручной импорт JSON</h2>
-                <p class="admin-card-label" style="margin-bottom:0.75rem; color:var(--text-light)">
-                    Вставьте массив объявлений или <code>{"items":[...]}</code>. Поля: <code>externalId</code>, <code>url</code>, <code>title</code>, опционально <code>description</code>, <code>geo</code>, <code>price</code>, <code>seller</code>.
-                </p>
-                <div class="form-group">
-                    <label for="importJson">JSON</label>
-                    <textarea id="importJson" class="form-input" rows="12" style="font-family:ui-monospace,monospace; font-size:0.85rem" placeholder='[{"externalId":"1664629","url":"https://agroserver.ru/b/...","title":"...","geo":"г. Москва"}]'></textarea>
-                </div>
-                <div class="form-group" style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end">
-                    <div>
-                        <label for="importStatus">Статус офферов</label>
-                        <select id="importStatus" class="form-input">
+                <div class="li-form-row">
+                    <div class="form-group">
+                        <label for="srcName">Название</label>
+                        <input type="text" id="srcName" class="form-input" placeholder="Органоминеральные удобрения">
+                    </div>
+                    <div class="form-group url">
+                        <label for="srcUrl">URL категории</label>
+                        <input type="url" id="srcUrl" class="form-input" placeholder="https://agroserver.ru/organo-mineralnye-udobreniya/">
+                    </div>
+                    <div class="form-group" style="max-width:120px">
+                        <label for="srcMax">Макс. шт.</label>
+                        <input type="number" id="srcMax" class="form-input" value="10" min="1" max="100">
+                    </div>
+                    <div class="form-group" style="max-width:140px">
+                        <label for="srcStatus">Статус оффера</label>
+                        <select id="srcStatus" class="form-input">
                             <option value="active" selected>active</option>
                             <option value="draft">draft</option>
                         </select>
                     </div>
-                    <div>
-                        <label for="importCategory">Category slug</label>
-                        <input type="text" id="importCategory" class="form-input" value="agrochemistry">
-                    </div>
+                    <button type="button" class="btn btn-primary" id="addSrcBtn"><i class="fas fa-plus"></i> Добавить</button>
                 </div>
-                <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.5rem">
-                    <button type="button" class="btn btn-primary" id="importJsonBtn"><i class="fas fa-upload"></i> Импортировать JSON</button>
-                    <button type="button" class="btn btn-secondary" id="importFeedBtn"><i class="fas fa-sync"></i> Тянуть LISTINGS_FEED_URL</button>
-                    <button type="button" class="btn btn-secondary" id="importQueueBtn"><i class="fas fa-clock"></i> В очередь (async)</button>
-                </div>
-                <p id="importResult" class="admin-card-label" style="margin-top:1rem; white-space:pre-wrap"></p>
             </div>
 
-            <div class="admin-card">
-                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Последние импортированные</h2>
+            <div class="admin-card" style="margin-bottom:1.25rem">
+                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Источники</h2>
                 <div class="admin-table-wrap">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Название</th>
-                                <th>Гео</th>
-                                <th>Статус</th>
-                                <th>Обновлён</th>
+                                <th>Название / URL</th>
+                                <th>Вкл</th>
+                                <th>Макс</th>
+                                <th>Последний статус</th>
+                                <th>Ошибка</th>
+                                <th></th>
                             </tr>
                         </thead>
-                        <tbody id="recentRows">
-                            <tr><td colspan="5">Загрузка…</td></tr>
+                        <tbody id="sourcesRows">
+                            <tr><td colspan="6">Загрузка…</td></tr>
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <div class="admin-card" style="margin-bottom:1.25rem">
+                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Лог прогонов и ошибки</h2>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Источник</th>
+                                <th>Статус</th>
+                                <th>Сообщение</th>
+                                <th>Детали</th>
+                                <th>Найдено / записано</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsRows">
+                            <tr><td colspan="6">Загрузка…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-card" style="max-width:900px">
+                <h2 class="admin-card-label" style="font-size:1rem; margin-bottom:0.75rem">Запасной путь: JSON вручную</h2>
+                <textarea id="importJson" class="form-input" rows="8" style="font-family:ui-monospace,monospace; font-size:0.85rem" placeholder='[{"externalId":"1","url":"https://...","title":"..."}]'></textarea>
+                <button type="button" class="btn btn-secondary" id="importJsonBtn" style="margin-top:0.75rem"><i class="fas fa-upload"></i> Импортировать JSON</button>
+                <p id="importResult" class="admin-card-label" style="margin-top:0.75rem; white-space:pre-wrap"></p>
             </div>
         </main>
     </div>
@@ -135,121 +165,171 @@
             window.location.href = '../index.html';
         };
 
-        function flag(ok) { return ok ? '✓' : '—'; }
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
 
-        function renderStatus(data) {
-            document.getElementById('metricImported').textContent = data.importedOffersCount != null ? data.importedOffersCount : '—';
-            document.getElementById('metricEnabled').textContent = data.enabled ? 'вкл' : 'выкл';
-            document.getElementById('metricCron').textContent = data.cron || '—';
-            document.getElementById('metricFlags').textContent =
-                'FEED ' + flag(data.hasFeedUrl) + ' · Redis ' + flag(data.hasRedisUrl) + ' · Secret ' + flag(data.hasSecret);
-            document.getElementById('envSnippet').textContent = data.envSnippet || '';
-            document.getElementById('importCategory').value = data.defaultCategorySlug || 'agrochemistry';
-            document.getElementById('importStatus').value = data.defaultStatus === 'draft' ? 'draft' : 'active';
+        function statusClass(st) {
+            if (st === 'ok') return 'li-ok';
+            if (st === 'partial') return 'li-partial';
+            if (st === 'error' || st === 'running') return st === 'error' ? 'li-error' : '';
+            return '';
+        }
 
-            var hints = document.getElementById('envHints');
-            hints.innerHTML = '';
-            (data.envRequired || []).forEach(function(row) {
-                var li = document.createElement('li');
-                li.innerHTML = '<code>' + row.key + '</code>' +
-                    (row.required ? ' <strong>(обязательно для расписания)</strong>' : '') +
-                    ' — ' + (row.hint || '');
-                hints.appendChild(li);
-            });
+        function showAlert(msg, isError) {
+            var el = document.getElementById('pageAlert');
+            if (!msg) { el.style.display = 'none'; return; }
+            el.style.display = 'block';
+            el.className = 'admin-card ' + (isError ? 'li-error' : 'li-ok');
+            el.textContent = msg;
+        }
 
-            var tbody = document.getElementById('recentRows');
+        function renderSources(sources) {
+            var tbody = document.getElementById('sourcesRows');
             tbody.innerHTML = '';
-            if (!data.recent || !data.recent.length) {
-                tbody.innerHTML = '<tr><td colspan="5">Пока нет офферов с id agro-*</td></tr>';
+            if (!sources || !sources.length) {
+                tbody.innerHTML = '<tr><td colspan="6">Пока нет источников. Добавьте URL категории выше.</td></tr>';
                 return;
             }
-            data.recent.forEach(function(o) {
+            sources.forEach(function(s) {
                 var tr = document.createElement('tr');
-                var updated = o.updatedAt ? new Date(o.updatedAt).toLocaleString('ru-RU') : '—';
+                var lastAt = s.lastRunAt ? new Date(s.lastRunAt).toLocaleString('ru-RU') : '—';
                 tr.innerHTML =
-                    '<td><code>' + o.id + '</code></td>' +
-                    '<td>' + (o.landingUrl ? '<a href="' + o.landingUrl + '" target="_blank" rel="noopener">' : '') +
-                    (o.title || '—') + (o.landingUrl ? '</a>' : '') + '</td>' +
-                    '<td>' + (o.targetGeo || '—') + '</td>' +
-                    '<td>' + (o.status || '—') + '</td>' +
-                    '<td>' + updated + '</td>';
+                    '<td><strong>' + esc(s.name) + '</strong><br><a href="' + esc(s.categoryUrl) + '" target="_blank" rel="noopener">' + esc(s.categoryUrl) + '</a></td>' +
+                    '<td>' + (s.enabled ? 'да' : 'нет') + '</td>' +
+                    '<td>' + esc(s.maxItems) + '</td>' +
+                    '<td><span class="li-status ' + statusClass(s.lastStatus) + '">' + esc(s.lastStatus || '—') + '</span><br><span class="li-detail">' + esc(lastAt) + '</span></td>' +
+                    '<td class="li-detail ' + (s.lastError ? 'li-error' : '') + '">' + esc(s.lastError || '—') + '</td>' +
+                    '<td style="white-space:nowrap">' +
+                    '<button type="button" class="btn btn-primary btn-run" data-id="' + esc(s.id) + '">Парсить</button> ' +
+                    '<button type="button" class="btn btn-secondary btn-toggle" data-id="' + esc(s.id) + '" data-enabled="' + (s.enabled ? '1' : '0') + '">' + (s.enabled ? 'Выкл' : 'Вкл') + '</button> ' +
+                    '<button type="button" class="btn btn-secondary btn-del" data-id="' + esc(s.id) + '">Удал.</button>' +
+                    '</td>';
+                tbody.appendChild(tr);
+            });
+
+            tbody.querySelectorAll('.btn-run').forEach(function(btn) {
+                btn.onclick = function() {
+                    var id = btn.getAttribute('data-id');
+                    btn.disabled = true;
+                    btn.textContent = '…';
+                    showAlert('Парсинг запущен…', false);
+                    window.RealCPA.admin.listingsSourceRun(id)
+                        .then(function(res) {
+                            var text = (res.message || '') + (res.detail ? '\n\nДетали:\n' + res.detail : '');
+                            showAlert(text, !res.ok);
+                            return loadAll();
+                        })
+                        .catch(function(err) {
+                            var p = err.payload || {};
+                            showAlert(
+                                'Ошибка запуска: ' + (p.message || err.message || p.error || 'unknown') +
+                                (p.detail ? '\n\nДетали:\n' + p.detail : ''),
+                                true
+                            );
+                            return loadAll();
+                        })
+                        .finally(function() { btn.disabled = false; btn.textContent = 'Парсить'; });
+                };
+            });
+            tbody.querySelectorAll('.btn-toggle').forEach(function(btn) {
+                btn.onclick = function() {
+                    var id = btn.getAttribute('data-id');
+                    var enabled = btn.getAttribute('data-enabled') !== '1';
+                    window.RealCPA.admin.listingsSourceUpdate(id, { enabled: enabled }).then(loadAll)
+                        .catch(function(err) { showAlert(err.message || 'Ошибка', true); });
+                };
+            });
+            tbody.querySelectorAll('.btn-del').forEach(function(btn) {
+                btn.onclick = function() {
+                    if (!confirm('Удалить источник?')) return;
+                    window.RealCPA.admin.listingsSourceDelete(btn.getAttribute('data-id')).then(loadAll)
+                        .catch(function(err) { showAlert(err.message || 'Ошибка', true); });
+                };
+            });
+        }
+
+        function renderLogs(logs) {
+            var tbody = document.getElementById('logsRows');
+            tbody.innerHTML = '';
+            if (!logs || !logs.length) {
+                tbody.innerHTML = '<tr><td colspan="6">Логов пока нет. Запустите «Парсить».</td></tr>';
+                return;
+            }
+            logs.forEach(function(l) {
+                var tr = document.createElement('tr');
+                var src = l.source ? (l.source.name || l.source.categoryUrl) : '—';
+                tr.innerHTML =
+                    '<td>' + esc(l.startedAt ? new Date(l.startedAt).toLocaleString('ru-RU') : '—') + '</td>' +
+                    '<td>' + esc(src) + '<br><span class="li-detail">' + esc(l.trigger || '') + '</span></td>' +
+                    '<td class="li-status ' + statusClass(l.status) + '">' + esc(l.status) + '</td>' +
+                    '<td class="' + (l.status === 'error' ? 'li-error' : '') + '">' + esc(l.message || '—') + '</td>' +
+                    '<td class="li-detail">' + esc(l.detail || '—') + '</td>' +
+                    '<td>' + esc(l.itemsFound) + ' / ' + esc(l.upserted) + '</td>';
                 tbody.appendChild(tr);
             });
         }
 
-        function loadStatus() {
-            return window.RealCPA.admin.listingsImportStatus().then(renderStatus).catch(function(err) {
-                document.getElementById('recentRows').innerHTML =
-                    '<tr><td colspan="5">Ошибка: ' + (err.message || 'не удалось загрузить') + '</td></tr>';
+        function loadAll() {
+            return window.RealCPA.admin.listingsImportStatus().then(function(data) {
+                showAlert('');
+                document.getElementById('metricImported').textContent = data.importedOffersCount != null ? data.importedOffersCount : '—';
+                document.getElementById('metricSources').textContent = (data.sources || []).length;
+                document.getElementById('metricEnabled').textContent = data.enabled ? 'вкл' : 'выкл';
+                document.getElementById('metricRedis').textContent = data.hasRedisUrl ? 'есть' : 'нет';
+                renderSources(data.sources || []);
+                renderLogs(data.logs || []);
+            }).catch(function(err) {
+                var msg = (err && (err.error || err.message)) || 'Не удалось загрузить';
+                if (err && err.detail) msg += '\n' + err.detail;
+                showAlert(msg, true);
+                document.getElementById('sourcesRows').innerHTML = '<tr><td colspan="6">' + esc(msg) + '</td></tr>';
+                document.getElementById('logsRows').innerHTML = '<tr><td colspan="6">—</td></tr>';
             });
         }
 
-        function showResult(res) {
-            var el = document.getElementById('importResult');
-            if (res.queued) {
-                el.textContent = 'В очереди, jobId=' + res.jobId + (res.count != null ? ', items≈' + res.count : '');
-            } else {
-                el.textContent = 'Готово: upserted=' + (res.upserted || 0) +
-                    ', skipped=' + (res.skipped || 0) +
-                    (res.errors && res.errors.length ? ', errors=' + JSON.stringify(res.errors) : '');
-            }
-        }
-
-        document.getElementById('copyEnvBtn').onclick = function() {
-            var text = document.getElementById('envSnippet').textContent || '';
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(function() {
-                    document.getElementById('copyEnvBtn').textContent = 'Скопировано';
-                    setTimeout(function() {
-                        document.getElementById('copyEnvBtn').innerHTML = '<i class="fas fa-copy"></i> Копировать .env';
-                    }, 1500);
-                });
-            } else {
-                alert(text);
-            }
+        document.getElementById('addSrcBtn').onclick = function() {
+            var categoryUrl = document.getElementById('srcUrl').value.trim();
+            var name = document.getElementById('srcName').value.trim();
+            var maxItems = Number(document.getElementById('srcMax').value || 10);
+            var offerStatus = document.getElementById('srcStatus').value;
+            if (!categoryUrl) { showAlert('Укажите URL', true); return; }
+            window.RealCPA.admin.listingsSourceCreate({
+                name: name || categoryUrl,
+                categoryUrl: categoryUrl,
+                maxItems: maxItems,
+                offerStatus: offerStatus,
+                enabled: true
+            }).then(function() {
+                document.getElementById('srcUrl').value = '';
+                document.getElementById('srcName').value = '';
+                showAlert('Источник добавлен. Нажмите «Парсить».', false);
+                return loadAll();
+            }).catch(function(err) {
+                showAlert(err.message || err.error || 'Ошибка создания', true);
+            });
         };
 
         document.getElementById('importJsonBtn').onclick = function() {
             var raw = document.getElementById('importJson').value.trim();
-            if (!raw) { alert('Вставьте JSON'); return; }
+            if (!raw) { showAlert('Вставьте JSON', true); return; }
             var parsed;
-            try { parsed = JSON.parse(raw); } catch (e) { alert('Невалидный JSON'); return; }
+            try { parsed = JSON.parse(raw); } catch (e) { showAlert('Невалидный JSON', true); return; }
             var payload = Array.isArray(parsed) ? { items: parsed } : parsed;
-            payload.status = document.getElementById('importStatus').value;
-            payload.categorySlug = document.getElementById('importCategory').value.trim() || 'agrochemistry';
-            document.getElementById('importResult').textContent = 'Импорт…';
             window.RealCPA.admin.listingsImport(payload)
-                .then(function(res) { showResult(res); return loadStatus(); })
-                .catch(function(err) { document.getElementById('importResult').textContent = 'Ошибка: ' + (err.message || ''); });
+                .then(function(res) {
+                    document.getElementById('importResult').textContent =
+                        'upserted=' + (res.upserted || 0) + ', skipped=' + (res.skipped || 0);
+                    return loadAll();
+                })
+                .catch(function(err) {
+                    document.getElementById('importResult').textContent = 'Ошибка: ' + (err.message || err.error || '');
+                });
         };
 
-        document.getElementById('importFeedBtn').onclick = function() {
-            document.getElementById('importResult').textContent = 'Тянем LISTINGS_FEED_URL…';
-            window.RealCPA.admin.listingsImport({
-                status: document.getElementById('importStatus').value,
-                categorySlug: document.getElementById('importCategory').value.trim() || 'agrochemistry'
-            })
-                .then(function(res) { showResult(res); return loadStatus(); })
-                .catch(function(err) { document.getElementById('importResult').textContent = 'Ошибка: ' + (err.message || ''); });
-        };
-
-        document.getElementById('importQueueBtn').onclick = function() {
-            var raw = document.getElementById('importJson').value.trim();
-            var payload = { async: true, status: document.getElementById('importStatus').value, categorySlug: document.getElementById('importCategory').value.trim() || 'agrochemistry' };
-            if (raw) {
-                try {
-                    var parsed = JSON.parse(raw);
-                    if (Array.isArray(parsed)) payload.items = parsed;
-                    else Object.assign(payload, parsed, { async: true });
-                } catch (e) { alert('Невалидный JSON'); return; }
-            }
-            document.getElementById('importResult').textContent = 'Ставим в очередь…';
-            window.RealCPA.admin.listingsImport(payload)
-                .then(function(res) { showResult(res); })
-                .catch(function(err) { document.getElementById('importResult').textContent = 'Ошибка: ' + (err.message || ''); });
-        };
-
-        loadStatus();
+        document.getElementById('reloadBtn').onclick = function() { loadAll(); };
+        loadAll();
     })();
     </script>
   <div id="footer-placeholder"></div>

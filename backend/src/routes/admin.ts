@@ -13,6 +13,7 @@ import {
   upsertExternalListings,
 } from '../lib/listings-import';
 import { enqueueListingsImport } from '../lib/listings-import-queue';
+import { runListingsSource } from '../lib/listings-scrape';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -1198,70 +1199,153 @@ router.patch('/kyc/:id', async (req: AuthRequest, res: Response) => {
   }
 });
 
-/** Статус импорта внешних объявлений (Agroserver / Apify / Crawlee) */
+/** Статус импорта + источники из БД + последние ошибки */
 router.get('/listings-import', async (_req: AuthRequest, res: Response) => {
   try {
     const enabled = ['1', 'true', 'yes'].includes((process.env.LISTINGS_IMPORT_ENABLED || '').toLowerCase());
     const importedOffersCount = await prisma.offer.count({
       where: { id: { startsWith: 'agro-' } },
     });
-    const recent = await prisma.offer.findMany({
-      where: { id: { startsWith: 'agro-' } },
-      orderBy: { updatedAt: 'desc' },
-      take: 10,
-      select: { id: true, title: true, status: true, landingUrl: true, targetGeo: true, updatedAt: true },
-    });
+    const [sources, logs, recent] = await Promise.all([
+      prisma.listingsSource.findMany({ orderBy: { createdAt: 'desc' } }),
+      prisma.listingsImportLog.findMany({
+        orderBy: { startedAt: 'desc' },
+        take: 30,
+        include: { source: { select: { id: true, name: true, categoryUrl: true } } },
+      }),
+      prisma.offer.findMany({
+        where: { id: { startsWith: 'agro-' } },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+        select: { id: true, title: true, status: true, landingUrl: true, targetGeo: true, updatedAt: true },
+      }),
+    ]);
 
     res.json({
       enabled,
       cron: process.env.LISTINGS_IMPORT_CRON || '0 3 * * *',
-      hasFeedUrl: Boolean(process.env.LISTINGS_FEED_URL || process.env.LISTINGS_APIFY_DATASET_ID),
-      hasSecret: Boolean(process.env.LISTINGS_IMPORT_SECRET),
-      hasApifyToken: Boolean(process.env.APIFY_TOKEN),
-      hasApifyActor: Boolean(process.env.LISTINGS_APIFY_ACTOR_ID),
       hasRedisUrl: Boolean(process.env.REDIS_URL),
-      source: process.env.LISTINGS_SOURCE || 'agroserver.ru',
-      defaultCategorySlug: process.env.LISTINGS_DEFAULT_CATEGORY_SLUG || 'agrochemistry',
-      defaultStatus: process.env.LISTINGS_DEFAULT_STATUS || 'active',
-      defaultPayout: Number(process.env.LISTINGS_DEFAULT_PAYOUT || 300),
-      supplierEmail: process.env.LISTINGS_SUPPLIER_EMAIL || 'supplier@example.com',
-      categoryUrl: process.env.LISTINGS_CATEGORY_URL || 'https://agroserver.ru/organo-mineralnye-udobreniya/',
+      hasApifyToken: Boolean(process.env.APIFY_TOKEN),
+      note:
+        'Источники и запуск парсинга управляются из этой страницы. Apify-токен не обязателен: при капче/блоке ошибка сохранится в логе с подробностями.',
       importedOffersCount,
+      sources,
+      logs,
       recent,
-      envRequired: [
-        { key: 'LISTINGS_IMPORT_SECRET', required: true, hint: 'Секрет webhook Apify → /api/integrations/listings/import' },
-        { key: 'LISTINGS_IMPORT_ENABLED', required: true, hint: 'true — суточный job в Redis/BullMQ' },
-        { key: 'REDIS_URL', required: true, hint: 'На Docker: redis://redis:6379' },
-        { key: 'APIFY_TOKEN', required: true, hint: 'Apify → Settings → API tokens (для авто)' },
-        { key: 'LISTINGS_APIFY_ACTOR_ID', required: false, hint: 'username~actor — наш cron сам запускает парсер' },
-        { key: 'LISTINGS_APIFY_DATASET_ID', required: false, hint: 'Или готовый dataset без запуска Actor' },
-        { key: 'LISTINGS_FEED_URL', required: false, hint: 'Или прямой URL JSON (альтернатива dataset)' },
-        { key: 'LISTINGS_CATEGORY_URL', required: false, hint: 'Категория для Actor' },
-        { key: 'LISTINGS_MAX_ITEMS', required: false, hint: 'Сколько объявлений за прогон (10)' },
-        { key: 'LISTINGS_IMPORT_CRON', required: false, hint: '0 3 * * *' },
-      ],
-      envSnippet:
-        'REDIS_URL=redis://redis:6379\n' +
-        'LISTINGS_IMPORT_SECRET=замените-на-длинный-секрет\n' +
-        'LISTINGS_IMPORT_ENABLED=true\n' +
-        'LISTINGS_IMPORT_CRON=0 3 * * *\n' +
-        'APIFY_TOKEN=apify_api_...\n' +
-        'LISTINGS_APIFY_ACTOR_ID=username~agroserver-listings\n' +
-        'LISTINGS_CATEGORY_URL=https://agroserver.ru/organo-mineralnye-udobreniya/\n' +
-        'LISTINGS_MAX_ITEMS=10\n' +
-        'LISTINGS_SOURCE=agroserver.ru\n' +
-        'LISTINGS_DEFAULT_CATEGORY_SLUG=agrochemistry\n' +
-        'LISTINGS_DEFAULT_STATUS=active\n' +
-        'LISTINGS_DEFAULT_PAYOUT=300\n' +
-        'LISTINGS_SUPPLIER_EMAIL=supplier@example.com\n',
     });
   } catch (e) {
     console.error('GET /api/admin/listings-import:', e);
-    res.status(500).json({ error: 'Ошибка статуса импорта' });
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('listings_sources') || msg.includes('does not exist') || msg.includes('P2021')) {
+      res.status(503).json({
+        error: 'Таблицы импорта ещё не созданы. На сервере выполните: docker-compose run --rm app npm run db:migrate',
+        detail: msg,
+      });
+      return;
+    }
+    res.status(500).json({ error: 'Ошибка статуса импорта', detail: msg });
   }
 });
 
-/** Ручной импорт из админки: JSON items / feedUrl / async queue */
+/** Создать источник (URL категории сайта) */
+router.post('/listings-sources', async (req: AuthRequest, res: Response) => {
+  try {
+    const categoryUrl = String(req.body?.categoryUrl || '').trim();
+    const name = String(req.body?.name || '').trim() || categoryUrl;
+    if (!categoryUrl || !/^https?:\/\//i.test(categoryUrl)) {
+      res.status(400).json({ error: 'Укажите корректный categoryUrl (https://...)' });
+      return;
+    }
+    const maxItems = Math.min(100, Math.max(1, Number(req.body?.maxItems || 10) || 10));
+    const row = await prisma.listingsSource.create({
+      data: {
+        name,
+        categoryUrl,
+        sourceKey: String(req.body?.sourceKey || 'agroserver.ru').trim() || 'agroserver.ru',
+        idPrefix: String(req.body?.idPrefix || 'agro').trim() || 'agro',
+        categorySlug: String(req.body?.categorySlug || 'agrochemistry').trim() || 'agrochemistry',
+        maxItems,
+        enabled: req.body?.enabled !== false,
+        offerStatus: req.body?.offerStatus === 'draft' ? 'draft' : 'active',
+      },
+    });
+    res.status(201).json(row);
+  } catch (e) {
+    console.error('POST /api/admin/listings-sources:', e);
+    res.status(500).json({ error: e instanceof Error ? e.message : 'Ошибка создания источника' });
+  }
+});
+
+router.patch('/listings-sources/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const data: Record<string, unknown> = {};
+    if (req.body?.name != null) data.name = String(req.body.name).trim();
+    if (req.body?.categoryUrl != null) {
+      const categoryUrl = String(req.body.categoryUrl).trim();
+      if (!/^https?:\/\//i.test(categoryUrl)) {
+        res.status(400).json({ error: 'Некорректный categoryUrl' });
+        return;
+      }
+      data.categoryUrl = categoryUrl;
+    }
+    if (req.body?.maxItems != null) data.maxItems = Math.min(100, Math.max(1, Number(req.body.maxItems) || 10));
+    if (req.body?.enabled != null) data.enabled = Boolean(req.body.enabled);
+    if (req.body?.offerStatus != null) data.offerStatus = req.body.offerStatus === 'draft' ? 'draft' : 'active';
+    if (req.body?.categorySlug != null) data.categorySlug = String(req.body.categorySlug).trim() || 'agrochemistry';
+    if (req.body?.sourceKey != null) data.sourceKey = String(req.body.sourceKey).trim() || 'agroserver.ru';
+    if (req.body?.idPrefix != null) data.idPrefix = String(req.body.idPrefix).trim() || 'agro';
+
+    const row = await prisma.listingsSource.update({ where: { id: req.params.id }, data });
+    res.json(row);
+  } catch (e) {
+    console.error('PATCH /api/admin/listings-sources/:id:', e);
+    res.status(500).json({ error: e instanceof Error ? e.message : 'Ошибка обновления источника' });
+  }
+});
+
+router.delete('/listings-sources/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    await prisma.listingsSource.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('DELETE /api/admin/listings-sources/:id:', e);
+    res.status(500).json({ error: e instanceof Error ? e.message : 'Ошибка удаления' });
+  }
+});
+
+/** Запустить парсинг источника сейчас — всегда возвращает ok/error + message/detail */
+router.post('/listings-sources/:id/run', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await runListingsSource(req.params.id, { prisma, trigger: 'admin' });
+    // Всегда 200: UI читает ok/message/detail (ошибка парсинга — не транспортная ошибка)
+    res.json(result);
+  } catch (e) {
+    console.error('POST /api/admin/listings-sources/:id/run:', e);
+    res.status(500).json({
+      ok: false,
+      status: 'error',
+      message: e instanceof Error ? e.message : 'Ошибка запуска парсинга',
+      detail: e instanceof Error ? e.stack : null,
+    });
+  }
+});
+
+router.get('/listings-import/logs', async (req: AuthRequest, res: Response) => {
+  try {
+    const take = Math.min(100, Math.max(1, Number(req.query.limit || 30) || 30));
+    const logs = await prisma.listingsImportLog.findMany({
+      orderBy: { startedAt: 'desc' },
+      take,
+      include: { source: { select: { id: true, name: true, categoryUrl: true } } },
+    });
+    res.json(logs);
+  } catch (e) {
+    console.error('GET /api/admin/listings-import/logs:', e);
+    res.status(500).json({ error: e instanceof Error ? e.message : 'Ошибка логов' });
+  }
+});
+
+/** Ручной импорт JSON (без парсинга сайта) */
 router.post('/listings-import', async (req: AuthRequest, res: Response) => {
   try {
     let items = extractListingItems(req.body);
@@ -1272,7 +1356,9 @@ router.post('/listings-import', async (req: AuthRequest, res: Response) => {
     if (items.length === 0 && datasetId) {
       const token = process.env.APIFY_TOKEN || '';
       if (!token) {
-        res.status(400).json({ error: 'Для datasetId задайте APIFY_TOKEN в .env' });
+        res.status(400).json({
+          error: 'APIFY_TOKEN не задан в .env — datasetId использовать нельзя. Добавьте источник URL в админке или вставьте JSON.',
+        });
         return;
       }
       items = await fetchApifyDatasetItems(datasetId, token);
@@ -1304,7 +1390,7 @@ router.post('/listings-import', async (req: AuthRequest, res: Response) => {
 
     if (items.length === 0) {
       res.status(400).json({
-        error: 'Нет данных: передайте items (JSON), feedUrl или datasetId, либо задайте LISTINGS_FEED_URL',
+        error: 'Нет данных: передайте items (JSON) или добавьте источник и нажмите «Парсить».',
       });
       return;
     }

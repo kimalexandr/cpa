@@ -57,11 +57,15 @@
         if (res.status === 401 && path.indexOf('/auth/') === -1) clearAuth();
         if (!res.ok) {
           var msg = 'Ошибка запроса';
-          if (payload && typeof payload === 'object' && payload.error) msg = payload.error;
+          if (payload && typeof payload === 'object') {
+            if (payload.error) msg = payload.error;
+            else if (payload.message) msg = payload.message;
+          }
           if (res.status >= 502 && res.status <= 504) msg = 'Сервер временно недоступен. Попробуйте позже.';
           var err = new Error(msg);
           err.status = res.status;
           err.payload = payload;
+          if (payload && typeof payload === 'object' && payload.detail) err.detail = payload.detail;
           throw err;
         }
         return payload;
@@ -417,6 +421,21 @@
       },
       listingsImport: function (data) {
         return request('POST', '/api/admin/listings-import', data || {});
+      },
+      listingsSourceCreate: function (data) {
+        return request('POST', '/api/admin/listings-sources', data || {});
+      },
+      listingsSourceUpdate: function (id, data) {
+        return request('PATCH', '/api/admin/listings-sources/' + encodeURIComponent(id), data || {});
+      },
+      listingsSourceDelete: function (id) {
+        return request('DELETE', '/api/admin/listings-sources/' + encodeURIComponent(id));
+      },
+      listingsSourceRun: function (id) {
+        return request('POST', '/api/admin/listings-sources/' + encodeURIComponent(id) + '/run', {});
+      },
+      listingsImportLogs: function (limit) {
+        return request('GET', '/api/admin/listings-import/logs' + (limit ? ('?limit=' + encodeURIComponent(limit)) : ''));
       }
     }
   };
