@@ -20,22 +20,30 @@ CREATE INDEX IF NOT EXISTS "ledger_entries_affiliate_id_status_idx" ON "ledger_e
 CREATE INDEX IF NOT EXISTS "ledger_entries_supplier_id_status_idx" ON "ledger_entries"("supplier_id", "status");
 CREATE INDEX IF NOT EXISTS "ledger_entries_offer_id_idx" ON "ledger_entries"("offer_id");
 
-ALTER TABLE "ledger_entries"
-  ADD CONSTRAINT "ledger_entries_event_id_fkey"
-  FOREIGN KEY ("event_id") REFERENCES "events"("id")
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE "ledger_entries"
-  ADD CONSTRAINT "ledger_entries_offer_id_fkey"
-  FOREIGN KEY ("offer_id") REFERENCES "offers"("id")
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE "ledger_entries"
-  ADD CONSTRAINT "ledger_entries_affiliate_id_fkey"
-  FOREIGN KEY ("affiliate_id") REFERENCES "users"("id")
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE "ledger_entries"
-  ADD CONSTRAINT "ledger_entries_supplier_id_fkey"
-  FOREIGN KEY ("supplier_id") REFERENCES "users"("id")
-  ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ledger_entries_event_id_fkey') THEN
+    ALTER TABLE "ledger_entries"
+      ADD CONSTRAINT "ledger_entries_event_id_fkey"
+      FOREIGN KEY ("event_id") REFERENCES "events"("id")
+      ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ledger_entries_offer_id_fkey') THEN
+    ALTER TABLE "ledger_entries"
+      ADD CONSTRAINT "ledger_entries_offer_id_fkey"
+      FOREIGN KEY ("offer_id") REFERENCES "offers"("id")
+      ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ledger_entries_affiliate_id_fkey') THEN
+    ALTER TABLE "ledger_entries"
+      ADD CONSTRAINT "ledger_entries_affiliate_id_fkey"
+      FOREIGN KEY ("affiliate_id") REFERENCES "users"("id")
+      ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ledger_entries_supplier_id_fkey') THEN
+    ALTER TABLE "ledger_entries"
+      ADD CONSTRAINT "ledger_entries_supplier_id_fkey"
+      FOREIGN KEY ("supplier_id") REFERENCES "users"("id")
+      ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;

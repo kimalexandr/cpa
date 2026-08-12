@@ -15,7 +15,14 @@ CREATE TABLE IF NOT EXISTS "user_sessions" (
 CREATE INDEX IF NOT EXISTS "user_sessions_user_id_revoked_at_idx" ON "user_sessions"("user_id", "revoked_at");
 CREATE INDEX IF NOT EXISTS "user_sessions_expires_at_idx" ON "user_sessions"("expires_at");
 
-ALTER TABLE "user_sessions"
-  ADD CONSTRAINT "user_sessions_user_id_fkey"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'user_sessions_user_id_fkey'
+  ) THEN
+    ALTER TABLE "user_sessions"
+      ADD CONSTRAINT "user_sessions_user_id_fkey"
+      FOREIGN KEY ("user_id") REFERENCES "users"("id")
+      ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
